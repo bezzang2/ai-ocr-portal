@@ -1,0 +1,48 @@
+server:
+  port: 8080
+
+spring:
+  thymeleaf:
+    cache: true # default true, 개발 시에는 false
+  datasource:
+    driver-class-name: com.p6spy.engine.spy.P6SpyDriver
+    url: jdbc:p6spy:mysql://bz2.myqnapcloud.com:3306/PMS
+    username: bezzang2
+    password: letdown12!@
+    hikari:
+      maximum-pool-size: 20
+      connection-timeout: 5000
+
+mybatis:
+  mapper-locations: classpath:sqlmap/mapper/*.xml
+  config-location: classpath:sqlmap/config/mybatis-config.xml
+
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true
+      logging: slf4j
+      # SQL을 한 줄로 정렬해서 보여줄지 여부
+      multiline: true
+
+# spring-boot-starter-log4j2 Configuration
+logging:
+  # default Logging 프레임워크 설정 파일을 참조
+  config: classpath:log4j2-local.yml	
+
+springdoc:
+  api-docs:
+    path: /api-docs
+    groups:
+      enabled: true
+  swagger-ui:
+    path: /swagger-ui-custom.html
+    enabled: true
+    groups-order: ASC
+    tags-sorter: alpha
+    operations-sorter: alpha
+    display-request-duration: true
+    doc-expansion: none
+  cache:
+    disabled: true
+  model-and-view-allowed: true
