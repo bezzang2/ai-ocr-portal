@@ -3,8 +3,8 @@ sever:
 
 spring:
   datasource:
-    driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://bz2.myqnapcloud.com:3306/PMS_2019
+    driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+    url: jdbc:log4jdbc:mariadb://bz2.myqnapcloud.com:3306/PMS
     username: bezzang2
     password: letdown12!@
   #if use redis
@@ -24,24 +24,9 @@ mybatis:
   mapper-locations: classpath:sqlmap/mapper/*.xml
   config-location: classpath:sqlmap/config/mybatis-config.xml
 
-# p6spy-spring-boot-starter Configuration
-decorator:
-  datasource:
-    p6spy:
-      enable-logging: true
-      logging: slf4j
-      # SQL을 한 줄로 정렬해서 보여줄지 여부
-      multiline: true
-
-# spring-boot-starter-log4j2 Configuration
-
+# log4j2 설정
 logging:
-  level:
-    org:
-      hibernate:
-        SQL: debug
-        type.descriptor.sql: trace
-    org.hibernate.orm.jdbc.bind: trace
+  config: classpath:log4j2-spring.xml
 
 springdoc:
   api-docs:
