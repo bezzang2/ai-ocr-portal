@@ -1,12 +1,21 @@
-package com.agilesoda.test;
+package com.agilesoda.sample;
 
-import lombok.extern.slf4j.Slf4j;
+import java.util.Map;
+
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
-@Service
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+
 @Slf4j
-public class TestService {
+@RequiredArgsConstructor
+@Service
+public class SampleService {
+	
+	private final SampleMapper sampleMapper;
+	
     public String callLink() {
         log.info("call Link START");
         RestClient restClient = RestClient.builder()
@@ -24,5 +33,9 @@ public class TestService {
         log.info("result = {}", result);
 
         return result;
+    }
+    
+    public Map<String, Object> selectUser(String userId) throws Exception{
+    	return sampleMapper.selectUser(userId);
     }
 }

@@ -1,28 +1,47 @@
-spring:
-  profile:
-    active: local
-  thymeleaf:
-    prefix: classpath:/templates/
-    check-template-location: true
-    suffix: .html
-    mode: HTML
+sever:
+  port: 8080
 
+spring:
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://bz2.myqnapcloud.com:3306/PMS_2019
+    username: bezzang2
+    password: letdown12!@
+  #if use redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: letdown12!@
   jpa:
-    show_sql: true
+    show-sql: true
     properties:
       hibernate:
-        show_sql: true
         format_sql: true
-    hibernate:
-      naming:
-        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-        implicit-strategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
-  threads:
-    virtual:
-      enabled: true
+
+#mybatis ??
 mybatis:
   mapper-locations: classpath:sqlmap/mapper/*.xml
   config-location: classpath:sqlmap/config/mybatis-config.xml
+
+# p6spy-spring-boot-starter Configuration
+decorator:
+  datasource:
+    p6spy:
+      enable-logging: true
+      logging: slf4j
+      # SQL을 한 줄로 정렬해서 보여줄지 여부
+      multiline: true
+
+# spring-boot-starter-log4j2 Configuration
+
+logging:
+  level:
+    org:
+      hibernate:
+        SQL: debug
+        type.descriptor.sql: trace
+    org.hibernate.orm.jdbc.bind: trace
 
 springdoc:
   api-docs:

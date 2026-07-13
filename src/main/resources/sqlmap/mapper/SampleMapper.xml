@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.agilesoda.sample.SampleMapper">
+	<select id="selectUser" parameterType="string" resultType="map">
+        SELECT USER_ID	AS userId
+             , USER_NM	AS userNm
+             , USER_PWD	AS userPwd
+             , TEAM_CD	AS teamCd
+             , AUTH_LV	AS authLv
+        FROM TB_USER
+        WHERE 1=1
+          AND USER_ID = #{userId}
+	</select> 
+</mapper>

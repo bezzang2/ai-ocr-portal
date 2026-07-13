@@ -1,4 +1,4 @@
-package com.agilesoda.test.entity;
+package com.agilesoda.sample.entity;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

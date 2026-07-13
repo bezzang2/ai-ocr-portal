@@ -20,6 +20,7 @@ repositories {
 
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-data-redis:3.3.0'
 	compileOnly 'org.springframework.boot:spring-boot-devtools'
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -28,11 +29,18 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
     implementation 'nz.net.ultraq.thymeleaf:thymeleaf-layout-dialect'
     
-    implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:2.0.0'
+    //	mybatis
+    runtimeOnly 'org.mariadb.jdbc:mariadb-java-client'
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1'
     
-    //	log
-    //implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    //  JPA
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
     
+    //	p6spy
+    implementation 'p6spy:p6spy:3.9.1'
+	// 스프링 부트 3.x(Spring 6) 이상 환경일 경우 아래 라이브러리도 권장됩니다.
+	implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.1'
+
     //  swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
     

@@ -1,11 +1,11 @@
-package com.agilesoda.test;
+package com.agilesoda.sample;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
-public class TestViewController {
+public class SampleViewController {
 	@GetMapping("test")
 	public String test() {
 		return "test/Test";
