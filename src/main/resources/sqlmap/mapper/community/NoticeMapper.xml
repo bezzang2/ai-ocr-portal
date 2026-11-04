@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.agilesoda.module.community.mapper.NoticeMapper">
+
+    <select id="selectNotice" resultType="com.agilesoda.module.community.vo.NoticeResVO">
+        /* 커뮤니티 (공지사항) 조회 쿼리 (selectNotice)*/
+        select NOTICE_SEQNO             as noticeSeqno
+            ,NOTICE_TTL                     as noticeTtl
+            ,NOTICE_CN                      as noticeCn
+            ,VIEW_CNT                       as viewCnt
+            ,USE_YN                         as useYn
+            ,NOTICE_MSG_DVCD                as noticeMsgDvcd
+            ,NOTICE_TYPE_CD                 as noticeTypeCd
+            ,FAQ_ANSMER                     as faqAnsmer
+            ,to_char(TO_DATE(STDD,'YYYYMMDD'),'YYYY-MM-DD')     as stdd
+            ,to_char(TO_DATE(ENDT,'YYYYMMDD'),'YYYY-MM-DD')     as endt
+            ,ATCH_FILE_ID                   as atchFileId
+            ,LAST_CHNG_EMPNO                as lastChngEmpno
+        from ocuoc_notic_m
+        where 1=1
+        <if test="noticeTypeCd != null and noticeTypeCd != ''">
+            and NOTICE_TYPE_CD = #{noticeTypeCd}
+        </if>
+        <if test="noticeTtl != null and noticeTtl != ''">
+            and NOTICE_TTL like '%'||#{noticeTtl}||'%'
+        </if>
+        <if test="startDate != null and startDate != ''">
+            and STDD <![CDATA[ >= ]]> replace(#{startDate},'-','')
+        </if>
+
+        <if test="endDate != null and endDate != ''">
+            and ENDT <![CDATA[ > ]]> replace(#{endDate},'-','')
+        </if>
+        ORDER BY NOTICE_SEQNO DESC
+        OFFSET #{offset} ROWS
+        FETCH NEXT #{pageSize} ROWS ONLY
+    </select>
+
+    <select id="selectNoticeCount" resultType="int">
+        /* 커뮤니티 (공지사항) 페이징 총카운터 조회 쿼리 (selectNoticeCount)*/
+        select count(*)
+        from ocuoc_notic_m
+        where 1=1
+        <if test="noticeTypeCd != null and noticeTypeCd != ''">
+            and NOTICE_TYPE_CD = #{noticeTypeCd}
+        </if>
+        <if test="noticeTtl != null and noticeTtl != ''">
+            and NOTICE_TTL like '%'||#{noticeTtl}||'%'
+        </if>
+        <if test="startDate != null and startDate != ''">
+            and STDD <![CDATA[ >= ]]> replace(#{startDate},'-','')
+        </if>
+
+        <if test="endDate != null and endDate != ''">
+            and ENDT <![CDATA[ > ]]> replace(#{endDate},'-','')
+        </if>
+    </select>
+
+    <insert id="insertNotice" parameterType="com.agilesoda.module.community.vo.NoticeResVO">
+        /* 커뮤니티 (공지사항) 저장 쿼리 (insertNotice)*/
+        INSERT INTO ocuoc_notic_m
+        ( NOTICE_SEQNO
+        , NOTICE_TYPE_CD
+        , NOTICE_TTL
+        , NOTICE_CN
+        , VIEW_CNT
+        , USE_YN
+        , NOTICE_MSG_DVCD
+        , STDD
+        , ENDT
+        , ATCH_FILE_ID
+        , FAQ_ANSMER
+        , LAST_CHNG_EMPNO
+        , LAST_CHNG_DTTM
+        , FRST_REG_EMPNO
+        , FRST_REG_DTTM)
+        VALUES ( (select NVL(max(NOTICE_SEQNO), 0) + 1
+                  from ocuoc_notic_m
+                  where NOTICE_TYPE_CD = #{noticeTypeCd})
+               , #{noticeTypeCd}
+               , #{noticeTtl}
+               , #{noticeCn}
+               , #{viewCnt}
+               , #{useYn}
+               , #{noticeMsgDvcd}
+               , replace(#{stdd},'-','')
+               , replace(#{endt},'-','')
+               , #{atchFileId}
+               , #{faqAnsmer}
+               , #{lastChngEmpno}
+               , TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+               , #{lastChngEmpno}
+               , TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+               )
+    </insert>
+
+    <insert id="insertAttachFile" parameterType="com.agilesoda.module.community.vo.NoticeAttachFileVO">
+        /* 커뮤니티 (공지사항) 첨부파일 저장 쿼리 (insertAttachFile)*/
+        INSERT INTO couoc_atchf_m
+        ( ATCH_FILE_ID
+        , FILE_SEQ
+        , ORG_FILE_NM
+        , SAVE_FILE_NM
+        , FILE_PATH
+        , FILE_SIZE
+        , FILE_EXT
+        , REG_DT)
+        VALUES (
+                 #{atchFileId}
+               , #{fileSeq}
+               , #{orgFileNm}
+               , #{saveFileNm}
+               , #{filePath}
+               , #{fileSize}
+               , #{fileExt}
+               , to_char(sysdate,'yyyymmdd')
+               )
+    </insert>
+
+
+    <select id="selectAttachFileList" resultType="com.agilesoda.module.community.vo.NoticeAttachFileVO">
+        /* 커뮤니티 (공지사항) 첨부파일 조회 쿼리 (selectAttachFileList)*/
+        select ATCH_FILE_ID                 as atchFileId
+             , FILE_SEQ                     as fileSeq
+             , ORG_FILE_NM                  as orgFileNm
+             , SAVE_FILE_NM                 as saveFileNm
+             , FILE_PATH                    as filePath
+             , FILE_SIZE                    as fileSize
+             , FILE_EXT                     as fileExt
+             , to_char(TO_DATE(REG_DT,'YYYYMMDD'),'YYYY-MM-DD') as reqDt
+        from ocuoc_atchf_m
+        where ATCH_FILE_ID = #{atchFileId}
+        order by FILE_SEQ
+    </select>
+
+    <select id="selectNoticeDetail" resultType="java.util.HashMap">
+        /* 커뮤니티 (공지사항) 상세 조회 쿼리 (selectNoticeDetail)*/
+        select NOTICE_SEQNO                 as "noticeSeqno"
+             ,NOTICE_TTL                    as "noticeTtl"
+             ,NOTICE_CN                     as "noticeCn"
+             ,VIEW_CNT                      as "viewCnt"
+             ,USE_YN                        as "useYn"
+             ,NOTICE_MSG_DVCD               as "noticeMsgDvcd"
+             ,NOTICE_TYPE_CD                as "noticeTypeCd"
+             ,FAQ_ANSMER                    as "faqAnsmer"
+             ,to_char(TO_DATE(STDD,'YYYYMMDD'),'YYYY-MM-DD')     as "stdd"
+             ,to_char(TO_DATE(ENDT,'YYYYMMDD'),'YYYY-MM-DD')     as "endt"
+             ,ATCH_FILE_ID                  as "atchFileId"
+             ,LAST_CHNG_EMPNO               as "lastChngEmpno"
+        from ocuoc_notic_m
+        where NOTICE_SEQNO  = #{noticeSeqno}
+         and NOTICE_TYPE_CD =  #{noticeTypeCd}
+    </select>
+
+    <update id="updateDetailNotice">
+        /* 커뮤니티 (공지사항) 상세 수정 쿼리 (updateDetailNotice)*/
+        update ocuoc_notic_m
+        set NOTICE_TTL       = #{noticeTtl}
+          , NOTICE_CN        = #{noticeCn}
+          , STDD             = replace(#{stdd},'-','')
+          , ENDT             = replace(#{endt},'-','')
+          , FAQ_ANSMER       = #{faqAnsmer}
+          , ATCH_FILE_ID     = #{atchFileId}
+          , LAST_CHNG_EMPNO  = #{lastChngEmpno}
+          , LAST_CHNG_DTTM   = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+        WHERE NOTICE_SEQNO   = #{noticeSeqno}
+          and NOTICE_TYPE_CD = #{noticeTypeCd}
+    </update>
+
+    <select id="selectAttachFile" resultType="com.agilesoda.module.community.vo.NoticeAttachFileVO">
+        select ATCH_FILE_ID                 as atchFileId
+             , FILE_SEQ                     as fileSeq
+             , ORG_FILE_NM                  as orgFileNm
+             , SAVE_FILE_NM                 as saveFileNm
+             , FILE_PATH                    as filePath
+             , FILE_SIZE                    as fileSize
+             , FILE_EXT                     as fileExt
+             , to_char(TO_DATE(REG_DT,'YYYYMMDD'),'YYYY-MM-DD') as reqDt
+        from ocuoc_atchf_m
+        where ATCH_FILE_ID = #{atchFileId}
+          and FILE_SEQ = #{fileSeq}
+    </select>
+
+    <delete id="deleteNoticeSeq">
+        /* 커뮤니티 (공지사항) 삭제 쿼리 (deleteNoticeSeq)*/
+        DELETE
+        FROM ocuoc_notic_m
+        WHERE NOTICE_SEQNO = #{noticeSeqno}
+        AND   NOTICE_TYPE_CD = #{noticeTypeCd}
+    </delete>
+
+    <delete id="deleteAttachFileList" parameterType="String">
+        /* 커뮤니티 (공지사항) 첨부파일 삭제 쿼리 (deleteAttachFileList)*/
+        DELETE
+        FROM ocuoc_atchf_m
+        WHERE ATCH_FILE_ID = #{atchFileId}
+    </delete>
+
+    <update id="updateNoticeViewCnt">
+        /* 커뮤니티 (공지사항) 조회수증가 쿼리 (updateNoticeViewCnt)*/
+        update ocuoc_notic_m
+        set VIEW_CNT =  NVL(TO_NUMBER(VIEW_CNT),0)+1
+        WHERE NOTICE_SEQNO = #{noticeSeqno}
+         and NOTICE_TYPE_CD = #{noticeTypeCd}
+    </update>
+
+
+</mapper>

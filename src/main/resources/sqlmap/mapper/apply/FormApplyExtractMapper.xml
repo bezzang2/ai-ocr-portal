@@ -1,0 +1,511 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.agilesoda.module.apply.mapper.FormApplyExtractMapper">
+
+    <select id="selectProcStatList" resultType="com.agilesoda.module.apply.vo.CodeDtlVO">
+		/* [신청관리 > OCR신청조회] 조건 진행상태 - selectProcStatList */
+    </select>
+    
+    <sql id="formApplWhere">
+    </sql>
+    
+    <select id="selectFormApplList" resultType="com.agilesoda.module.apply.vo.FormApplVO">
+		/* [신청관리 > OCR신청조회] OCR서식신청 조회 - selectFormApplList */
+    </select>
+
+    <select id="selectFormApplCount" resultType="int">
+		/* [신청관리 > OCR신청조회] 페이징 - selectFormApplCount */
+    </select>
+
+	<select id="selectFormApplListAll" resultType="com.agilesoda.module.apply.vo.FormApplVO">
+		/* [신청관리 > OCR신청조회] 엑셀다운 - selectFormApplListAll */
+	</select>
+
+	<select id="selectFormApplDetail" resultType="com.agilesoda.module.apply.vo.FormApplDetailVO">
+		/* [신청관리 > OCR서식등록신청] - selectFormApplDetail */
+		SELECT
+		    A.APPC_ID      AS applId,
+		    A.LEFRM_NM     AS formNm,
+		    U.EMP_KOR_FLNM AS applicantNm,
+		    A.PRGS_ST_CD   AS procStatCd
+		  FROM
+		    ocuoc_lfapp_m A
+		  LEFT JOIN ocuoc_useri_m U
+		    ON U.EMPNO = A.APCT_ID
+		 WHERE A.APPC_ID = #{applId}
+	</select>
+
+	<select id="selectFormApplFldList" resultType="com.agilesoda.module.apply.vo.FormApplFldVO">
+		/* [신청관리 > OCR서식등록신청] - selectFormApplFldList */
+		SELECT
+			FILD_ID      	AS fldId,
+			IMG_ID      	AS imgId,
+			UPRN_FILD_ID    AS upFldId,
+			ROW_NO      	AS rowNo,
+			FILD_DV_CD      AS fldTypeCd,
+			RADR_DV_CD      AS srcTypeCd,
+			FILD_NM      	AS fldNm,
+			FILD_VAL      	AS fldVal,
+			FILD_DESC      	AS fldDesc,
+			ESN_YN      	AS reqYn,
+			VALDTN_RULE     AS validRule,
+			META_RULE      	AS metaRule,
+			DATA_TYPE_CD	AS dataTypeCd,
+			DATA_LEN		AS dataLen,
+		  	MASK_YN			AS maskYn,
+		    MASK_RANGE		AS maskRange,
+			DATA_CMPR_RULE	AS dataCmprRule,
+		    META_CLSS		AS metaClss,
+		    META_TYPE		AS metaType,
+		    META_WORD		AS metaWord,
+		    META_LNM		AS metaLnm,
+		    META_PNM		AS metaPnm
+		FROM
+			ocuoc_lfafl_l
+		WHERE
+		    APPC_ID = #{applId}
+		    AND (FILD_VAL IS NOT NULL OR FILD_DV_CD = 'GROUP' OR VALDTN_RULE IS NOT NULL OR META_RULE IS NOT NULL OR FILD_DESC IS NOT NULL)
+		ORDER BY
+		    FILD_ID ASC
+	</select>
+
+	<update id="updateFormApplFld" parameterType="com.agilesoda.module.apply.vo.FormApplFldVO">
+		/* [신청관리 > OCR서식등록신청] - updateFormApplFld */
+		UPDATE  ocuoc_lfafl_l
+		SET
+			FILD_NM      	= #{fldNm},
+			FILD_VAL      	= #{fldVal},
+			FILD_DESC      	= #{fldDesc},
+			IMG_ID      	= #{imgId},
+			UPRN_FILD_ID  	= #{upFldId},
+			ROW_NO      	= #{rowNo},
+			FILD_DV_CD      = #{fldTypeCd},
+			ESN_YN      	= #{reqYn},
+			VALDTN_RULE     = #{validRule},
+			META_RULE      	= #{metaRule},
+			EDTR_ID      	= #{modId},
+			CHNG_DT      	= #{modDt}
+		WHERE
+		    FILD_ID = #{fldId}
+	</update>
+
+	<insert id="insertFormApplFld" parameterType="com.agilesoda.module.apply.vo.FormApplFldVO">
+		/* [신청관리 > OCR서식등록신청] - insertFormApplFld */
+	</insert>
+
+	<insert id="insertFormAppl" parameterType="com.agilesoda.module.apply.vo.FormApplInsertVO" useGeneratedKeys="true" keyProperty="applId" keyColumn="APPC_ID">
+		/* [신청관리 > OCR서식등록신청] - insertFormAppl */
+		INSERT INTO ocuoc_lfapp_m (
+		    APPC_ID, LEFRM_NM, APCT_ID, APCT_DPRM_CD, PRGS_ST_CD, RGSR_ID, REG_DT
+		) VALUES (
+			SQ_OCUOC_LFAPP_M_01.NEXTVAL, #{formNm}, #{applicantUserId}, #{applDeptCd}, #{procStatCd}, #{regId}, #{regDt}
+		)
+	</insert>
+
+	<update id="updateFormAppl">
+		/* [신청관리 > OCR서식등록신청] - updateFormAppl */
+		UPDATE  ocuoc_lfapp_m
+		SET
+			LEFRM_NM = #{formNm},
+			EDTR_ID  = #{modId},
+			CHNG_DT  = #{modDt}
+		WHERE
+			APPC_ID = #{applId}
+	</update>
+
+    <!-- 추출설명/추출항목 탭별 요청내용-->
+	<insert id="upsertFormApplWriteCntn">
+		/* [신청관리 > OCR서식등록신청] - upsertFormApplWriteCntn */
+		MERGE INTO ocuoc_lfarc_l T
+		USING (
+		    SELECT #{applId} AS APPC_ID,
+				   #{srcTypeCd} AS RADR_DV_CD
+		    FROM DUAL
+		) S
+		ON (T.APPC_ID = S.APPC_ID AND T.RADR_DV_CD = S.RADR_DV_CD)
+		WHEN MATCHED THEN
+			UPDATE SET
+				T.FLIN_CNTN = #{writeCntn},
+				T.EDTR_ID = #{regId},
+				T.CHNG_DT = #{regDt}
+		WHEN NOT MATCHED THEN
+			INSERT (APPC_ID, RADR_DV_CD, FLIN_CNTN, RGSR_ID, REG_DT, EDTR_ID, CHNG_DT)
+		    VALUES (#{applId}, #{srcTypeCd}, #{writeCntn}, #{regId}, #{regDt}, #{regId}, #{regDt})
+	</insert>
+
+	<select id="selectFormApplWriteCntnList" resultType="com.agilesoda.module.apply.vo.FormApplWriteCntnVO">
+		/* [신청관리 > OCR서식등록신청] - selectFormApplWriteCntnList */
+		SELECT
+			APPC_ID     AS applId,
+			RADR_DV_CD 	AS srcTypeCd,
+			FLIN_CNTN 	AS writeCntn
+		FROM
+			ocuoc_lfarc_l
+		WHERE APPC_ID = #{applId}
+	</select>
+
+	<delete id="deleteFormApplWriteCntnByApplId">
+		/* [신청관리 > OCR서식등록신청] - deleteFormApplWriteCntnByApplId */
+		DELETE FROM ocuoc_lfarc_l WHERE APPC_ID = #{applId}
+	</delete>
+
+	<update id="cancelFormAppl">
+		/* [신청관리 > OCR서식등록신청] - cancelFormAppl */
+		UPDATE  ocuoc_lfapp_m
+		SET
+			PRGS_ST_CD = 'CANC',
+			EDTR_ID  = #{modId},
+			CHNG_DT  = SYSDATE
+		WHERE
+			APPC_ID = #{applId}
+		  AND PRGS_ST_CD = 'APPL'
+	</update>
+
+	<update id="submitFormAppl">
+		/* [신청관리 > OCR서식등록신청] - submitFormAppl */
+		UPDATE  ocuoc_lfapp_m
+		SET
+			PRGS_ST_CD = 'APPL',
+			EDTR_ID  = #{modId},
+			CHNG_DT  = #{modDt}
+		WHERE
+			APPC_ID = #{applId}
+		 	AND PRGS_ST_CD IN ('DRAFT', 'CANC')
+	</update>
+
+	<select id="selectNextFldId" resultType="Long">
+		/* [신청관리 > OCR서식등록신청] - selectNextFldId */
+		SELECT NVL(MAX(FILD_ID), 0) + 1 FROM ocuoc_lfafl_l
+	</select>
+
+	<insert id="insertFormApplFldAiSuggest">
+		/* [신청관리 > OCR서식등록신청] - insertFormApplFldAiSuggest */
+		INSERT INTO ocuoc_lfafl_l (
+			FILD_ID, APPC_ID, FILD_CD, IMG_ID, UPRN_FILD_ID, ROW_NO, FILD_NM, FILD_VAL, FILD_DESC,
+			ESN_YN, VALDTN_RULE, META_RULE, FILD_DV_CD, RADR_DV_CD, CFDC, RGSR_ID, REG_DT
+		)
+		SELECT T.*
+		FROM (
+		<foreach collection="fldList" item="fld" separator="UNION ALL">
+			SELECT #{fld.fldId},#{applId},#{fld.fldCd},#{fld.imgId},#{fld.upFldId},#{fld.rowNo},#{fld.fldNm},#{fld.fldVal},#{fld.fldDesc},
+			       #{fld.reqYn},#{fld.validRule},#{fld.metaRule},#{fld.fldTypeCd},#{fld.srcTypeCd},#{fld.confidence},#{regId},SYSDATE
+			FROM DUAL
+		</foreach>
+		) T
+	</insert>
+
+	<insert id="insertFormApplImg" parameterType="com.agilesoda.module.apply.vo.FormApplImgVO" useGeneratedKeys="true" keyProperty="imgId" keyColumn="IMG_ID">
+		/* [신청관리 > OCR서식등록신청] - insertFormApplImg */
+		INSERT INTO ocuoc_lfaim_l (
+			IMG_ID, APPC_ID, FILE_NM, FILE_PATH, IMG_DV_CD, LNUP_SER, RGSR_ID, REG_DT
+		) VALUES (
+					SQ_OCUOC_LFAIM_L_01.NEXTVAL, #{applId}, #{fileNm}, #{filePath}, #{imgTypeCd}, #{sortOrd}, #{regId}, #{regDt}
+				 )
+	</insert>
+
+	<select id="selectFormApplImgList" resultType="com.agilesoda.module.apply.vo.FormApplImgVO">
+		/* [신청관리 > OCR서식등록신청] - selectFormApplImgList */
+		SELECT
+		    IMG_ID 		AS imgId,
+			APPC_ID     AS applId,
+			FILE_NM 	AS fileNm,
+			FILE_PATH 	AS filePath,
+			IMG_DV_CD   AS imgTypeCd,
+			LNUP_SER 	AS sortOrd
+		FROM
+			ocuoc_lfaim_l
+		WHERE
+		    APPC_ID = #{applId}
+		ORDER BY
+		    LNUP_SER ASC, IMG_ID ASC
+	</select>
+
+	<select id="selectFormApplImg" resultType="com.agilesoda.module.apply.vo.FormApplImgVO">
+		/* [신청관리 > OCR서식등록신청] - selectFormApplImg */
+		SELECT
+			IMG_ID 		AS imgId,
+			APPC_ID     AS applId,
+			FILE_NM 	AS fileNm,
+			FILE_PATH 	AS filePath,
+			IMG_DV_CD   AS imgTypeCd,
+			LNUP_SER 	AS sortOrd
+		FROM
+			ocuoc_lfaim_l
+		WHERE
+			IMG_ID = #{imgId}
+	</select>
+
+	<delete id="deleteFormApplImg">
+		/* [신청관리 > OCR서식등록신청] - deleteFormApplImg */
+		DELETE FROM ocuoc_lfaim_l WHERE IMG_ID = #{imgId} AND APPC_ID = #{applId}
+	</delete>
+
+	<delete id="deleteFormApplFldByImgId">
+		/* [신청관리 > OCR서식등록신청] - deleteFormApplFldByImgId */
+		DELETE FROM ocuoc_lfafl_l WHERE IMG_ID = #{imgId} AND APPC_ID = #{applId}
+	</delete>
+
+	<delete id="deleteFormApplFldMatchByImgId">
+		/* [신청관리 > OCR서식등록신청] - deleteFormApplFldMatchByImgId */
+		DELETE FROM ocuoc_lfafm_l M
+		WHERE EXISTS (
+		      SELECT 1
+		        FROM ocuoc_lfafl_l F
+			   WHERE F.FILD_ID = M.FLD_ID
+			     AND F.IMG_ID = #{imgId}
+				 AND F.APPC_ID = #{applId}
+		)
+	</delete>
+
+	<select id="selectFormApplImgCount" resultType="int">
+		/* [신청관리 > OCR서식등록신청] - selectFormApplImgCount */
+		SELECT COUNT(*) FROM ocuoc_lfaim_l WHERE APPC_ID = #{applId}
+	</select>
+
+	<insert id="insertFormApplFile" parameterType="com.agilesoda.module.apply.vo.FormApplFileVO" useGeneratedKeys="true" keyProperty="fileId" keyColumn="FILE_ID">
+		/* [신청관리 > OCR서식등록신청] - insertFormApplFile */
+		INSERT INTO ocuoc_lfaaf_l (
+			FILE_ID, APPC_ID, RADR_DV_CD, FILE_NM, FILE_PATH, FILE_SIZE, RGSR_ID, REG_DT
+		) VALUES (
+					SQ_OCUOC_LFAAF_L_01.NEXTVAL, #{applId}, #{srcTypeCd}, #{fileNm}, #{filePath}, #{fileSize}, #{regId}, #{regDt}
+				 )
+	</insert>
+
+	<select id="selectFormApplFileList" resultType="com.agilesoda.module.apply.vo.FormApplFileVO">
+		/* [신청관리 > OCR서식등록신청] - selectFormApplFileList */
+		SELECT
+			FILE_ID     AS fileId,
+			APPC_ID    	AS applId,
+			RADR_DV_CD 	AS srcTypeCd,
+			FILE_NM 	AS fileNm,
+			FILE_PATH 	AS filePath,
+			FILE_SIZE 	AS fileSize
+		FROM
+			ocuoc_lfaaf_l
+		WHERE
+		    APPC_ID = #{applId}
+		ORDER BY
+		    FILE_ID ASC
+	</select>
+
+	<select id="selectFormApplFile" resultType="com.agilesoda.module.apply.vo.FormApplFileVO">
+		/* [신청관리 > OCR서식등록신청] - selectFormApplFile */
+		SELECT
+			FILE_ID     AS fileId,
+			APPC_ID    	AS applId,
+			RADR_DV_CD 	AS srcTypeCd,
+			FILE_NM 	AS fileNm,
+			FILE_PATH 	AS filePath,
+			FILE_SIZE 	AS fileSize
+		FROM
+			ocuoc_lfaaf_l
+		WHERE
+			FILE_ID = #{fileId}
+	</select>
+
+	<delete id="deleteFormApplFile">
+		/* [신청관리 > OCR서식등록신청] - deleteFormApplFile */
+		DELETE FROM ocuoc_lfaaf_l WHERE FILE_ID = #{fileId} AND APPC_ID = #{applId}
+	</delete>
+
+	<delete id="deleteFormApplFldByApplId">
+		/* [신청관리 > OCR서식등록신청] - deleteFormApplFldByApplId */
+	</delete>
+
+	<delete id="deleteFormApplImgByApplId">
+		/* [신청관리 > OCR서식등록신청] - deleteFormApplImgByApplId */
+		DELETE FROM ocuoc_lfaim_l WHERE APPC_ID = #{applId}
+	</delete>
+
+	<delete id="deleteFormApplFileByApplId">
+		/* [신청관리 > OCR서식등록신청] - deleteFormApplFileByApplId */
+		DELETE FROM ocuoc_lfaaf_l WHERE APPC_ID = #{applId}
+	</delete>
+
+	<delete id="deleteFormAppl">
+		/* [신청관리 > OCR서식등록신청] - deleteFormAppl */
+		DELETE FROM ocuoc_lfapp_m WHERE APPC_ID = #{applId}
+	</delete>
+
+	<select id="selectStaffList" resultType="com.agilesoda.module.apply.vo.StaffVO">
+		/* [신청관리 > OCR서식등록신청] - selectStaffList */
+	</select>
+
+	<!--결재선 지정 팝업 전용-->
+	<select id="selectStaffListByName" resultType="com.agilesoda.module.apply.vo.StaffVO">
+		/* [신청관리 > OCR서식등록신청] - selectStaffListByName */
+		SELECT
+			U.EMPNO     	AS userId,
+			U.EMP_KOR_FLNM  AS userNm,
+			D.CD_NM         AS graNm,
+			C.CD_NM         AS posNm
+		 FROM ocuoc_useri_m U
+		 JOIN ocuoc_ccdtl_l D
+		   ON D.CD_VAL = U.EMP_JOBCLS_CD
+		 JOIN ocuoc_ccdtl_l C
+		   ON C.CD_VAL = U.HRA_PSTN_CD
+		WHERE D.CD_GROUP = '217000'
+		  AND C.CD_GROUP = '216000'
+		  AND U.EMP_KOR_FLNM LIKE '%' || #{keyword} || '%'
+		ORDER BY
+			U.EMP_KOR_FLNM ASC
+		FETCH FIRST 10 ROWS ONLY
+	</select>
+
+	<delete id="deleteFormApplMgrByApplId">
+		/* [신청관리 > OCR서식등록신청] - deleteFormApplMgrByApplId */
+		DELETE FROM ocuoc_lfamg_l WHERE APPC_ID = #{applId}
+	</delete>
+
+	<insert id="insertFormApplMgrList">
+		/* [신청관리 > OCR서식등록신청] - insertFormApplMgrList */
+		INSERT INTO ocuoc_lfamg_l (
+			MNGR_ID, APPC_ID, MNGR_DV_CD, MNGR_SEQNO, MNGR_USER_ID, RGSR_ID, REG_DT
+		)
+		SELECT SQ_OCUOC_LFAMG_L_01.NEXTVAL, T.*
+		    FROM (
+			<foreach collection="mgrList" item="mgr" separator="UNION ALL">
+				SELECT #{applId}, #{mgr.mgrTypeCd}, #{mgr.mgrSeq}, #{mgr.mgrUserId}, #{regId}, SYSDATE
+				FROM DUAL
+			</foreach>
+		) T
+	</insert>
+
+	<select id="selectFormApplMgrList" resultType="com.agilesoda.module.apply.vo.FormApplMgrVO">
+		/* [신청관리 > OCR서식등록신청] - selectFormApplMgrList */
+		SELECT
+			M.MNGR_ID     	AS mgrId,
+			M.APPC_ID    	AS applId,
+			M.MNGR_DV_CD 	AS mgrTypeCd,
+			M.MNGR_SEQNO 	AS mgrSeq,
+			M.MNGR_USER_ID 	AS mgrUserId,
+			U.EMP_KOR_FLNM 	AS mgrUserNm,
+			M.RGSR_ID 		AS regId,
+		    M.REG_DT 		AS regDt
+		FROM
+			ocuoc_lfamg_l M
+		LEFT JOIN ocuoc_useri_m U
+		ON U.EMPNO = M.MNGR_USER_ID
+		WHERE
+			M.APPC_ID = #{applId}
+		ORDER BY
+			M.MNGR_SEQNO ASC
+	</select>
+
+	<delete id="deleteApprvlLineByApplId">
+		/* [신청관리 > OCR서식등록신청] - deleteApprvlLineByApplId */
+		DELETE FROM ocuoc_aprvl_l WHERE APPC_ID = #{applId}
+	</delete>
+
+	<insert id="insertApprvlLineList">
+		/* [신청관리 > OCR서식등록신청] - insertApprvlLineList */
+		INSERT INTO ocuoc_aprvl_l (
+			APRVL_ID, APPC_ID, APPC_TYP_CD, APRVL_SEQNO, APOF_ID, APPC_STA_CD, APRVL_OPN, APRVL_DT, RGSR_ID, REG_DT
+		)
+		SELECT SQ_OCUOC_APRVL_L_01.NEXTVAL, T.*
+		FROM (
+		<foreach collection="apprvlLineList" item="line" separator="UNION ALL">
+			SELECT
+			    #{applId} 				AS APPC_ID,
+			    #{line.applTypeCd} 		AS APPC_TYP_CD,
+			    #{line.apprvlSeq} 		AS APRVL_SEQNO,
+			    #{line.apprvrUserId} 	AS APOF_ID,
+			    #{line.apprvlStatCd} 	AS APPC_STA_CD,
+			    null                    AS APRVL_OPN,
+			    null                    AS APRVL_DT,
+			    #{regId} 				AS RGSR_ID,
+			    SYSDATE 				AS REG_DT
+			FROM DUAL
+		</foreach>
+		) T
+	</insert>
+
+	<select id="selectApprvlLineList" resultType="com.agilesoda.module.apply.vo.ApprvlLineVO">
+		/* [신청관리 > OCR서식등록신청] - selectApprvlLineList */
+	</select>
+
+	<update id="updateFormApplFldRule">
+		/* [신청관리 > OCR서식등록신청 : 규칙모달] - updateFormApplFldRule */
+		UPDATE  ocuoc_lfafl_l
+		SET
+			ESN_YN 			= #{fld.reqYn},
+			DATA_TYPE_CD 	= #{fld.dataTypeCd},
+			DATA_LEN 		= #{fld.dataLen},
+			MASK_YN 		= #{fld.maskYn},
+			MASK_RANGE 		= #{fld.maskRange},
+			DATA_CMPR_RULE 	= #{fld.dataCmprRule},
+			EDTR_ID  		= #{modId},
+			CHNG_DT  		= SYSDATE
+		WHERE
+			FILD_ID = #{fld.fldId}
+		  	AND APPC_ID = #{applId}
+	</update>
+
+	<update id="updateFormApplFldMeta">
+		/* [신청관리 > OCR서식등록신청 : 메타모달] - updateFormApplFldMeta */
+		UPDATE  ocuoc_lfafl_l
+		SET
+			META_CLSS 	= #{fld.metaClss},
+			META_TYPE	= #{fld.metaType},
+			META_WORD 	= #{fld.metaWord},
+			META_LNM 	= #{fld.metaLnm},
+			META_PNM 	= #{fld.metaPnm},
+			EDTR_ID  	= #{modId},
+			CHNG_DT  	= SYSDATE
+		WHERE
+			FILD_ID = #{fld.fldId}
+		  AND APPC_ID = #{applId}
+	</update>
+
+	<insert id="insertFormApplFldMatchList">
+		/* [신청관리 > OCR서식등록신청] - insertFormApplFldMatchList */
+		INSERT INTO ocuoc_lfafm_l (
+			MATCH_ID, FLD_ID, MATCH_FLD_ID, SORT_ORD, RGSR_ID, REG_DT
+		)
+		SELECT SQ_OCUOC_LFAFM_L_01.NEXTVAL, T.*
+		FROM (
+		<foreach collection="matchFldIdList" item="matchFldId" index="idx" separator="UNION ALL">
+			SELECT
+				#{fldId}, #{matchFldId}, #{idx} + 1, #{regId}, SYSDATE
+			FROM DUAL
+		</foreach>
+		) T
+	</insert>
+
+	<delete id="deleteFormApplFldMatchByFldId">
+		/* [신청관리 > OCR서식등록신청] - deleteFormApplFldMatchByFldId */
+		DELETE FROM ocuoc_lfafm_l WHERE FLD_ID = #{fldId}
+	</delete>
+
+	<select id="selectFormApplFldMatchList" resultType="com.agilesoda.module.apply.vo.FormApplFldMatchVO">
+		/* [신청관리 > OCR서식등록신청] - selectFormApplFldMatchList */
+		SELECT
+			M.FLD_ID     	AS fldId,
+			M.MATCH_FLD_ID	AS matchFldId,
+			M.SORT_ORD 		AS sortOrd
+		FROM
+			ocuoc_lfafm_l M
+			JOIN ocuoc_lfafl_l F
+			  ON F.FILD_ID = M.FLD_ID
+		WHERE
+			F.APPC_ID = #{applId}
+		ORDER BY
+			M.fld_id ASC, M.SORT_ORD ASC
+	</select>
+
+	<select id="selectRuleMatchCdList" resultType="com.agilesoda.module.apply.vo.CodeDtlVO">
+		/* [신청관리 > OCR서식등록신청] - selectRuleMatchCdList */
+		SELECT
+			CD_GROUP    AS cdGrpId,
+			CD_VAL		AS cd,
+			CD_NM 		AS cdNm
+		FROM
+			ocuoc_ccdtl_l
+		WHERE
+			CD_GROUP = 'RULE_MATCH_CD'
+		AND UZ_YN = 'Y'
+		ORDER BY
+			LNUP_SER ASC
+	</select>
+
+</mapper>

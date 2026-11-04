@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+  <meta charset="UTF-8">
+<title>권한관리 | AI OCR 서류판독시스템</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <!-- inline JS 영역-->
+  <script th:inline="javascript" type="text/javascript">
+    document.addEventListener('DOMContentLoaded',function () {
+
+      // 메뉴 오픈시 lnb쪽 메뉴 활성화 부분
+      const params = new URLSearchParams(location.search);
+      const menuId = params.get("menuId");
+
+      if (menuId) {
+        openLnb(menuId);
+      }
+
+      /**********************************************************************
+       *  역할권한 행추가 버튼 이벤트
+       ***********************************************************************/
+      const btnRoleAdd = document.getElementById("btnRoleAdd");
+      if(btnRoleAdd){
+        btnRoleAdd.addEventListener("click", function () {
+          const tBody = document.getElementById("roleBody");
+          // 기존 선택 해제
+          tBody.querySelectorAll("tr").forEach(function (row){
+            row.classList.remove("is-selected");
+          });
+
+          const tr = document.createElement("tr");
+
+          // 신규행 표시용
+          tr.dataset.newRow = "Y";
+          tr.classList.add("is-selected");
+          tr.innerHTML += '<td>' +
+                  '<span class="cell-text" style="display: none;"></span>' +
+                  '<input class="input call-input input--sm role-id" type="text" value="" placeholder="역할코드">'+
+                  '</td>'+
+                  '<td>' +
+                  '<span class="cell-text" style="display: none;"></span>' +
+                  '<input class="input call-input input--sm role-nm" type="text" value="" placeholder="역할명">'+
+                  '</td>'+
+                  '<td>'+
+                  '<span class="cell-text" style="display:none"></span>'+
+                  '<select class="input input--sm use-yn">' +
+                  '<option value="Y">Y</option>'+
+                  '<option value="N">N</option>'+
+                  '</select>'+
+                  '</td>'+
+                  '<td>'+
+                  '<button type="button" class="btn-neutral detail-btn" >설정</button>'+
+                  '</td>';
+
+          tBody.appendChild(tr);
+
+          const userBody = document.getElementById("userBody");
+          if(userBody){
+            userBody.innerHTML = '<tr><td colspan="6" style="text-align: center;">조회된 데이터가 없습니다.</td></tr>';
+          }
+
+
+          // 역할코드 포커스
+          tr.querySelector(".role-id")?.focus();
+        })
+      }
+
+      /*******************************************************
+       *  역할권한 행 클릭 이벤트
+       * *******************************************************/
+      const roleBody = document.getElementById("roleBody");
+      if(roleBody){
+        roleBody.addEventListener("click", function (e) {
+          // 버튼/input/select 클릭 시 행조회 이벤트 타지 않게
+          if(e.target.closest("button,input,select")){
+            return;
+          }
+          const row = e.target.closest("tr");
+          if(!row){return;}
+          roleBody.querySelectorAll("tr").forEach(function (tr) {
+            tr.classList.remove("is-selected");
+          });
+          row.classList.add("is-selected");
+          if(row.dataset.newRow === "Y"){
+            const userBody = document.getElementById("userBody");
+            if(userBody){
+              userBody.innerHTML = "";
+            }
+            return;
+          }
+          const roleId = row.dataset.roleId;
+          if(roleId){
+            selectUserAuth(roleId);
+          }
+
+        });
+      }
+
+      /*******************************************************
+       *  역할권한 삭제 이벤트
+       * *******************************************************/
+      const btnRoleDelete = document.getElementById("btnRoleDelete");
+      if(btnRoleDelete){
+        btnRoleDelete.addEventListener("click", function () {
+          const tBody = document.getElementById("roleBody");
+          const selectedRow = tBody.querySelector("tr.is-selected");
+          if (!selectedRow) {
+            openErrorModal("삭제할 행을 선택하세요.");
+            return;
+          }
+          // 신규로 추가한 행이면 화면에서 바로 삭제
+          if (selectedRow.dataset.newRow === "Y") {
+            selectedRow.remove();
+            const firstRow = roleBody.querySelector("tr");
+            if(firstRow){
+              roleBody.querySelectorAll("tr").forEach(function (row) {
+                row.classList.remove("is-selected");
+              });
+              firstRow.classList.add("is-selected");
+              const roleId =  firstRow.dataset.roleId;
+              if(roleId){
+                selectUserAuth(roleId);
+              }
+            }
+            return;
+          }
+          // 기존 DB데이터면 서비스 호출
+          const roleId = selectedRow.dataset.roleId;
+          if (!roleId) {
+            openErrorModal("역할권한을 확인할 수 없습니다.");
+            return;
+          }
+          const param = {roleId:roleId};
+          openConfirmModal("역할권한 삭제시 하위권한 전부삭제됩니다."+"\n삭제하시겠습니까?", function () {
+            fetch(contextPath+"module/admin/deleteRole", {
+              method: "POST",
+              headers:{"Content-Type":"application/json"},
+              body:JSON.stringify(param)
+            })
+            .then(response => {
+              if (!response.ok) {
+                openErrorModal("삭제 실패");
+                return;
+              }
+              return response.json()
+            })
+            .then(data => {
+              if (data.result === "SUCCESS") {
+                openSuccessModal("삭제 되었습니다.");
+                searchRoleAuth();
+              } else {
+                openErrorModal("삭제 실패 :" + data.message);
+                return;
+              }
+            })
+            .catch(error => {
+              console.error(error);
+              openErrorModal("삭제 중 오류가 발행했습니다.");
+              return;
+            });
+          });
+        });
+      }
+
+      /*******************************************************
+       *  사용자권한 삭제 이벤트
+       * *******************************************************/
+      const btnUserDelete = document.getElementById("btnUserDelete");
+      if(btnUserDelete){
+        btnUserDelete.addEventListener("click", function () {
+          const userBody = document.getElementById("userBody");
+          const roleBody = document.getElementById("roleBody");
+          const userRow = userBody.querySelector("tr.is-selected");
+          const roleRow = roleBody.querySelector("tr.is-selected");
+          if (!userRow) {
+            openErrorModal("삭제할 행을 선택하세요.");
+            return;
+          }
+          // 신규로 추가한 행이면 화면에서 바로 삭제
+          if (userRow.dataset.newRow === "Y") {
+            userRow.remove();
+            const firstRow = userBody.querySelector("tr");
+            if(firstRow){
+              firstRow.classList.add("is-selected");
+            }
+            return;
+          }
+          // 기존 DB데이터면 서비스 호출
+          const userId = userRow.dataset.userId;
+          if (!userId) {
+            openErrorModal("사용자권한을 확인할 수 없습니다.");
+            return;
+          }
+          const param = {userId:userId,roleId:roleRow.dataset.roleId};
+          openConfirmModal("사용자권한 삭제하시겠습니까?", function () {
+            fetch(contextPath+"module/admin/deleteUser", {
+              method: "POST",
+              headers:{"Content-Type":"application/json"},
+              body:JSON.stringify(param)
+            })
+                    .then(response => {
+                      if (!response.ok) {
+                        openErrorModal("삭제 실패");
+                        return;
+                      }
+                      return response.json()
+                    })
+                    .then(data => {
+                      if (data.result === "SUCCESS") {
+                        openSuccessModal("삭제 되었습니다.");
+                        searchRoleAuth();
+                      } else {
+                        openErrorModal("삭제 실패 :" + data.message);
+                        return;
+                      }
+                    })
+                    .catch(error => {
+                      console.error(error);
+                      openErrorModal("삭제 중 오류가 발행했습니다.");
+                      return;
+                    });
+          });
+        });
+      }
+
+      /**********************************************************************
+       *  사용자권한 행클릭
+       ***********************************************************************/
+      document.getElementById("userBody").addEventListener("click",function (e) {
+        const row = e.target.closest("tr");
+        if(!row){return;}
+        selectRow(row);
+      });
+
+
+      /**********************************************************************
+       *  모든 버튼 클릭 이벤트
+       ***********************************************************************/
+      document.addEventListener("click",function (e) {
+
+        const detailBtn = e.target.closest(".detail-btn");
+        if(detailBtn){
+          const tr = detailBtn.closest("tr");
+          if(!tr){return;}
+          const roleId = tr.dataset.roleId;
+          detailSetting(roleId);
+          return;
+        }
+
+        const btn = e.target.closest("[data-action-cd]");
+
+        if(!btn){ return;}
+
+        const actionCd = btn.dataset.actionCd;
+        const areaCd = btn.dataset.areaCd;
+        console.log("actionCd===>>>",actionCd)
+        console.log("areaCd===>>>",areaCd)
+        if(areaCd === "DETAIL"){
+          switch (actionCd){
+            case "SAVE":
+              saveUaerbtn();
+              break;
+            case "ADD":
+              addUserRow();
+              break;
+          }
+        }else{
+          switch (actionCd){
+            case "SAVE":
+              saveRolebtn();
+              break;
+            case "SEARCH":
+              searchRoleAuth();
+              break;
+
+          }
+        }
+      })
+
+      /*******************************************************
+       *  조회 조건 엔터키 이벤트
+       * *******************************************************/
+      document.addEventListener("keydown",function (e) {
+        if(e.key !== "Enter"){ return;}
+        if(e.target.id === "roleId" || e.target.id === "roleNm"){
+          e.preventDefault();
+          searchRoleAuth();
+        }
+      })
+
+    });
+
+    /*******************************************************
+     *  세로고침 이벤트
+     * *******************************************************/
+    function searchRefresh(){
+      document.getElementById("roleId").value = "";
+      document.getElementById("roleNm").value = "";
+    }
+
+    /*******************************************************
+     * 조회버튼 클릭 이벤트
+     * *******************************************************/
+    function searchRoleAuth(){
+      console.log("권한 조회 시작 : ");
+
+      const param = {
+        roleId: document.getElementById("roleId").value,
+        roleNm: document.getElementById("roleNm").value
+      };
+
+      fetch(contextPath+"module/admin/searchRoleAuth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(param)
+      })
+      .then(response => {
+        if (!response.ok) {
+          openErrorModal("조회 오류");
+          return;
+        }
+        return response.json();
+      })
+      .then(data => {
+
+        drawRoleList(data.list);
+
+      })
+      .catch(error => {
+        console.error(error);
+        return;
+      })
+    }
+
+    /*******************************************************
+     * 역할권한 조회 후 세팅
+     * *******************************************************/
+    function drawRoleList(list){
+      const tBody = document.getElementById("roleBody");
+      let html = "";
+      if(!list || list.length === 0){
+        html = '<tr><td colspan="4" style="text-align: center;">조회된 데이터가 없습니다.</td></tr>';
+        tBody.innerHTML = html;
+        clearUserDetail();
+        return;
+      }
+      list.forEach(function (item) {
+        const roleId = item.roleId || "";
+        const roleNm = item.roleNm || "";
+        const useYn = item.useYn || "";
+        html += '<tr data-role-id="'+roleId+'">';
+        html += '<td>';
+        html += '<span class="cell-text">'+roleId+'</span>';
+        html += '<input class="input cell-input input--sm role-id" type="text" value="'+roleId+'">';
+        html += '</td>';
+        html += '<td>';
+        html += '<span class="cell-text">'+roleNm+'</span>';
+        html += '<input class="input cell-input input--sm role-nm" type="text" value="'+roleNm+'">';
+        html += '</td>';
+        html += '<td>';
+        html += '<select class="input input--sm use-yn">';
+        html += '<option value="Y" ' + (useYn === "Y" ? "selected" : "") + '>Y</option>';
+        html += '<option value="N" ' + (useYn === "N" ? "selected" : "") + '>N</option>';
+        html += '</select>';
+        html += '</td>';
+        html += '<td>';
+        html += '<button type="button" class="btn-neutral detail-btn" >설정</button>';
+        html += '</td>';
+        html += '</tr>';
+      })
+      tBody.innerHTML = html;
+
+      const firstRow = tBody.querySelector("tr");
+      if(firstRow){
+        firstRow.classList.add("is-selected");
+        const roleId = firstRow.dataset.roleId;
+
+        selectUserAuth(roleId);
+      }
+    }
+
+    function clearUserDetail(){
+      const userBody = document.getElementById("userBody");
+      if(userBody){
+        userBody.innerHTML ="";
+      }
+    }
+
+    /*******************************************************
+     * 역할권한 저장버튼 클릭 이벤트
+     * *******************************************************/
+    function saveRolebtn() {
+
+      // 신규 행만 조회
+      const newRows = document.querySelectorAll('#roleBody tr');
+      if(newRows.length === 0){
+        openErrorModal("저장할 역할권한이 없습니다.");
+        return;
+      }
+
+      const roleList = [];
+      for(const row of newRows){
+        const roleId = row.querySelector(".role-id").value.trim();
+        const roleNm = row.querySelector(".role-nm").value.trim();
+        const useYn = row.querySelector(".use-yn").value.trim();
+        // 필수값 체크
+        if(roleId === ""){
+          openInformationModal("역할코드를 입력하세요.");
+          row.querySelector(".role-id").focus();
+          return;
+        }
+
+        if(roleNm === ""){
+          openInformationModal("역할명을 입력하세요.");
+          row.querySelector(".role-nm").focus();
+          return;
+        }
+
+        roleList.push({
+          roleId:roleId,
+          roleNm:roleNm,
+          useYn:useYn
+        });
+      }
+
+      openConfirmModal("등록 하시겠습니까?",function (){
+
+        fetch(contextPath+"module/admin/saveRole", {
+          method: "POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify(roleList)
+        })
+        .then(response => {
+          if (!response.ok) {
+            openErrorModal("등록 실패");
+            return;
+          }
+          return response.json();
+        })
+        .then(data => {
+          if(data.result === "SUCCESS"){
+            openSuccessModal("등록되었습니다.");
+            searchRoleAuth();
+          }else{
+            openErrorModal("등록 실패 :"+data.message);
+            return;
+          }
+        })
+        .catch(error => {
+          console.error(error);
+          openErrorModal("등록 중 오류가 발행했습니다.");
+          return;
+        });
+      });
+    }
+
+    /*******************************************************
+     * 사용자권한 조회 이벤트
+     * *******************************************************/
+    function selectUserAuth(roleId) {
+
+      fetch(contextPath+"module/admin/selectUserAuth", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          roleId: roleId
+        })
+      })
+      .then(response => {
+        if (!response.ok) {
+          openErrorModal("사용자권한 조회 실패");
+          return;
+        }
+        return response.json();
+      })
+      .then(data => {
+        drawUserList(data.userList);
+      })
+      .catch(error => {
+        console.error(error);
+        return;
+      });
+    }
+
+    /*******************************************************
+     * 사용자권한 조회 후 데이터 세팅
+     * *******************************************************/
+    function drawUserList(list) {
+      const tBody = document.getElementById("userBody");
+      let html = "";
+      if(!list || list.length === 0){
+        html = '<tr class="empty-row"><td colspan="5" style="text-align: center;">조회된 데이터가 없습니다.</td></tr>';
+        tBody.innerHTML = html;
+        return;
+      }
+      list.forEach(function (item) {
+        const userId = item.userId || "";
+        const roleId = item.roleId || "";
+        const empKorFlnm = item.empKorFlnm || "";
+        const hraPstnNm =  item.hraPstnNm || "";
+        const brNm =  item.brNm || "";
+        const useYn = item.useYn || "";
+        html += `<tr data-user-id="${userId}" data-role-id="${roleId}" data-new-row="N">`;
+        html += '<td>';
+        html += '<span class="cell-text">'+userId+'</span>';
+        html += '<input class="input cell-input input--sm user-id" type="text" value="'+userId+'">';
+        html += '</td>';
+        html += '<td>';
+        html += '<span class="cell-text">'+empKorFlnm+'</span>';
+        html += '<input class="input cell-input input--sm empKorFlnm" type="text" value="'+empKorFlnm+'">';
+        html += '</td>';
+        html += '<td>';
+        html += '<span class="cell-text">'+hraPstnNm+'</span>';
+        html += '<input class="input cell-input input--sm hraPstnNm" type="text" value="'+hraPstnNm+'">';
+        html += '</td>';
+        html += '<td>';
+        html += '<span class="cell-text">'+brNm+'</span>';
+        html += '<input class="input cell-input input--sm brNm" type="text" value="'+brNm+'">';
+        html += '</td>';
+        html += '<td>';
+        html += '<select class="input input--sm use-yn">';
+        html += '<option value="Y" ' + (useYn === "Y" ? "selected" : "") + '>Y</option>';
+        html += '<option value="N" ' + (useYn === "N" ? "selected" : "") + '>N</option>';
+        html += '</select>';
+        html += '</td>';
+        html += '</tr>';
+
+      })
+      tBody.innerHTML = html;
+
+      const firstUserRow = tBody.querySelector("tr[data-user-id]");
+      if(firstUserRow){
+        firstUserRow.classList.add("is-selected");
+      }
+
+      tBody.querySelectorAll("tr[data-user-id]").forEach(function (row) {
+        row.addEventListener("click",function () {
+          tBody.querySelectorAll("tr[data-user-id]").forEach(function (r) {
+            // 기존 선택 제거
+            r.classList.remove("is-selected");
+          });
+          // 클릭한 행 선택
+          row.classList.add("is-selected");
+        });
+
+      });
+
+    }
+
+    /**********************************************************************
+     *  사번 더블클릭 이벤트
+     ***********************************************************************/
+    document.addEventListener("dblclick",function (e) {
+      const userId = e.target.closest(".user-id");
+      if(!userId){return;}
+      e.preventDefault();
+      e.stopPropagation();
+
+      const targetRow = userId.closest("tr");
+
+      // 모달 열기
+      openUserSearchModal(function (selectedRows) {
+        //console.log("receiveCommonUsers 직전 => ");
+        receiveCommonUsers(selectedRows);
+        //console.log("receiveCommonUsers 완료 => ");
+      });
+    })
+
+    /*******************************************************
+     *  사용자정보 리턴 처리 함수
+     * *******************************************************/
+    function receiveCommonUsers(user) {
+      const tBody = document.getElementById("userBody");
+      const targetRow = Array.from(tBody.querySelectorAll('tr[data-new-row="Y"]')).find(function (row) {
+        const inputs = row.querySelectorAll("input");
+        return inputs.length >= 3 && inputs[0].value.trim() === "";
+      });
+
+      if(!targetRow){
+        openErrorModal("입력 가능한 신규행이 없습니다.");
+        return;
+      }
+      const inputs = targetRow.querySelectorAll("input");
+      inputs[0].value = user.empNo || "";
+      inputs[1].value = user.empKorFlnm || "";
+      inputs[2].value = user.hraPstnNm || "";
+
+      tBody.querySelectorAll("tr").forEach(function (row) {
+        row.classList.remove("is-selected");
+      });
+      targetRow.classList.add("is-selected");
+
+
+      // const tBody = document.getElementById("userBody");
+      // const targetRow = tBody.querySelector('tr[data-new-row="Y"]');
+      // if(!targetRow){
+      //   console.log("선택된 신규행 없음");
+      //   return;
+      // }
+      // const inputs = targetRow.querySelectorAll("input");
+      // inputs[0].value = user.empNo || "";
+      // inputs[1].value = user.empKorFlnm || "";
+      // inputs[2].value = user.hraPstnNm || "";
+      //
+      // tBody.querySelectorAll("tr").forEach(function (row) {
+      //   row.classList.remove("is-selected");
+      // });
+      // targetRow.classList.add("is-selected");
+    }
+
+
+    /*******************************************************
+     * 사용자권한 행추가 이벤트
+     * *******************************************************/
+    function addUserRow() {
+
+      // if(e){
+      //   e.preventDefault();
+      //   e.stopPropagation();
+      // }
+
+      //역활권한  선택행
+      const roleBody = document.getElementById("roleBody");
+      const roleRow = roleBody.querySelector("tr.is-selected");
+      if(!roleRow){
+        openErrorModal("역할권한을 먼저 선택하세요.");
+        return;
+      }
+
+      const tBody = document.getElementById("userBody");
+      const emptyRow = tBody.querySelector(".empty-row");
+      if(emptyRow){
+        emptyRow.remove();
+      }
+
+
+      const tr = document.createElement("tr");
+
+      // 신규 행 표시
+      tr.dataset.newRow = "Y";
+      tr.onclick = function (){
+        selectRow(this);
+      }
+
+      tr.innerHTML += '<td>' +
+              '<span class="cell-text" style="display:none"></span>'+
+              '<input class="input cell-input input--sm user-id"  style="display: block;" type="text" value="" placeholder="사번">'+
+              '</td>'+
+              '<td>'+
+              '<span class="cell-text" style="display:none"></span>'+
+              '<input class="input cell-input input--sm empKorFlnm" style="display: block;" type="text" value="" placeholder="이름" readonly>' +
+              '</td>'+
+              '<td>'+
+              '<span class="cell-text" style="display:none"></span>'+
+              '<input class="input cell-input input--sm hraPstnNm" style="display: block;" type="text" value="" placeholder="직위" readonly>'+
+              '</td>'+
+              '<td>'+
+              '<span class="cell-text" style="display:none"></span>'+
+              '<input class="input cell-input input--sm brNm" style="display: block;" type="text" value="" placeholder="조직" readonly>'+
+              '</td>'+
+              '<td>'+
+              '<span class="cell-text"></span>'+
+              '<select class="input cell-input input--sm use-yn" style="display: block;">' +
+              '<option value="Y">Y</option>'+
+              '<option value="N">N</option>'+
+              '</select>'+
+              '</td>';
+
+
+      tBody.appendChild(tr);
+
+      selectRow(tr);
+
+      // 사번에 바로 포커스
+      tr.querySelector(".user-id").focus();
+
+    }
+
+    /**********************************************************************
+     *  로우 변경이벤트
+     ***********************************************************************/
+    function selectRow(row) {
+      document.querySelectorAll("#userBody tr").forEach(function (item){
+        item.classList.remove("is-selected");
+      });
+
+      row.classList.add("is-selected");
+    }
+
+    /**********************************************************************
+     *  역할권한 상세 클릭 이베트
+     ***********************************************************************/
+    function detailSetting(roleId) {
+      //현제 url의 menuId 가져오기
+      const params = new URLSearchParams(window.location.search);
+      const menuId = params.get("menuId");
+      //console.log("roleId==>>>",roleId)
+      //console.log("menuId==>>>",menuId)
+      location.href = contextPath+"module/admin/permissionDetail?mode=Detail&menuId="+encodeURIComponent(menuId)+"&roleId="+encodeURIComponent(roleId);
+    }
+
+    /*******************************************************
+     * 사용자 저장버튼 클릭 이벤트
+     * *******************************************************/
+    function saveUaerbtn() {
+      const selectedRoleRow = document.querySelector("#roleBody tr.is-selected");
+      if(!selectedRoleRow){
+        openInformationModal("역할을 먼저 선택해주세요.");
+        return;
+      }
+      const roleId = selectedRoleRow.dataset.roleId;
+      const rows = document.querySelectorAll("#userBody tr");
+      if(rows.length === 0){
+        openErrorModal("저장할 사용자권한이 없습니다.");
+        return;
+      }
+
+      const userList = [];
+      for(const row of rows){
+        const userId = row.querySelector(".user-id").value.trim();
+        const useYn = row.querySelector(".use-yn").value.trim();
+        // 필수값 체크
+        if(userId === ""){
+          openInformationModal("사번을 입력하세요.");
+          row.querySelector(".user-id").focus();
+          return;
+        }
+
+        userList.push({
+          userId:userId,
+          roleId:roleId,
+          useYn:useYn
+        });
+      }
+
+      openConfirmModal("등록 하시겠습니까?",function (){
+
+        fetch(contextPath+"module/admin/saveUser", {
+          method: "POST",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify(userList)
+        })
+        .then(response => {
+          if (!response.ok) {
+            openErrorModal("등록 실패");
+            return;
+          }
+          return response.json();
+        })
+        .then(data => {
+          if(data.result === "SUCCESS"){
+            openSuccessModal("등록되었습니다.");
+            searchRoleAuth();
+          }else{
+            openErrorModal("등록 실패 :"+data.message);
+            return;
+          }
+        })
+        .catch(error => {
+          console.error(error);
+          openErrorModal("등록 중 오류가 발행했습니다.");
+          return;
+        });
+      });
+    }
+
+
+
+  </script>
+</head>
+<body>
+
+
+
+    <main class="content">
+
+      <!-- 페이지 헤더 — get_design_context(617:10047) 실측. "Btn" 슬롯(617:10049)이 빈 채로
+           실측돼 버튼 없이 제목만 반영했다. -->
+      <div class="page-header">
+        <h1 class="page-header__title">권한관리</h1>
+      </div>
+
+      <div class="layout-list">
+
+        <!-- 검색영역 — get_design_context(617:10554) 실측.
+             2026-08-20: 새로고침/조회 버튼을 .search-area__row 바깥의 별도 .search-area__actions로
+             두던 구조를, 관리자>감사로그(audit-log.html)와 동일하게 마지막 .search-area__item의
+             .search-area__combo 안으로 옮겼다 — 필터 줄바꿈 시에도 버튼이 그 항목 옆에 붙어
+             있도록 하는 감사로그 패턴 재사용. -->
+        <form class="search-area">
+          <div class="search-area__row">
+            <div class="search-area__item">
+              <label class="search-area__label">권한</label>
+              <div class="search-area__combo">
+                <input id="roleId" class="input input--w120" type="text" placeholder="권한코드">
+                <input id="roleNm" class="input input--w120" type="text" placeholder="권한명">
+                <div class="search-area__actions">
+                  <button type="button" class="btn-icon" id="btnRefresh" onclick="searchRefresh()">
+                    <img th:src="@{/images/icons/buttons/ic-16-refresh.svg}" alt="">
+                  </button>
+                  <button th:each="btn : ${session.buttonList}"
+                          th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'SEARCH'}"
+                          type="button"
+                          class="btn-outline-primary"
+                          style="width:80px"
+                          th:id="${btn.btnCd}"
+                          data-audit="Y"
+                          th:data-area-cd="${btn.areaCd}"
+                          th:data-menu-id="${btn.menuId}"
+                          th:data-btn-cd="${btn.btnCd}"
+                          th:data-action-cd="${btn.actionCd}"
+                          th:data-action-nm="${btn.btnNm}">
+                    <span class="btn-icon-slot"><svg width="11.5" height="11.5" viewBox="0 0 11.5 11.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10.75 10.75L8.33333 8.33333M9.63889 5.19444C9.63889 7.64904 7.64904 9.63889 5.19444 9.63889C2.73985 9.63889 0.75 7.64904 0.75 5.19444C0.75 2.73985 2.73985 0.75 5.19444 0.75C7.64904 0.75 9.63889 2.73985 9.63889 5.19444Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                    <span th:text="${btn.btnNm}"></span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+
+        <!-- 코드그룹 목록(좌) + 코드값 목록(우) — get_design_context(617:10628) 실측.
+             Figma 원본 제목이 두 곳 다 "서식조회 목록"으로 돼 있었으나(다른 화면 템플릿을
+             복사하면서 라벨을 못 고친 것으로 보이는 오류) 사용자 확인 후 "코드 그룹"/"코드 상세"로
+             교체했다(2026-08-19). -->
+        <div style="display:flex; gap:24px; align-items:flex-start; width:100%">
+
+          <!-- 좌측: 코드그룹 목록 — get_design_context(617:10083) 실측 기반.
+               [TEST-ONLY, 2026-08-19] 사용자 요청으로 이 페이지에서만 실험 중 — 패널
+               자체의 폭도 px min/max 클램프 대신 %로 바꿨다. 비율은 직전에 실측했던
+               "좌측 max 460px : 우측 min 740px" (460+740=1200 기준) 를 그대로 옮긴 것
+               (460/1200=38.33%, 740/1200=61.67%) — 화면 폭이 바뀌어도 두 패널이 항상 이
+               비율을 유지한 채 같이 늘고 준다. 24px 갭을 calc()로 양쪽에서 절반(12px)씩
+               미리 빼서, 두 패널 %의 합(100%)+갭이 컨테이너 폭을 넘지 않게 했다. 표는
+               이미 width:100%라 패널 폭이 바뀌면 그대로 따라간다(풀로 채움). 표 내부 칼럼
+               비율(colgroup %)은 이전 실측 그대로 유지 — 패널이 늘고 줄 때 칼럼도 항상
+               같은 비율로 같이 늘고 준다.
+               2026-08-20: 사용자가 상호작용을 명확히 함 — 이 표는 "한 번 클릭 = 행 선택
+               (오른쪽 코드상세 패널 연동, is-selected)", "더블클릭 = 편집(코드번호·코드명
+               둘 다 input으로 전환)"이 별개 동작이다. 두 동작 모두 js/table-row-edit.js
+               한 파일 안에 있다(선택은 data-row-select, 편집 트리거 오버라이드는
+               data-edit-trigger="dblclick") — 처음엔 선택 로직을 별도 파일(table-row-select.js)로
+               만들었다가, "행 클릭 시 클래스 하나만 토글"이라는 동일한 뼈대를 쓰는 로직을
+               파일만 나누는 건 불필요한 중복이라는 지적을 받아 이 파일로 합쳤다. 같은 표에서
+               서로 다른 이벤트(click vs dblclick)만 듣기 때문에 두 동작이 충돌하지 않는다. -->
+          <div class="task-section" style="flex:0 0 calc(38.33% - 12px)">
+            <div class="task-section__header">
+              <span class="task-section__title">역할 권한</span>
+              <div class="task-section__actions">
+                <button th:each="btn : ${session.buttonList}"
+                        th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'HEADER'}"
+                        type="button"
+                        class="btn-neutral"
+                        style="width:80px"
+                        th:id="${btn.btnCd}"
+                        data-audit="Y"
+                        th:data-area-cd="${btn.areaCd}"
+                        th:data-menu-id="${btn.menuId}"
+                        th:data-btn-cd="${btn.btnCd}"
+                        th:data-action-cd="${btn.actionCd}"
+                        th:data-action-nm="${btn.btnNm}">
+                  <img th:src="@{${btn.iocnUrl}}" alt="">
+                  <span th:text="${btn.btnNm}"></span>
+                </button>
+              </div>
+            </div>
+            <table class="table" style="table-layout:fixed; width:100%" data-row-select data-edit-trigger="dblclick">
+              <colgroup>
+                <col style="width:30.43%">
+                <col style="width:49.57%">
+                <col style="width:20.00%">
+                <col style="width:20.00%">
+              </colgroup>
+              <thead>
+              <tr>
+                <th>역할코드</th>
+                <th>역할명</th>
+                <th>사용여부</th>
+                <th>상세설정</th>
+              </tr>
+              </thead>
+              <tbody id="roleBody">
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 우측: 코드값 목록 — get_design_context(617:10872) 재실측(2026-08-20,
+               "신청부서"/"최종변경일자" → "유효시작일"/"유효마감일"로 라벨 교체. 두 칼럼 다
+               날짜값이라 지금까지의 "부서명인데 날짜가 들어있는 오류"가 아니라 원래부터
+               유효기간 칼럼이었던 것으로 확인됐다 — 이전 코멘트의 "Figma 원본 오류" 추정은
+               철회한다. "유효마감일"도 이번에 Figma에서 새로 datepicker(ic/24/insert_invitation)로
+               바뀌어 유효시작일과 동일하게 cell-text/cell-input(type=date) 쌍을 갖는다.
+               코드번호는 항상 텍스트(고유 식별자라 미편집), 나머지 5칼럼은 전 행에
+               cell-text/cell-input을 둬서 어떤 행이든 편집 가능하게 했다(이전엔 첫 행만
+               가능했는데, 사용자가 "더블클릭하면 셀이 활성화"라고 확인해줘 특정 행 하나로
+               고정할 이유가 없어짐). 편집 트리거는 table-row-edit.js 기본값인 click이 아니라
+               data-edit-trigger="dblclick"로 오버라이드했다 — 이 표가 속한 화면은 좌측
+               코드그룹 표에서 "한 번 클릭 = 행 선택(코드상세 연동)"을 이미 쓰고 있어, 오른쪽도
+               같은 규칙(클릭=선택/포커스, 더블클릭=편집)으로 통일했다. -->
+          <div class="task-section" style="flex:0 0 calc(61.67% - 12px)">
+            <div class="task-section__header">
+              <span class="task-section__title">사용자 권한</span>
+              <div class="task-section__actions">
+                <button th:each="btn : ${session.buttonList}"
+                        th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'DETAIL'}"
+                        type="button"
+                        class="btn-neutral"
+                        style="width:80px"
+                        th:id="${btn.btnCd}"
+                        data-audit="Y"
+                        th:data-area-cd="${btn.areaCd}"
+                        th:data-menu-id="${btn.menuId}"
+                        th:data-btn-cd="${btn.btnCd}"
+                        th:data-action-cd="${btn.actionCd}"
+                        th:data-action-nm="${btn.btnNm}">
+                  <img th:src="@{${btn.iocnUrl}}" alt="">
+                  <span th:text="${btn.btnNm}"></span>
+                </button>
+              </div>
+            </div>
+            <table class="table" style="table-layout:fixed; width:100%" data-edit-trigger="dblclick">
+              <colgroup>
+                <col style="width:15.58%">
+                <col style="width:20.83%">
+                <col style="width:12.5%">
+                <col style="width:20.42%">
+                <col style="width:10.83%">
+              </colgroup>
+              <thead>
+              <tr>
+                <th>사번</th>
+                <th>이름</th>
+                <th>직위</th>
+                <th>조직</th>
+                <th>사용여부</th>
+              </tr>
+              </thead>
+              <tbody id="userBody">
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+<div th:replace="~{common/commonModals :: commonModals}"></div>
+<script th:src="@{/js/modal.js}"></script>
+<script th:src="@{/js/lnb.js}"></script>
+<script th:src="@{/js/menu-tree.js}"></script>
+<script th:src="@{/js/table-col-select-all.js}"></script>
+<script th:src="@{/js/common.js}"></script>
+</body>
+</html>

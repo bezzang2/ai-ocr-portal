@@ -1,0 +1,98 @@
+/* ==========================================================================
+   BASE — 전역 기본 스타일 (reset → tokens 다음, layout/components 이전)
+   ========================================================================== */
+
+html {
+  font-family: var(--font-family-base);
+  color: var(--text-neutral-default);
+  height: 100%;
+  overflow: hidden; /* .app-container > .content의 overflow-y:auto가 실제로 걸리려면 상위가 overflow:hidden이어야 한다 */
+}
+
+body {
+  height: 100%;
+  font-size: var(--font-size-14);
+  overflow: hidden; /* .app-container > .content의 overflow-y:auto가 실제로 걸리려면 상위가 overflow:hidden이어야 한다 */
+}
+
+/* ---- Figma 로컬 텍스트 스타일 1:1 매핑 ----
+   화면 어디서든 이 클래스명 그대로 재사용한다(Figma 스타일명과 동일하게 유지해
+   디자인-코드 간 번역 오차를 없앤다). */
+.type-display-36b {
+  font-size: var(--font-size-36);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-tight);
+}
+.type-display-32sb {
+  font-size: var(--font-size-32);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-tight);
+}
+.type-title-18m {
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-tight);
+}
+.type-title-16m {
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-tight);
+}
+.type-lnb-14sb {
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-tight);
+}
+.type-lnb-13sb {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-tight);
+}
+.type-body-14m {
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-none);
+}
+.type-body-13sb {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-tight);
+}
+.type-body-13m {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-tight);
+}
+.type-body-13r {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-none);
+  letter-spacing: var(--letter-spacing-tight);
+}
+.type-body-12sb {
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--line-height-relaxed);
+  letter-spacing: var(--letter-spacing-tight);
+}
+.type-body-12m {
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-relaxed);
+  letter-spacing: var(--letter-spacing-tight);
+}
+.type-body-12r {
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-regular);
+  line-height: var(--line-height-relaxed);
+  letter-spacing: var(--letter-spacing-tight);
+}

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{common/layouts/defaultLayout}" layout:fragment="Content">
+<head>
+<meta charset="UTF-8">
+<title>OCR서식신청 | AI OCR 서류판독시스템</title>
+<link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+    <main class="content">
+      <!-- 페이지 헤더 — get_design_context(481:6843) 실측. 목록 내용은
+           추후 업데이트 예정(서식조회와 동일한 골격을 임시로 유지 중). -->
+      <div class="page-header">
+        <h1 class="page-header__title">OCR서식신청</h1>
+        <div class="page-header__actions">
+          <button type="button" class="btn-outline-primary" id="btnExcelDown">엑셀다운</button>
+          <button type="button" class="btn btn-primary" id="btnApplyForm">신규 OCR서식 신청</button>
+        </div>
+      </div>
+
+      <div class="layout-list">
+
+          <!-- 검색 필터 — img/서식신청검색조건.png 실측 반영(서식조회와 다른 필드 구성) -->
+          <form id="searchForm" class="search-area" th:action="@{/module/apply/list}" method="post">
+            <div class="search-area__row">
+              <div class="search-area__item">
+                <label class="search-area__label search-area__label--required" for="apply-status">진행상태</label>
+                <select id="searchStatus" name="procStatCd" class="input input--w120">
+                  <option value="">전체</option>
+                  <option th:each="code : ${procStatList}" th:value="${code.cd}" th:text="${code.cdNm}"
+                    th:selected="${code.cd == searchVO.procStatCd}">진행상태</option>
+                </select>
+              </div>
+              <div class="search-area__item">
+                <label class="search-area__label" for="searchDept">신청부서</label>
+                <input id="searchDept" name="applDeptNm" class="input input--w200" type="text" placeholder="신청부서 입력" th:value="${searchVO.applDeptNm ?: ''}">
+              </div>
+              <div class="search-area__item">
+                <label class="search-area__label" for="applicant">신청자</label>
+                <input id="searchApplicantNm" name="applicantNm" class="input input--w120" type="text" th:value="${searchVO.applicantNm}">
+              </div>
+              <div class="search-area__item">
+                <label class="search-area__label" for="date-from">신청일자</label>
+                <div class="search-area__combo">
+                  <input type="date" id="searchDateFrom" name="applDateFrom" class="input input--w120" th:value="${searchVO.applDateFrom}">
+                  <span class="search-area__tilde">~</span>
+                  <input type="date" id="searchDateTo" name="applDateTo" class="input input--w120" th:value="${searchVO.applDateTo}">
+                </div>
+              </div>
+              <div class="search-area__item">
+                <label class="search-area__label" for="searchKeyword">검색어</label>
+                <div class="search-area__combo">
+                  <select id="searchKeywordType" name="keywordType" class="input input--w120">
+                    <option value="">선택</option>
+                    <option value="FORM_NM" th:selected="${searchVO.keywordType == 'FORM_NM'}">서식명</option>
+                    <option value="APPLICANT" th:selected="${searchVO.keywordType == 'APPLICANT'}">신청자</option>
+                  </select>
+                  <input id="searchKeyword" name="keyword" class="input input--w200" type="text" placeholder="검색어" th:value="${searchVO.keyword}">
+                </div>
+              </div>
+            </div>
+            <div class="search-area__actions">
+              <button type="button" class="btn-icon" id="btnReset">
+                <!--<img src="../../images/icons/buttons/ic-16-refresh.svg" alt="새로고침">-->
+                <img th:src="@{/images/icons/buttons/ic-16-refresh.svg}" alt="새로고침">
+              </button>
+              <button type="submit" class="btn-outline-primary" id="btnSearch">
+                <span class="btn-icon-slot"><svg width="11.5" height="11.5" viewBox="0 0 11.5 11.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10.75 10.75L8.33333 8.33333M9.63889 5.19444C9.63889 7.64904 7.64904 9.63889 5.19444 9.63889C2.73985 9.63889 0.75 7.64904 0.75 5.19444C0.75 2.73985 2.73985 0.75 5.19444 0.75C7.64904 0.75 9.63889 2.73985 9.63889 5.19444Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                조회
+              </button>
+            </div>
+          </form>
+
+          <!-- 목록 — 서식조회와 동일 구조. 진행상태 태그 타입별 1건씩(개발자 전달용) -->
+          <div class="list-section" id="resultFragment" th:fragment="resultFragment">
+            <div class="list-section__header">
+              <h2 class="list-section__title">서식신청 목록</h2>
+              <label class="checkbox">
+                <input type="checkbox" id="chkOnlyMine" name="onlyMine" class="checkbox__input" form="searchForm" value="true" th:checked="${searchVO.onlyMine}">
+                <span class="checkbox__box">
+                  <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" style="overflow:visible" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.83263 3.64645C10.0558 3.84171 10.0558 4.15829 9.83263 4.35355L5.2612 8.35355C5.03805 8.54882 4.67624 8.54882 4.45308 8.35355L2.16737 6.35355C1.94421 6.15829 1.94421 5.84171 2.16737 5.64645C2.39052 5.45118 2.75233 5.45118 2.97549 5.64645L4.85714 7.29289L9.02451 3.64645C9.24767 3.45118 9.60948 3.45118 9.83263 3.64645Z" fill="currentColor" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </span>
+                <span class="checkbox__label">내 글만 보기</span>
+              </label>
+            </div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width:80px">No</th>
+                  <th style="width:160px">진행상태</th>
+                  <th>서식명</th>
+                  <th style="width:200px">신청자</th>
+                  <th style="width:200px">신청부서</th>
+                  <th style="width:200px">신청일자</th>
+                  <th style="width:200px">최종변경일자</th>
+                </tr>
+              </thead>
+              <tbody id="resultBody">
+                <tr th:each="row, rowStat : ${formList}" th:data-appl-id="${row.no}">
+                  <td th:text="${row.no}"></td>
+                  <td th:text="${row.procStatNm}"><span class="status-pill"></span></td>
+                  <td th:text="${row.formNm}" style="text-align:left"></td>
+                  <td th:text="${row.applicantNm}"></td>
+                  <td th:text="${row.applDeptNm}"></td>
+                  <td th:text="${row.applDate}"></td>
+                  <td th:text="${row.updateDate}"></td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!--하단 : 조회 결과 건수 /페이지 크기-->
+
+            <div class="list-footer">
+              <span class="list-footer__count">조회 결과 : <strong id="pageRangeStart" th:text="${pageInfo.rangeStart}"></strong>~<strong id="pageRangeEnd" th:text="${pageInfo.rangeEnd}"></strong>/<strong id="totalCound" th:text="${totalCount}"></strong></span>
+
+             <nav class="pagination" id="pagination">
+                <li th:classappend="${pageInfo.pageNo == 1} ? 'disabled'" style="list-style:none;display:inline;">
+                  <button type="button" class="pagination__item" aria-label="처음" th:if="${pageInfo.pageNo != 1}" data-page="1"><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8.75 7.41667L5.41667 4.08333L8.75 0.75M4.08333 7.41667L0.75 4.08333L4.08333 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  <button type="button" class="pagination__item" aria-label="처음" th:unless="${pageInfo.pageNo != 1}" disabled><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8.75 7.41667L5.41667 4.08333L8.75 0.75M4.08333 7.41667L0.75 4.08333L4.08333 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </li>
+                <li th:classappend="${pageInfo.hasPrevGroup} ? 'disabled'" style="list-style:none;display:inline;">
+                  <button type="button" class="pagination__item" aria-label="이전" th:if="${pageInfo.hasPrevGroup}" data-page="${pageInfo.prevGroupPage}"><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.75 8.75L0.75 4.75L4.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  <button type="button" class="pagination__item" aria-label="이전" th:unless="${pageInfo.hasPrevGroup}" disabled><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.75 8.75L0.75 4.75L4.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </li>
+                <li th:each="p : ${#numbers.sequence(pageInfo.startPage, pageInfo.endPage)}" style="list-style:none;display:inline;">
+                  <button type="button" class="pagination__item" th:classappend="${p == pageInfo.pageNo} ? 'is-current'" th:data-page="${p}" th:text="${p}">1</button>
+                </li>
+                <li th:classappend="${pageInfo.hasNextGroup} ? 'disabled'" style="list-style:none;display:inline;">
+                  <button type="button" class="pagination__item" aria-label="다음" th:if="${pageInfo.hasNextGroup}" data-page="${pageInfo.hasNextGroup}"><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 8.75L4.75 4.75L0.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  <button type="button" class="pagination__item" aria-label="다음" th:unless="${pageInfo.hasNextGroup}" disabled><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 8.75L4.75 4.75L0.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </li>
+                <li th:classappend="${pageInfo.pageNo == pageInfo.totalPageCount} ? 'disabled'" style="list-style:none;display:inline;">
+                  <button type="button" class="pagination__item" aria-label="끝" th:if="${pageInfo.pageNo != pageInfo.totalPageCount}" data-page="${pageInfo.totalPageCount}"><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 7.41667L4.08333 4.08333L0.75 0.75M5.41667 7.41667L8.75 4.08333L5.41667 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  <button type="button" class="pagination__item" aria-label="끝" th:unless="${pageInfo.pageNo != pageInfo.totalPageCount}" disabled><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 7.41667L4.08333 4.08333L0.75 0.75M5.41667 7.41667L8.75 4.08333L5.41667 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                </li>
+              </nav>
+
+              <select id="pageSize" class="input input&#45;&#45;w140 list-footer__page-size" name="pageSize" form="searchForm">
+                <option value="15" th:selected="${searchVO.pageSize == 15}">15개씩 보기</option>
+                <option value="30" th:selected="${searchVO.pageSize == 30}">30개씩 보기</option>
+                <option value="50" th:selected="${searchVO.pageSize == 50}">50개씩 보기</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+    </main>
+<input type="hidden" id="pageNo" name="pageNo" form="searchForm" th:value="${searchVO.pageNo}">
+
+<script th:inline="none">
+  document.addEventListener('DOMContentLoaded',function (){
+    // 메뉴 오픈시 lnb쪽 메뉴 활성화 부분
+    const params = new URLSearchParams(location.search);
+    const menuId = params.get("menuId");
+    // console.log("menuId:"+menuId);
+    document.querySelectorAll('.menu-tree__subitem').forEach(item => {item.classList.remove('is-active');});
+    if(menuId) {
+      openLnb(menuId);
+      selectMenu(menuId);
+    }
+  });
+
+  // 신청일자 검색조건이 최초 진행 시에만 시작/종료일자를 당일로 채운다(조회는 자동 실행하지 않음)
+  (function () {
+    var dateFrom = document.getElementById('searchDateFrom');
+    var dateTo = document.getElementById('searchDateTo');
+
+    if (!dateFrom.value && !dateTo.value) {
+      var today = new Date();
+      var yyyy = today.getFullYear();
+      var mm = String(today.getMonth() + 1).padStart(2, '0');
+      var dd = String(today.getDate()).padStart(2, '0');
+      var todayStr = yyyy + '-' + mm + '-' + dd;
+      dateFrom.value = todayStr;
+      dateTo.value = todayStr;
+    }
+  })();
+
+  //초기화
+  document.getElementById('btnReset').addEventListener('click', function () {
+    window.location.href = window.location.pathname;
+  });
+
+  // 신규OCR서식 신청
+  document.getElementById('btnApplyForm').addEventListener('click', function () {
+    window.location.href = contextPath + 'module/apply/extract?menuId=MENU0307';
+  })
+
+  //엑셀다운
+  document.getElementById('btnExcelDown').addEventListener('click', function () {
+    var params = new URLSearchParams(new FormData(document.getElementById('searchForm')));
+    window.location.href = contextPath + 'module/apply/excel?' + params.toString();
+  });
+
+  var listContainer = document.querySelector('.layout-list');
+  var searchForm = document.getElementById('searchForm');
+
+  // 서버에 검색조건...
+  function reloadList() {
+    var params = new URLSearchParams(new FormData(searchForm));
+
+    fetch(searchForm.action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded'},
+      body: params.toString()
+    })
+    .then(function (res) {
+      if (!res.ok) {
+        throw new Error('조회 중 오류가 발생했습니다.')
+      }
+      return res.text();
+    })
+    .then(function (html) {
+      document.getElementById('resultFragment').outerHTML = html;
+    })
+    .catch(function (err) {
+      alert(err.message);
+    })
+  }
+
+  // 조회결과 더블클릭(OCR서식등록신청) 이동
+  listContainer.addEventListener('dblclick', function (e) {
+    var row = e.target.closest('tr[data-appl-id]');
+    if (!row) {
+      return;
+    }
+    var applId = row.dataset.applId;
+    if (applId != null) {
+      window.location.href = contextPath + 'module/apply/extract?menuId=MENU0307&applId=' + applId;
+    } else {
+      window.location.href = contextPath + 'module/apply/extract?menuId=MENU0307';
+    }
+  });
+
+  searchForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    document.getElementById('pageNo').value = 1;
+    reloadList();
+  })
+
+  //OCR서식신청
+  // document.getElementById('btnApplyForm').addEventListener('click', function () {
+  // });
+
+
+
+  //페이징
+  document.getElementById('pageSize').addEventListener('change', function () {
+    document.getElementById('pageNo').value = 1;
+    document.getElementById('searchForm').submit();
+  });
+
+  document.getElementById('pagination').addEventListener('click', function (e) {
+    var btn = e.target.closest('button:not([disabled])');
+    if (!btn) {
+      return;
+    }
+    document.getElementById('pageNo').value = btn.getAttribute('data-page');
+    document.getElementById('searchForm').submit();
+  });
+</script>
+
+<script th:src="@{/js/lnb.js}"></script>
+<script th:src="@{/js/date-input.js}"></script>
+</body>
+</html>

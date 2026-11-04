@@ -1,0 +1,50 @@
+/* ==========================================================================
+   COMPONENT TOKENS — Layer 3
+   두 가지 출처가 섞여 있으니 주석으로 구분한다.
+   (a) "Figma Variable" — get_variable_defs로 실제 바인딩을 확인한 값. 신뢰도 높음.
+   (b) "레이아웃 실측(좌표)" — get_metadata의 x/y/width/height 좌표를 계산한 값.
+       Variable로 바인딩된 게 아니라 디자이너가 화면에서 직접 입력했을 가능성이 있어
+       (a)보다 신뢰도가 낮다. 필요하면 해당 프레임을 다시 실측해 (a)로 승격할 것.
+   Button/Input의 Fill/Hover/Disabled 색상 등 상태값은 이번 조사 범위 밖이라 비어
+   있다 — 지어내지 않는다.
+   ========================================================================== */
+
+:root {
+  /* ---- 공용 간격/반경 별칭 (Figma Variable, primitive.css 참조) ----
+     원본에 이름이 중복돼 있어(예: radius/sm = Size/Radius-M = Corner/Extra-small)
+     실제 컴포넌트에 바인딩된 이름을 정식 소스로 채택하고 나머지는 동의어로 남긴다. */
+  --gap-sm: var(--spacing-sm);            /* 6px — 컴포넌트-컴포넌트 간격 기준 */
+  --gap-md: var(--size-space-s);          /* 8px — 레이블+컴포넌트 그룹 간 세로 갭 기준 */
+  --gap-lg: var(--spacing-lg);            /* 12px */
+  --gap-xl: var(--spacing-xl);            /* 16px — 레이블-컴포넌트 간격 기준 */
+  --gap-2xl: var(--spacing-2xl);          /* 36px — 레이블+컴포넌트 그룹 간 가로 갭 기준 */
+  --pad-x-control: var(--size-pd-xl);     /* 16px — 버튼/테이블 실제 바인딩 확인 */
+  --radius-control: var(--corner-extra-small); /* 4px — 버튼 인스턴스에 실바인딩 확인 */
+  --radius-pill: var(--size-radius-round);     /* 9999px */
+  --control-height-md: var(--size-size-m);     /* 30px — 버튼 인스턴스에 실바인딩 확인 */
+  --icon-size-md: 16px;                        /* 버튼 아이콘 영역(슬롯) 기준 */
+  --icon-inset-md: 2px;                        /* 사용자 지정 — 아이콘 영역(16) 안에서 실제 아이콘은 사방 2px 여백을 두고 12로 표시 */
+
+  /* ---- App shell (레이아웃 실측 — Variable 아님) ---- */
+  --layout-lnb-width:          200px;
+  --layout-gnb-height:          56px; /* 광주은행 로고 상단바(2026-10-25 전 화면 통일) */
+  --layout-content-padding-x:   40px;
+
+  /* ---- LNB menu (레이아웃 실측 — Variable 아님) ---- */
+  --nav-item-1depth-height: 38px;
+  --nav-item-2depth-height: 32px;
+
+  /* ---- Table (레이아웃 실측 — Variable 아님) ---- */
+  --table-header-height: 32px;
+  --table-row-height: 32px;
+  --table-cell-padding-x: var(--pad-x-control);
+
+  /* ---- Pagination (레이아웃 실측 — Variable 아님) ---- */
+  --pagination-item-size: 28px;
+  --pagination-gap: 4px; /* get_design_context(243:2184) 재실측 — 이전 버전이 "confirmed"로 남겼던 6px를 4px로 교체 */
+
+  /* ---- 진행상태 pill (레이아웃 실측 — Variable 아님) ----
+     get_metadata(254:2239) 실측 — 텍스트 길이와 무관하게 모든 상태값 프레임이 128x21로 고정. */
+  --status-pill-width: 128px;
+  --status-pill-height: 21px;
+}

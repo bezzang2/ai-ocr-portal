@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+  <meta charset="UTF-8">
+  <title>게시판 상세 | AI OCR 서류판독시스템</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+
+  <!-- inline JS 영역-->
+  <script th:inline="javascript" type="text/javascript">
+    document.addEventListener('DOMContentLoaded',function () {
+      const params = new URLSearchParams(window.location.search);
+      const mode = params.get("mode");
+      const menuId = params.get("menuId");
+
+
+      /**********************************************************************
+       *  화면내 모든 버튼 클릭 이베트
+       ***********************************************************************/
+      document.addEventListener("click",function (e) {
+        const btn = e.target.closest("[data-action-cd]");
+
+        if(!btn){ return;}
+
+        const actionCd = btn.dataset.actionCd;
+        const areaCd = btn.dataset.areaCd;
+        //console.log("actionCd===>>>",actionCd)
+        //console.log("areaCd===>>>",areaCd)
+
+        switch (actionCd){
+          case "DELETE":
+            deleteDetailNotice();
+            break;
+          case "UPDATE":
+            updateDetailNotice();
+            break;
+          case "LIST":
+            location.href = contextPath+"module/community/board"+"?menuId="+encodeURIComponent(menuId||"");
+            break;
+        }
+      })
+    });
+
+    /**********************************************************************
+     *  계시판/공지사항/FAQ 삭제 버튼 함수
+     ***********************************************************************/
+    function deleteDetailNotice() {
+      const noticeSeqnoEl = document.getElementById("noticeSeqno");
+      const noticeTypeCdEl = document.getElementById("noticeTypeCd");
+      if(!noticeSeqnoEl){
+        openErrorModal("삭제할 게시물 번호를 찾을 수 없습니다.");
+        return;
+      }
+      const noticeSeqno = Number(noticeSeqnoEl.value);
+      const noticeTypeCd = noticeTypeCdEl.value;
+      if(!noticeSeqno){
+        openErrorModal("삭제할 게시물 번호가 없습니다.");
+        return;
+      }
+      const seqList = [{
+        noticeSeqno : noticeSeqno,
+        noticeTypeCd :noticeTypeCd
+      }];
+
+      openConfirmModal("삭제 하시겠습니까?",function (){
+
+        fetch(contextPath+"module/community/deleteNotice", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(seqList)
+        })
+                .then(response => {
+                  if (!response.ok) {
+                    openErrorModal("삭제 요청 실패");
+                    return;
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  if(data.result > 0){
+                    openSuccessModal("삭제 되었습니다.");
+                    const params = new URLSearchParams(window.location.search);
+                    const menuId = params.get("menuId");
+                    location.href = contextPath+"module/community/board"+"?menuId="+encodeURIComponent(menuId||"");
+                  }else{
+                    openErrorModal("삭제된 데이터가 없습니다.");
+                    return;
+                  }
+                })
+                .catch(error => {
+                  console.error(error);
+                  openErrorModal("삭제 중 오류가 발행했습니다.");
+                  return;
+                });
+      });
+
+    }
+
+    /**********************************************************************
+     *  계시판/공지사항/FAQ 수정 버튼 함수
+     ***********************************************************************/
+    function updateDetailNotice() {
+      //console.log("수정버튼 클릭 이벤트 ");
+      const formData = new FormData();
+      // 공지사항 데이터
+      formData.append("noticeSeqno",document.getElementById("noticeSeqno").value.trim());
+      formData.append("noticeTtl",document.getElementById("noticeTtl").value.trim());
+      formData.append("noticeCn",document.getElementById("noticeCn").value.trim());
+      formData.append("stdd",document.getElementById("stdd").value.trim());
+      formData.append("endt",document.getElementById("endt").value.trim());
+      formData.append("noticeTypeCd",document.getElementById("noticeTypeCd").value.trim());
+
+      // 첨부파일
+      const fileInput = document.getElementById("fileInput");
+      if(fileInput && fileInput.files.length > 0){
+        for(const file of fileInput.files){
+          formData.append("files",file);
+        }
+      }
+
+      const noticeTtl = document.getElementById("noticeTtl");
+      // 체크
+      if(!noticeTtl || !noticeTtl.value.trim()){
+        openInformationModal("제목을 입력하세요.");
+        noticeTtl.focus();
+        return;
+      }
+      const noticeCn = document.getElementById("noticeCn");
+      if(!noticeCn || !noticeCn.value.trim()){
+        openInformationModal("내용을 입력하세요.");
+        noticeCn.focus();
+        return;
+      }
+      openConfirmModal("수정 하시겠습니까?",function (){
+
+        fetch(contextPath+"module/community/updateDetailNotice", {
+          method: "POST",
+          body: formData
+        })
+                .then(response => {
+                  if (!response.ok) {
+                    openErrorModal("수정 요청 실패",function (){
+                    });
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  if(data.result === "SUCCESS"){
+                    openSuccessModal("수정 되었습니다.");
+                    const params = new URLSearchParams(window.location.search);
+                    const menuId = params.get("menuId");
+                    location.href = contextPath+"module/community/board"+"?menuId="+encodeURIComponent(menuId||"");
+                  }else{
+                    openErrorModal("수정 실패"+data.message);
+                    return;
+                  }
+                })
+                .catch(error => {
+                  console.error(error);
+                  openErrorModal("수정 중 오류가 발행했습니다.");
+                  return;
+                });
+      });
+    }
+
+
+
+  </script>
+</head>
+<body>
+
+
+    <main class="content content--narrow">
+
+      <div class="page-header">
+        <h1 class="page-header__title">게시판 상세</h1>
+        <div class="page-header__actions">
+          <button th:each="btn : ${session.buttonList}"
+                  th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'DETAIL'}"
+                  type="button"
+                  th:class="${btn.actionCd == 'UPDATE'} ? 'btn btn-primary' : 'btn-outline-primary'"
+                  style="width:80px"
+                  th:id="${btn.btnCd}"
+                  data-audit="Y"
+                  th:data-area-cd="${btn.areaCd}"
+                  th:data-menu-id="${btn.menuId}"
+                  th:data-btn-cd="${btn.btnCd}"
+                  th:data-action-cd="${btn.actionCd}"
+                  th:data-action-nm="${btn.btnNm}">
+            <span th:text="${btn.btnNm}"></span></button>
+        </div>
+      </div>
+
+      <div class="notice-detail">
+
+        <!-- 기본정보 — get_design_context(775:3120) 실측 -->
+        <div class="notice-detail__section">
+          <div class="detail-panel detail-panel--column">
+            <div class="search-area__row search-area__row--detail">
+              <div class="search-area__item search-area__item--equal">
+                <span class="search-area__label" style="width:80px; flex-shrink:0">제목</span>
+                <input type="hidden" id="noticeSeqno" name="noticeSeqno" th:value="${detail['noticeSeqno']}">
+                <input type="hidden" id="noticeTypeCd" name="noticeTypeCd" th:value="${detail['noticeTypeCd']}">
+                <input type="hidden" id="stdd" name="stdd" th:value="${detail['stdd']}">
+                <input type="hidden" id="endt" name="endt" th:value="${detail['endt']}">
+                <input class="input" type="text" style="flex:1" placeholder="제목을 입력해주세요" th:value="${detail['noticeTtl']}" id="noticeTtl">
+              </div>
+            </div>
+            <div class="search-area__item search-area__item--equal">
+              <span class="search-area__label" style="width:80px; flex-shrink:0">작성자</span>
+              <span class="notice-detail__value" th:text="${' ('+detail['lastChngEmpno']+')'}"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 내용 — get_design_context(775:3120) 실측 -->
+        <div class="notice-detail__content-box">
+          <div class="notice-detail__content-row">
+            <span class="notice-detail__content-label">내용</span>
+            <!--            <div class="notice-detail__content-text">-->
+            <textarea class="notice-register__textarea notice-detail__textarea" placeholder="Text" th:text="${detail['noticeCn']}" id="noticeCn"></textarea>
+            <!--            </div>-->
+          </div>
+        </div>
+
+        <!-- 첨부 — get_design_context(775:3120) 실측(조회 전용이라 업로드 버튼/삭제 칼럼 없음) -->
+        <div class="notice-detail__section">
+          <h2 class="section-title">첨부</h2>
+          <table class="table">
+            <thead>
+            <tr>
+              <th>파일명</th>
+              <th style="width:200px">크기</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="file : ${fileList}">
+              <td>
+                <input type="hidden" th:id="'fileId_'+${fileStat.index}" th:value="${file.atchFileId}">
+                <a th:href="@{/module/community/fileDownload(atchFileId=${file.atchFileId},fileSeq=${file.fileSeq})}" th:text="${file.getOrgFileNm()}">첨부파일</a>
+              </td>
+              <td>
+                <span th:text="${file.fileSize + 'byte'}"></span>
+              </td>
+            </tr>
+            <tr th:if="${fileList == null || #lists.isEmpty((fileList))}">
+              <td colspan="2"> 첨부파일이 없습니다.
+            </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </main>
+
+
+<div th:replace="~{common/commonModals :: commonModals}"></div>
+<script th:src="@{/js/modal.js}"></script>
+<script th:src="@{/js/common.js}"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+/* ---- 탭 — get_design_context(481:7399) 실측. 여러 화면에서 재사용하는 범용 컴포넌트라
+   nav-search.css(검색/목록 화면 전용)에서 분리했다. ---- */
+.tabs {
+  display: flex;
+  align-items: flex-start;
+  border-bottom: 1px solid var(--border-neutral-subtle);
+}
+.tabs__item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--gap-sm);
+  height: 38px; /* 폰트 크기(14/13) 모디파이어와 무관하게 항상 38 — padding+line-height 합산에 맡기면 크기별로 값이 갈림 */
+  padding: 0 16px;
+  font-size: var(--font-size-14);
+  line-height: var(--line-height-none); /* body의 1.5 상속 시 줄박스가 훨씬 커져 47px까지 부풀어 보임(버튼/페이지네이션과 동일 원인) */
+  font-weight: var(--font-weight-regular);
+  color: var(--text-neutral-tertiary);
+  border: none;
+  box-shadow: inset 0 -2px 0 0 transparent; /* border-bottom 대신 — 레이아웃 높이에 더해지지 않음 */
+  background: none;
+  cursor: pointer;
+}
+.tabs__item.is-active {
+  font-weight: var(--font-weight-medium);
+  color: var(--text-primary-default);
+  box-shadow: inset 0 -2px 0 0 var(--border-primary-default);
+}
+
+/* ---- 13px 모디파이어 — 화면 내 탭(업무화면/업무명, 추출설명/추출항목 등)용.
+   기본(14px)은 서브타이틀 대용으로 쓸 때다. ---- */
+.tabs--sm .tabs__item { font-size: var(--font-size-13); }

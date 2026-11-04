@@ -1,0 +1,153 @@
+/* 판독작업 목록과 상세 요약. 기존 Portal 글꼴·색상 토큰을 이어 쓴다. */
+.review-list {
+  --review-ink: var(--text-neutral-default, #0a0b0e);
+  --review-muted: var(--text-neutral-tertiary, #636873);
+  --review-blue: var(--text-primary-default, #0565ef);
+  --review-border: var(--border-neutral-subtle, #d6d9dd);
+  --review-surface: var(--surface-neutral-faint, #f1f1f4);
+  --review-danger: #b4233b;
+  --review-caution: #8a5700;
+  color: var(--review-ink);
+  /* 목록의 공통 버튼 모양은 이 화면 안에서만 적용한다. */
+  --review-button-height: 30px;
+  --review-button-padding: 4px 12px;
+  --review-button-border: var(--border-neutral-default, #b8bbc2);
+  --review-button-color: var(--review-ink);
+  --review-button-hover-border: var(--border-primary-medium);
+  --review-button-hover-color: var(--text-primary-medium);
+  --review-button-hover-surface: var(--surface-primary-faint);
+}
+/* 상세 요약은 백업 시안의 색상·버튼·글꼴을 유지하고 목록 테마와 분리한다. */
+.review-detail-summary {
+  --review-ink: var(--text-neutral-primary, #1e2e43);
+  --review-muted: #5c6d82;
+  --review-blue: #225f9f;
+  --review-border: #dfe6ef;
+  --review-surface: #f5f8fc;
+  --review-danger: #b4233b;
+  --review-caution: #8a5700;
+  color: var(--review-ink);
+}
+.review-list { min-width: 0; padding: 24px var(--layout-content-padding-x, 40px); gap: 12px; background: #fff; }
+.review-list__heading { margin: 0; padding: 0; }
+.review-list .page-header__title { font-size: 18px; font-weight: 500; }
+.review-list__search { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 24px; padding: 12px 24px; background: var(--review-surface); border-radius: 8px; }
+.review-list__field { display: flex; align-items: center; gap: 16px; min-width: 0; }
+.review-list__field label { font-size: 13px; font-weight: 500; color: var(--review-muted); white-space: nowrap; }
+.review-list__field--workflow { flex: none; }
+.review-list__field .input { width: 130px; height: var(--control-height-md, 30px); min-width: 0; padding: 0 8px; background-color: #fff; color: var(--review-ink); font-size: 13px; border: 1px solid var(--border-neutral-default, #b8bbc2); border-radius: 4px; }
+.review-list__field--workflow .input { width: 180px; }
+.review-list__dates { display: flex; align-items: center; gap: 8px; color: var(--review-muted); }
+.review-list__dates .input { width: 120px; font-variant-numeric: tabular-nums; }
+.review-list__mine { display: inline-flex; align-items: center; gap: 8px; min-height: 30px; white-space: nowrap; font-size: 13px; cursor: pointer; }
+.review-list__mine input { width: 16px; height: 16px; accent-color: var(--review-blue); }
+.review-button:not(.btn-outline-primary) { display: inline-flex; align-items: center; justify-content: center; flex: none; gap: 6px; min-height: var(--review-button-height, 36px); padding: var(--review-button-padding, 7px 14px); border: 1px solid var(--review-button-border, #ccd6e2); border-radius: 4px; background: #fff; color: var(--review-button-color, #314966); font: inherit; font-size: 13px; line-height: 1.4; text-decoration: none; white-space: nowrap; cursor: pointer; }
+.review-button:hover:not(:disabled) { border-color: var(--review-button-hover-border, #225f9f); color: var(--review-button-hover-color, #225f9f); background: var(--review-button-hover-surface, #f3f7fd); }
+.review-button--primary { background: var(--surface-primary-default); border-color: var(--border-primary-default); color: #fff; min-width: 68px; }
+.review-button--primary:hover:not(:disabled) { background: var(--surface-primary-medium); color: #fff; }
+.review-button--small { min-height: 28px; padding: 3px 8px; font-size: 12px; }
+.review-button:disabled { color: #8995a5; background: #f5f7fa; border-color: #e1e6ed; cursor: not-allowed; }
+.review-list a:focus-visible, .review-list button:focus-visible, .review-list input:focus-visible, .review-list select:focus-visible,
+.review-detail-summary a:focus-visible, .review-detail-summary button:focus-visible, .review-list__table-wrap:focus-visible { outline: 2px solid #3177c6; outline-offset: 3px; }
+.review-list__results { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.review-list__toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 40px; }
+.review-list__count { margin: 0; color: var(--review-muted); font-size: 13px; }
+.review-list__count strong { color: var(--review-blue); font-weight: 600; }
+.review-list__count span { margin-left: 4px; font-size: 12px; }
+.review-list__views { display: inline-flex; flex: none; border: 1px solid var(--border-neutral-default, #b8bbc2); border-radius: 5px; overflow: hidden; }
+.review-list__views a { display: inline-flex; align-items: center; min-height: 30px; padding: 4px 12px; color: var(--review-muted); background: #fff; font-size: 12px; text-decoration: none; }
+.review-list__views a + a { border-left: 1px solid var(--review-border); }
+.review-list__views [aria-current="true"] { color: var(--review-ink); background: var(--review-surface); }
+.review-list__views a:focus-visible { outline-offset: -3px; }
+.review-list__table-wrap { min-width: 0; overflow-x: auto; border: 1px solid var(--review-border); }
+.review-table { width: 100%; min-width: 1100px; table-layout: fixed; border-collapse: collapse; font-size: 13px; }
+.review-table__col-no { width: 44px; } .review-table__col-id { width: 210px; } .review-table__col-workflow { width: 170px; }
+.review-table__col-progress { width: 126px; } .review-table__col-issue { width: 102px; } .review-table__col-warning { width: 98px; }
+.review-table__col-assignee { width: 96px; } .review-table__col-date { width: 139px; } .review-table__col-status { width: 92px; }
+.review-table th { text-align: center; vertical-align: middle; height: var(--table-header-height, 32px); padding: 0 8px; background: var(--review-surface); color: var(--review-ink); font-size: 13px; font-weight: 500; border-bottom: 1px solid var(--review-border); }
+.review-table td { height: 36px; padding: 2px 8px; border-bottom: 1px solid var(--review-border); text-align: center; color: var(--review-ink); vertical-align: middle; }
+.review-table th:not(:last-child), .review-table td:not(:last-child) { border-right: 1px solid var(--review-border); }
+.review-table tbody tr:last-child td { border-bottom: 0; }
+.review-table [data-review-row] { cursor: pointer; }
+.review-table [data-review-row]:hover td, .review-table [data-review-row]:focus-within td { background: var(--surface-primary-faint); }
+.review-table__link, .review-table__ellipsis { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.review-table__link { color: var(--review-blue); text-decoration: none; font-variant-numeric: tabular-nums; }
+.review-table__link:hover { text-decoration: underline; }
+.review-table__number, .review-table__muted, .review-table__separator { color: var(--review-muted); }
+/* 경고 숫자의 자릿수가 달라도 구분선은 열의 중앙에 고정한다. */
+.review-warning-counts { display: inline-grid; grid-template-columns: 3ch auto 3ch; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.review-table__separator { padding: 0; }
+.review-table__date { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.review-table abbr { text-underline-offset: 4px; cursor: help; }
+.review-progress { display: inline-grid; grid-template-columns: 46px 6ch; align-items: center; justify-content: center; gap: 8px; font-size: 12px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.review-progress__track { width: 46px; height: 5px; border-radius: 3px; background: #e4eaf1; overflow: hidden; }
+.review-progress__track i { display: block; height: 100%; background: #2c8957; }
+.review-status { display: inline-flex; align-items: center; justify-content: center; min-width: 58px; padding: 3px 8px; border: 1px solid #d5dde7; border-radius: 12px; background: #f2f4f7; color: #526174; font-size: 11px; font-weight: 500; line-height: 1.4; white-space: nowrap; }
+.review-status[data-status="UNASSIGNED"] { border-color: #efd3a1; background: #fff7e9; color: #885300; }
+.review-status[data-status="IN_REVIEW"] { border-color: #bdd5f3; background: #edf4ff; color: #1b5fa8; }
+.review-status[data-status="VERIFIED"] { border-color: #b7dfc7; background: #edf8f0; color: #226940; }
+.review-status[data-status="FAILED"] { border-color: #edc0c7; background: #fff0f2; color: #aa253b; }
+.review-status[data-status="PROCESSING"] { border-color: #cbd0f1; background: #f1f2ff; color: #5455a0; }
+.review-count--warning { color: var(--review-danger) !important; font-weight: 600; }
+.review-count--caution { color: var(--review-caution) !important; font-weight: 600; }
+.review-table .review-table__group td { padding: 0; background: var(--review-surface); border-bottom: 1px solid var(--review-border); }
+.review-table__group button { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 36px; padding: 6px 16px; border: 0; background: transparent; color: var(--review-ink); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.review-table__group button:hover { background: var(--surface-primary-faint); }
+.review-table__group-meta { margin-left: auto; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--review-muted); white-space: nowrap; }
+.review-table__chevron { width: 7px; height: 7px; flex: none; margin-right: 4px; border-right: 1.5px solid; border-bottom: 1.5px solid; transform: translateY(-2px) rotate(45deg); }
+.review-table [aria-expanded="false"] .review-table__chevron { transform: rotate(-45deg); }
+.review-list [hidden] { display: none !important; }
+.review-list__empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 260px; padding: 36px 20px; border: 1px solid var(--review-border); border-radius: 6px; color: var(--review-muted); text-align: center; font-size: 13px; }
+.review-list__empty svg { color: #7d91a9; margin-bottom: 4px; }
+.review-list__empty strong { color: var(--review-ink); font-size: 14px; font-weight: 500; }
+.review-list__notice { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 18px 20px; border: 1px solid #edc0c7; border-radius: 6px; background: #fff5f6; color: #aa253b; font-size: 13px; }
+.review-list__notice .review-button { margin-left: auto; }
+.review-list__feedback { margin: 0; font-size: 13px; color: #1b5fa8; }
+.review-list__feedback.is-error { color: var(--review-danger); }
+.review-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* 상단 요약은 뷰어 밖에 두어 서식 탐색 중에도 판독작업 문맥을 확인한다. */
+.review-detail-summary { display: flex; flex: none; flex-wrap: wrap; align-items: center; gap: 10px 24px; padding: 12px 16px; border: 1px solid var(--review-border); border-radius: 8px; background: #fff; font-size: 12px; }
+.review-detail-summary__fields { display: flex; flex: 1 1 620px; flex-wrap: wrap; align-items: center; gap: 10px 20px; min-width: 0; }
+.review-detail-summary__field { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.review-detail-summary__label { flex: none; color: var(--review-muted); font-size: 11px; }
+.review-detail-summary__value { color: var(--review-ink); font-weight: 500; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; }
+.review-detail-summary__id { max-width: 260px; font-size: 11px; font-variant-numeric: tabular-nums; }
+.review-detail-summary__actions { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.review-detail-summary .review-button { min-height: 32px; padding: 5px 10px; font-size: 12px; }
+.review-detail-summary [hidden] { display: none; }
+@media (max-width: 600px) {
+  .review-list { padding: 20px 12px; gap: 18px; }
+  .review-list__search { padding: 16px; gap: 14px; }
+  .review-list__field { flex: 1 1 100%; min-width: 0; }
+  .review-list__field--workflow { max-width: none; }
+  .review-list__field--period { flex-basis: 100%; }
+  .review-list__dates .input { width: 0; flex: 1; }
+  .review-list__search > .review-button { margin-left: auto; }
+  .review-list__toolbar { flex-wrap: wrap; }
+  .review-list__count { flex: 1 1 100%; }
+  .review-list__views { margin-left: auto; }
+  .review-detail-summary { gap: 12px; padding: 12px; }
+  .review-detail-summary__fields { gap: 10px 16px; flex-basis: 100%; }
+  .review-detail-summary__field { max-width: 100%; }
+  .review-detail-summary__value { max-width: 210px; }
+  .review-detail-summary__actions { width: 100%; margin: 0; }
+  .review-detail-summary__actions .review-button:last-child { margin-left: auto; }
+}
+/* 상세에서는 업무 묶음 제목 없이 서식만 표시한다. 문서 역할과 상태는 같은 행에 둔다. */
+.ocr-portal .ocr-review .result-file-group { gap: 2px; padding: 0; }
+.ocr-portal .ocr-review .result-file-group__file-inner { flex-wrap: wrap; align-items: center; }
+.ocr-portal .ocr-review .result-file-group__file-name { flex: 1 1 80px; font-size: 12px; }
+.ocr-portal .ocr-review .result-file-group__dot { margin-top: 0; }
+.ocr-portal .ocr-review .result-file-group__review { font-size: 10px; }
+.ocr-portal .ocr-review .result-file-group__empty { min-height: 44px; gap: 8px; color: #67788e; }
+.ocr-portal .ocr-review .result-file-group__state { flex: none; color: #67788e; font-size: 10px; line-height: 1.5; white-space: nowrap; }
+.ocr-portal .ocr-review .result-file-group__state--failed,
+.ocr-portal .ocr-review .result-file-group__empty--failed .result-file-group__state { color: #aa253b; }
+.ocr-portal .ocr-review .result-file-group__empty--failed .result-file-group__dot { border-color: #c65c6d; }
+.ocr-portal .ocr-review .review-detail-summary .review-button[hidden] { display: none; }
+.ocr-portal .ocr-review .result-file-group__body { display: flex; flex-direction: column; gap: 2px; }
+.ocr-portal .ocr-review .result-file-group__empty { display: flex; align-items: center; padding: 6px 9px; }
+.ocr-portal .ocr-review .result-file-group__empty .result-file-group__file-name { min-width: 0; color: inherit; }
+.ocr-portal .ocr-review .result-file-group__empty .result-file-group__dot { border-style: dashed; }
+.ocr-portal .ocr-review .result-file-group__pending--failed { background: #fff0f2; }
+.ocr-portal .ocr-review .result-file-group__pending--failed .result-file-group__pending-status { color: #aa253b; }

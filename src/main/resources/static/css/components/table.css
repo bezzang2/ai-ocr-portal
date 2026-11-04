@@ -1,0 +1,171 @@
+.table { border: 1px solid var(--border-neutral-subtle); } /* 기존 --border-neutral-default 오적용 수정 — 테이블 라인은 전부 subtle로 통일 */
+
+.table th {
+  height: var(--table-header-height);
+  padding: 0 var(--table-cell-padding-x);
+  background: var(--surface-neutral-faint);
+  color: var(--text-neutral-default); /* Neutral/900 — get_design_context(232:1064) 실측, 기존 Neutral/700 오적용 수정 */
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0442px; /* 실측값, 라이브러리 -0.34px와 다름 */
+  border-bottom: 1px solid var(--border-neutral-subtle); /* 기존 --border-neutral-default 오적용 수정 */
+  text-align: center;
+  vertical-align: middle; /* td/th 기본값은 baseline이라 체크박스처럼 inline-flex인 콘텐츠가 텍스트 기준선에 맞춰져 위로 쏠려 보였다 */
+}
+.table th:not(:last-child) { border-right: 1px solid var(--border-neutral-subtle); } /* 실측 — 헤더 칼럼 구분선 */
+
+/* ---- 정렬 방향 토글이 있는 헤더 칼럼 — get_design_context(617:11355, 커뮤니티>공지사항
+   조회결과 목록의 "작성일자" 칼럼) 실측. th 자체는 text-align/vertical-align으로 중앙정렬하는
+   일반 표 셀이라(위 .table th 참고) 라벨+버튼을 같이 중앙에 놓으려면 inline-flex 래퍼가
+   필요하다. 버튼은 테두리/배경 없는 아이콘 전용, 폭16×높이24 고정(2026-08-26 재확인 —
+   Figma 리터럴 그대로) — 기존 .btn-icon류(30px 고정, 흰 배경+테두리)와는 다른 톤이라 이 표
+   전용으로 새로 정의했다. ---- */
+.table-sort-th { display: inline-flex; align-items: center; gap: var(--gap-xs, 4px); }
+.table-sort-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 24px;
+  padding: 0;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  border-radius: var(--size-radius-s); /* 2px */
+  cursor: pointer;
+}
+.table-sort-btn:hover { background: var(--surface-neutral-subtle); }
+.table-sort-btn img { width: 12px; height: 12px; display: block; }
+/* 오름차순 — get_design_context(617:11355)에는 내림차순(ic/16/arrow-narrow-down)만 있고 별도
+   업 애셋이 없어, 같은 아이콘을 180도 돌려 재사용한다(위/아래 화살표가 완전 대칭이라 실제
+   에셋 좌표를 왜곡 없이 그대로 뒤집는 것과 같다 — 대시보드 바로가기 화살표와 같은 방식). */
+.table-sort-btn--asc img { transform: rotate(180deg); }
+
+.table td {
+  height: var(--table-row-height);
+  padding: 0 var(--table-cell-padding-x);
+  font-size: var(--font-size-13);
+  color: var(--text-neutral-default);
+  border-bottom: 1px solid var(--border-neutral-subtle);
+  text-align: center;
+  vertical-align: middle;
+}
+.table td:not(:last-child) { border-right: 1px solid var(--border-neutral-subtle); } /* 바디 칼럼 구분선 — 헤더와 동일 규칙 적용 */
+
+.table tbody tr:hover { background: var(--surface-primary-faint); }
+
+/* 행 전체가 링크처럼 동작하는 표(js/table-row-link.js) — 클릭 가능하다는 시각적 힌트만
+   커서로 주고, 텍스트 색은 바꾸지 않는다(하이퍼링크처럼 보이면 셀 하나만 이동 가능한 것으로
+   오해를 줄 수 있어 커뮤니티>공지사항 목록에서 행 전체 클릭 방식으로 바꿨다 — 2026-08-25). */
+.table[data-row-link] tbody tr[data-href] { cursor: pointer; }
+
+/* 다른 화면(상세/판독결과 등)으로 이동하는 셀 값 — 통합검색>고객 통합검색의 전문코드
+   (get_design_context 585:2268 서식판독결과 진입점) 실측. 값 자체가 링크라 밑줄 없이
+   Primary 색으로만 구분하고 hover에서만 밑줄을 준다. */
+.table-link { color: var(--text-primary-default); text-decoration: none; }
+.table-link:hover { text-decoration: underline; }
+
+/* ---- 선택된 행(마스터-디테일) — get_design_context(617:10119, 관리자>코드관리 코드그룹
+   목록) 실측. 클릭 한 번의 hover 스냅샷이 아니라 "지금 상세 패널에 표시 중인 행"이라는
+   지속 상태라 :hover와 별도로 고정 클래스를 둔다(코드값 표의 .is-editing과는 다른 개념 —
+   같은 색을 쓰지만 편집 모드가 아니라 목록에서 고른 대상 표시). ---- */
+.table tr.is-selected td { background: var(--surface-primary-faint); }
+
+/* ---- "구분"류 라벨 칼럼(트리처럼 depth별로 값이 들어가는 칼럼) 배경 —
+   get_design_context(604:6658, 역할권한 상세 모달의 역할권한 매트릭스) 실측. th와 같은
+   Neutral/50 배경을 body 칼럼에도 줘서 "값 칼럼(체크박스)"과 시각적으로 구분한다. ---- */
+.table td.cell-faint { background: var(--surface-neutral-faint); }
+
+/* ---- 인풋형 표(행을 선택하면 그 행만 인풋으로 바뀌는 편집 가능한 표) —
+   get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 604:5638) 실측
+   (관리자>메뉴관리 "버튼정의" 표). 기본형 표는 td에 텍스트만 두면 되고, 편집 가능한 표는
+   각 td 안에 텍스트(.cell-text)와 인풋(.cell-input, .input 상속)을 같이 두고 상태에 따라
+   하나만 보여준다 — 값을 동기화하는 JS 없이 마크업만으로 두 상태를 표현하기 위함이다.
+   행 클릭으로 is-editing을 토글하는 동작은 js/table-row-edit.js가 담당(한 번에 한 행만 편집). ---- */
+.table td .cell-input { display: none; }
+.table tr.is-editing td .cell-text { display: none; }
+.table tr.is-editing td .cell-input { display: block; }
+.table tr.is-editing td { background: var(--surface-primary-faint); } /* Blue/50 — 편집 중인 행 강조 */
+.table tbody tr:has(.cell-input) { cursor: pointer; } /* 편집 가능한 표라는 시각적 힌트 */
+
+/* ---- 상태 pill(진행상태 컬럼) — get_design_context(232:744 전체 상태값 개별 실측)
+   상태값별로 색이 다르다(이전에 "전부 동일 스타일"로 잘못 반영했던 것 수정):
+   - 기본(서식신청): 흰 배경, 뉴트럴 테두리/텍스트
+   - status-pill--neutral-fill(처리중[책임자]/처리중[부서장]/프로세스 혁신부): 옅은 회색 채움
+   - status-pill--info-fill(개발진행): 파랑 채움
+   - status-pill--info(개발완료/검증완료): 파랑 테두리만(채움 없음)
+   - status-pill--success(배포완료, 통합검색>고객 통합검색 AI-OCR 처리이력의 "정상"): 초록 테두리만(채움 없음)
+   - status-pill--success-fill(커뮤니티>공지사항의 "예약"): 초록 채움
+   - status-pill--error-fill(통합검색>고객 통합검색 AI-OCR 처리이력의 "오류", 공지사항의 "중요"): 빨강 채움 ---- */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--status-pill-width);
+  height: var(--status-pill-height);
+  background: var(--surface-white);
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: var(--size-radius-round);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0442px;
+  color: var(--text-neutral-secondary);
+  white-space: nowrap;
+}
+.status-pill--neutral-fill {
+  background: var(--surface-neutral-faint);
+  border-color: var(--border-neutral-subtle);
+  color: var(--text-neutral-secondary);
+}
+.status-pill--info-fill {
+  background: var(--status-info-surface);
+  border-color: var(--status-info-border);
+  color: var(--status-info-default);
+}
+.status-pill--info {
+  background: transparent;
+  border-color: var(--status-info-border);
+  color: var(--status-info-default);
+}
+.status-pill--success {
+  background: transparent;
+  border-color: var(--status-success-border);
+  color: var(--status-success-default);
+}
+/* get_design_context(617:11360, 커뮤니티>공지사항 "예약" 태그) 실측 — Green/500 채움.
+   --status-success-default는 쓰지 않는다 — semantic.css에서 실제로는 Green/600(#207945)에
+   별칭돼 있어(주석은 #279153이라고 돼 있지만 값이 안 맞는 기존 버그) 대시보드 화면과 같은
+   이유로 primitive를 직접 참조한다. */
+.status-pill--success-fill {
+  background: var(--status-success-surface);
+  border-color: var(--status-success-border);
+  color: var(--color-green-500);
+}
+/* get_design_context(559:19399, 통합검색>고객 통합검색 AI-OCR 처리이력 표) 실측 — "오류" 상태만
+   채움(Red/50 배경 + Red/200 테두리)으로 구분된다. */
+.status-pill--error-fill {
+  background: var(--status-error-surface);
+  border-color: var(--status-error-border);
+  color: var(--status-error-default);
+}
+/* ---- 표 안 소형 아이콘 버튼(행 삭제 등) — get_design_context(492:9662, OCR서식신청 추출설명의
+   첨부파일 표) 실측. 공지사항 등록 첨부 표도 같은 버튼을 써서 components/로 승격했다
+   (2026-08-25, 기존 pages/extract.css의 .extract-field__delete를 여기로 이동). 아이콘 영역은
+   버튼 아이콘 표준(16px, .btn-icon-slot)과 맞춘다. ---- */
+.table-icon-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--icon-neutral-subtle);
+  cursor: pointer;
+}
+
+/* 진행상태 칼럼이 표준폭(128px)보다 좁은 표 전용 — 통합검색>고객 통합검색 AI-OCR 처리이력
+   get_design_context(559:19399)에서 이 pill은 flex-[1_0_0](= 칼럼 폭에 맞춰 채움)로 실측됐다
+   — 고정 128px도, 텍스트에 맞춘 auto width도 아니고 fill이 맞다. 높이는 절대 건드리지 않는다
+   — height:auto로 바꿨다가 body의 line-height:1.5를 물려받아 기본보다 커지는 버그가 났었다
+   (2026-08-24). 폭만 100%로 바꾸고 그 폭 좁은 칼럼에만 예외로 적용한다. */
+.status-pill--fill { width: 100%; }

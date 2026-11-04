@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+  <meta charset="UTF-8">
+  <title>업무·서식 연결 관리 | AI OCR 서류판독시스템</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+    <!-- 관리자 > 업무·서식 연결 관리. 업무(엔진 워크플로)의 분류 클래스마다 연결된 서식을 보여 주고,
+         서식 마스터 등록·수정과 워크플로 즉시 동기화를 한다. 데이터는 /module/admin/formLink/{workflows,classes,forms,sync}
+         를 fetch 로 받는다(FormLinkController). -->
+    <main class="content" id="form-link-page">
+      <div class="page-header">
+        <h1 class="page-header__title">업무·서식 연결 관리</h1>
+        <div class="page-header__actions">
+          <span class="fl-meta" id="fl-last-sync">마지막 동기화 -</span>
+          <button type="button" class="btn btn-primary" id="fl-sync">지금 동기화</button>
+        </div>
+      </div>
+
+      <div class="layout-list">
+        <p class="fl-hint">판독결과 화면은 업무에 연결된 서식만 보여 줍니다. 엔진 분류 클래스의 영문코드가 서식의 문서 종류 코드와 같으면 연결됩니다.
+          미연결 클래스는 <strong>서식 등록</strong>으로 바로 연결할 수 있습니다.</p>
+
+        <div class="list-section">
+          <div class="list-section__header">
+            <span>업무 <strong id="fl-wk-count">0</strong>건</span>
+            <label class="checkbox fl-filter">
+              <input type="checkbox" class="checkbox__input" id="fl-wk-problem">
+              <span class="checkbox__box">
+                <svg viewBox="0 0 12 12" fill="none" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.83263 3.64645C10.0558 3.84171 10.0558 4.15829 9.83263 4.35355L5.2612 8.35355C5.03805 8.54882 4.67624 8.54882 4.45308 8.35355L2.16737 6.35355C1.94421 6.15829 1.94421 5.84171 2.16737 5.64645C2.39052 5.45118 2.75233 5.45118 2.97549 5.64645L4.85714 7.29289L9.02451 3.64645C9.24767 3.45118 9.60948 3.45118 9.83263 3.64645Z" fill="currentColor"/></svg>
+              </span>
+              <span>미연결·연결 대기가 있는 업무만</span>
+            </label>
+          </div>
+          <div class="fl-scroll">
+            <table class="table" style="table-layout:fixed; width:100%">
+              <colgroup>
+                <col><col style="width:90px"><col style="width:90px"><col style="width:90px"><col style="width:90px"><col style="width:170px">
+              </colgroup>
+              <thead>
+                <tr><th>업무명</th><th>클래스</th><th>연결</th><th>연결 대기</th><th>미연결</th><th>마지막 동기화</th></tr>
+              </thead>
+              <tbody id="fl-workflows">
+                <tr><td colspan="6">불러오는 중입니다.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="list-section">
+          <div class="list-section__header">
+            <span id="fl-class-title">분류 클래스</span>
+            <button type="button" class="btn-neutral" id="fl-unlinked-all">전체 미연결 클래스 보기</button>
+          </div>
+          <table class="table" style="table-layout:fixed; width:100%">
+            <colgroup>
+              <col style="width:22%"><col><col style="width:16%"><col style="width:120px"><col style="width:20%"><col style="width:110px">
+            </colgroup>
+            <thead>
+              <tr><th>업무명</th><th>클래스명</th><th>영문코드</th><th>상태</th><th>연결 서식</th><th>관리</th></tr>
+            </thead>
+            <tbody id="fl-classes">
+              <tr><td colspan="6">업무를 선택해 주세요.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="list-section">
+          <div class="list-section__header">
+            <span>서식 <strong id="fl-form-count">0</strong>건</span>
+            <button type="button" class="btn btn-primary" id="fl-form-add">서식 등록</button>
+          </div>
+          <div class="fl-scroll">
+            <table class="table" style="table-layout:fixed; width:100%">
+              <colgroup>
+                <col style="width:90px"><col><col style="width:22%"><col style="width:110px"><col style="width:170px"><col style="width:90px">
+              </colgroup>
+              <thead>
+                <tr><th>서식 ID</th><th>서식명</th><th>문서 종류 코드</th><th>연결 업무</th><th>최종 변경</th><th>관리</th></tr>
+              </thead>
+              <tbody id="fl-forms">
+                <tr><td colspan="6">불러오는 중입니다.</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 서식 등록·수정 모달 -->
+      <div id="fl-modal" class="modal-overlay" hidden>
+        <div class="modal" role="dialog" aria-labelledby="fl-modal-title">
+          <div class="modal__header">
+            <span class="modal__title" id="fl-modal-title">서식 등록</span>
+            <button type="button" class="modal__close" aria-label="닫기" data-fl-close>
+              <svg width="7.725" height="7.725" viewBox="0 0 7.725 7.725" fill="none" aria-hidden="true"><path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div class="modal__body">
+            <div class="fl-field">
+              <label class="split-view__search-label" for="fl-form-name">서식명</label>
+              <input class="input" type="text" id="fl-form-name" maxlength="66" placeholder="예) 적합성원칙 고객정보 확인서">
+            </div>
+            <div class="fl-field">
+              <label class="split-view__search-label" for="fl-form-doc">문서 종류 코드</label>
+              <input class="input" type="text" id="fl-form-doc" maxlength="100" placeholder="예) KJB_00000000">
+            </div>
+            <p class="fl-hint" id="fl-form-hint">엔진 분류 클래스의 영문코드와 같게 입력하면 그 클래스에 연결됩니다.</p>
+          </div>
+          <div class="modal__footer">
+            <div class="modal__footer-actions">
+              <button type="button" class="btn-outline-primary" data-fl-close>취소</button>
+              <button type="button" class="btn btn-primary" id="fl-form-save">저장</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+<style>
+  .fl-meta { font-size: 13px; color: var(--text-neutral-secondary); }
+  .fl-hint { margin: 0 0 12px; font-size: 12px; color: var(--text-neutral-tertiary); }
+  .fl-filter { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer; }
+  .fl-scroll { max-height: 360px; overflow-y: auto; }
+  .fl-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .fl-field .input { width: 100%; }
+  #fl-workflows tr { cursor: pointer; }
+  #fl-workflows tr.is-selected td { background: var(--surface-primary-faint); }
+  .fl-left { text-align: left; }
+  .fl-warn { color: var(--status-error-default); font-weight: 600; }
+</style>
+
+<div th:insert="~{common/commonModals :: commonModals}"></div>
+<script th:src="@{/js/modal.js}"></script>
+
+<script th:inline="none">
+  (function () {
+    var base = contextPath + 'module/admin/formLink';
+    var STATUS = {
+      LINKED: { label: '연결', cls: 'status-pill status-pill--success status-pill--fill' },
+      PENDING: { label: '연결 대기', cls: 'status-pill status-pill--info status-pill--fill' },
+      UNLINKED: { label: '미연결', cls: 'status-pill status-pill--error-fill status-pill--fill' }
+    };
+    var workflows = [];
+    var selectedWkId = null;
+    var editing = null;
+
+    function el(tag, text, cls) {
+      var node = document.createElement(tag);
+      if (text != null) node.textContent = text;
+      if (cls) node.className = cls;
+      return node;
+    }
+
+    function request(url, options) {
+      return fetch(url, options).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (body) {
+          if (!res.ok) throw new Error(body.message || '처리하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+          return body;
+        });
+      });
+    }
+
+    function emptyRow(body, cols, text) {
+      var tr = el('tr');
+      var td = el('td', text);
+      td.colSpan = cols;
+      tr.appendChild(td);
+      body.appendChild(tr);
+    }
+
+    function countCell(n, warn) {
+      return el('td', String(n), warn && n > 0 ? 'fl-warn' : null);
+    }
+
+    function loadWorkflows() {
+      return request(base + '/workflows').then(function (list) {
+        workflows = list;
+        var last = list.reduce(function (max, w) { return w.syncDt && w.syncDt > max ? w.syncDt : max; }, '');
+        document.getElementById('fl-last-sync').textContent = '마지막 동기화 ' + (last || '-');
+        renderWorkflows();
+      });
+    }
+
+    function renderWorkflows() {
+      var onlyProblem = document.getElementById('fl-wk-problem').checked;
+      var rows = workflows.filter(function (w) {
+        return !onlyProblem || w.unlinkedCnt > 0 || w.pendingCnt > 0 || w.classCnt === 0;
+      });
+      var body = document.getElementById('fl-workflows');
+      body.innerHTML = '';
+      document.getElementById('fl-wk-count').textContent = rows.length;
+      if (!rows.length) {
+        emptyRow(body, 6, workflows.length ? '조건에 맞는 업무가 없습니다.' : '동기화된 업무가 없습니다. 지금 동기화를 눌러 주세요.');
+        return;
+      }
+      rows.forEach(function (w) {
+        var tr = el('tr');
+        if (w.wkId === selectedWkId) tr.className = 'is-selected';
+        tr.appendChild(el('td', w.wkNm, 'fl-left'));
+        tr.appendChild(el('td', w.classCnt === 0 ? '정보 없음' : String(w.classCnt), w.classCnt === 0 ? 'fl-warn' : null));
+        tr.appendChild(countCell(w.linkedCnt));
+        tr.appendChild(countCell(w.pendingCnt, true));
+        tr.appendChild(countCell(w.unlinkedCnt, true));
+        tr.appendChild(el('td', w.syncDt || '-'));
+        tr.addEventListener('click', function () { selectWorkflow(w); });
+        body.appendChild(tr);
+      });
+    }
+
+    function selectWorkflow(w) {
+      selectedWkId = w.wkId;
+      renderWorkflows();
+      document.getElementById('fl-class-title').textContent = '분류 클래스 - ' + w.wkNm;
+      loadClasses(w.wkId, false, w.classCnt === 0
+        ? '이 업무의 분류 클래스 정보가 없습니다. 지금 동기화 후 다시 확인해 주세요.' : '분류 클래스가 없습니다.');
+    }
+
+    function loadClasses(wkId, unlinkedOnly, emptyText) {
+      var q = '?unlinkedOnly=' + unlinkedOnly + (wkId ? '&wkId=' + encodeURIComponent(wkId) : '');
+      return request(base + '/classes' + q).then(function (list) {
+        var body = document.getElementById('fl-classes');
+        body.innerHTML = '';
+        if (!list.length) { emptyRow(body, 6, emptyText); return; }
+        list.forEach(function (c) {
+          var tr = el('tr');
+          tr.appendChild(el('td', c.wkNm, 'fl-left'));
+          tr.appendChild(el('td', c.classNm, 'fl-left'));
+          tr.appendChild(el('td', c.docTypCd || '(없음)'));
+          var st = STATUS[c.status];
+          var stCell = el('td');
+          stCell.appendChild(el('span', st.label, st.cls));
+          tr.appendChild(stCell);
+          tr.appendChild(el('td', c.lefrmNm ? c.lefrmNm + ' (' + c.docId + ')' : '-', 'fl-left'));
+          var act = el('td');
+          if (c.status === 'UNLINKED') {
+            var add = el('button', '서식 등록', 'btn-neutral');
+            add.type = 'button';
+            add.addEventListener('click', function () { openEditor(null, c); });
+            act.appendChild(add);
+          }
+          tr.appendChild(act);
+          body.appendChild(tr);
+        });
+      }).catch(function (e) { openErrorModal(e.message); });
+    }
+
+    function loadForms() {
+      return request(base + '/forms').then(function (list) {
+        var body = document.getElementById('fl-forms');
+        body.innerHTML = '';
+        document.getElementById('fl-form-count').textContent = list.length;
+        if (!list.length) { emptyRow(body, 6, '등록된 서식이 없습니다.'); return; }
+        list.forEach(function (f) {
+          var tr = el('tr');
+          tr.appendChild(el('td', String(f.lefrmId)));
+          tr.appendChild(el('td', f.lefrmNm, 'fl-left'));
+          tr.appendChild(el('td', f.docId));
+          tr.appendChild(el('td', String(f.linkCnt)));
+          tr.appendChild(el('td', f.chngDt || '-'));
+          var act = el('td');
+          var edit = el('button', '수정', 'btn-neutral');
+          edit.type = 'button';
+          edit.addEventListener('click', function () { openEditor(f, null); });
+          act.appendChild(edit);
+          tr.appendChild(act);
+          body.appendChild(tr);
+        });
+      });
+    }
+
+    // 미연결 클래스에서 열면 클래스 이름·영문코드를 채운다. 연결은 영문코드로만 하므로 코드가 없는 클래스는 서식을 등록해도 연결되지 않는다고 안내한다.
+    function openEditor(form, cls) {
+      editing = form;
+      document.getElementById('fl-modal-title').textContent = form ? '서식 수정' : '서식 등록';
+      document.getElementById('fl-form-name').value = form ? form.lefrmNm : (cls ? cls.classNm : '');
+      document.getElementById('fl-form-doc').value = form ? form.docId : (cls && cls.docTypCd ? cls.docTypCd : '');
+      document.getElementById('fl-form-hint').textContent = cls && !cls.docTypCd
+        ? '이 클래스는 영문코드가 없어 연결되지 않습니다. 엔진 워크플로 클래스에 영문코드(은행 서식코드)를 먼저 지정하세요.'
+        : '엔진 분류 클래스의 영문코드와 같게 입력하면 그 클래스에 연결됩니다. 엔진 접두어 KJB_ 는 빼고 입력해도 됩니다.';
+      var overlay = document.getElementById('fl-modal');
+      overlay.hidden = false;
+      overlay.style.display = 'flex';
+      document.getElementById(cls && !cls.docTypCd ? 'fl-form-doc' : 'fl-form-name').focus();
+    }
+
+    function closeEditor() {
+      var overlay = document.getElementById('fl-modal');
+      overlay.hidden = true;
+      overlay.style.display = 'none';
+    }
+
+    function reloadAll() {
+      var reloadClasses = function () {
+        var w = workflows.filter(function (x) { return x.wkId === selectedWkId; })[0];
+        if (w) selectWorkflow(w);
+      };
+      return Promise.all([loadWorkflows(), loadForms()]).then(reloadClasses);
+    }
+
+    function saveForm() {
+      var payload = {
+        lefrmId: editing ? editing.lefrmId : null,
+        lefrmNm: document.getElementById('fl-form-name').value.trim(),
+        docId: document.getElementById('fl-form-doc').value.trim()
+      };
+      request(base + '/forms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).then(function (saved) {
+        closeEditor();
+        openSuccessModal('저장했습니다. 연결된 업무 ' + saved.linkCnt + '건');
+        return reloadAll();
+      }).catch(function (e) { openErrorModal(e.message); });
+    }
+
+    function sync() {
+      var button = document.getElementById('fl-sync');
+      button.disabled = true;
+      button.textContent = '동기화 중...';
+      request(base + '/sync', { method: 'POST' }).then(function (r) {
+        var msg = '동기화했습니다. 업무 ' + r.stored + '건, 클래스 ' + r.classes + '건 중 연결 ' + r.linked + '건, 미연결 ' + r.unlinked + '건';
+        if (r.detailFailed > 0) msg += ' (상세 조회 실패 ' + r.detailFailed + '건은 기존 연결 유지)';
+        if (r.classStoreFailed > 0) msg += ' (클래스 저장 실패 ' + r.classStoreFailed + '건: DB 마이그레이션 확인 필요)';
+        openSuccessModal(msg);
+        return reloadAll();
+      }).catch(function (e) {
+        openErrorModal(e.message);
+      }).then(function () {
+        button.disabled = false;
+        button.textContent = '지금 동기화';
+      });
+    }
+
+    document.getElementById('fl-wk-problem').addEventListener('change', renderWorkflows);
+    document.getElementById('fl-unlinked-all').addEventListener('click', function () {
+      selectedWkId = null;
+      renderWorkflows();
+      document.getElementById('fl-class-title').textContent = '전체 미연결 클래스';
+      loadClasses(null, true, '미연결 클래스가 없습니다.');
+    });
+    document.getElementById('fl-form-add').addEventListener('click', function () { openEditor(null, null); });
+    document.getElementById('fl-form-save').addEventListener('click', saveForm);
+    document.getElementById('fl-sync').addEventListener('click', sync);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-fl-close]'), function (b) {
+      b.addEventListener('click', closeEditor);
+    });
+    Promise.all([loadWorkflows(), loadForms()]).catch(function (e) { openErrorModal(e.message); });
+  })();
+</script>
+<script th:src="@{/js/lnb.js}"></script>
+</body>
+</html>

@@ -1,0 +1,170 @@
+/* ==========================================================================
+   LAYOUT — 앱 셸 구조
+   실측 근거: node 232:744(신청관리-OCR신청검색)
+
+   구조: LNB(좌측, 화면 전체 높이) + 우측 컨테이너(GNB 40px + Content 나머지).
+   ⚠️ 참고: 로고와 GNB가 한 행을 공유하는 일반적인 관리자 UI 셸 패턴이 아니라,
+   로고가 LNB 안에 포함돼 LNB가 화면 전체 높이를 차지하는 구조로 실측 확인됐다.
+   다른 화면(로그인 등 LNB가 없는 화면 포함)에서 이 패턴이 유지되는지는
+   추가 프레임 확인이 필요 — 임의로 일반화하지 않았다.
+   ========================================================================== */
+
+.app-shell {
+  display: flex;
+  height: 100vh; /* min-height였으면 콘텐츠가 넘칠 때 셸 자체가 늘어나 body가 스크롤됨 — .content의
+    overflow-y:auto가 실제로 걸리려면 상위가 뷰포트에 고정된 값이어야 한다 */
+ /* .content의 overflow-y:auto가 실제로 걸리려면 상위가 overflow:hidden이어야 한다 */
+}
+
+/* .lnb, .lnb__logo, .lnb__menu 상세 스타일은 css/components/lnb.css로 이전했다
+   (get_design_context(481:6740) 전체 실측 반영 — 크기/간격/배경색/아이콘 포함).
+   여기서는 앱 셸 그리드 안에서의 배치(flex-basis)만 유지한다. */
+.lnb {
+  flex: 0 0 var(--layout-lnb-width);
+}
+
+.app-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.gnb {
+  flex: 0 0 var(--layout-gnb-height);
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 var(--layout-content-padding-x);
+  background: var(--surface-white);
+  border-bottom: 1px solid var(--border-neutral-subtle);
+}
+
+/* ---- GNB 브랜드: 모든 화면에 광주은행 로고, 구분선 뒤에 경로를 둔다 ---- */
+.gnb__brand { display: flex; align-items: center; flex-shrink: 0; }
+.gnb__brand:focus-visible { outline: 2px solid var(--border-primary-default); outline-offset: 2px; }
+.gnb__brand-logo { display: block; width: 128px; height: 24px; object-fit: contain; }
+.gnb > .breadcrumb { min-width: 0; padding-left: 18px; border-left: 1px solid var(--border-neutral-subtle); margin-right: auto; }
+
+/* ---- GNB Breadcrumb ---- */
+/* 원래 components/nav-search.css에 있던 것을 분리했다(2026-08-18) — .gnb 소속이라 layout.css가 더 맞는 위치. */
+.breadcrumb { display: flex; align-items: center; gap: 4px; } /* 실측 4px */
+.breadcrumb__item {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0442px; /* 실측값, 라이브러리 -0.34px와 다름 */
+  color: var(--text-neutral-tertiary); /* Neutral/500 — 중간 depth */
+  white-space: nowrap;
+}
+.breadcrumb__item--current { color: var(--text-neutral-secondary); } /* Neutral/700 — 현재 화면(마지막 항목) */
+.breadcrumb__arrow { width: 16px; height: 16px; flex-shrink: 0; } /* iconamoon:arrow-right-2 실측 아이콘 */
+
+/* ---- GNB User / 알림 ---- */
+.gnb__user { display: flex; align-items: center; gap: 16px; }
+.gnb__user-name-group { display: flex; align-items: center; gap: 8px; }
+.gnb__user-icon { width: 16px; height: 16px; flex-shrink: 0; }
+.gnb__user-name {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0442px;
+  color: var(--text-neutral-secondary);
+  white-space: nowrap;
+}
+.gnb__user-dept {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  letter-spacing: -0.0442px;
+  color: var(--text-neutral-tertiary);
+  white-space: nowrap;
+}
+/* 알림 아이콘 — 뱃지(.gnb__notif-badge)가 있으면 "읽지 않은 알림 있음", 없으면(숨김)
+   "알림 없음" 상태다. 기본 마크업은 Figma 기본 상태(뱃지 있음)를 그대로 반영했고,
+   "알림 없음" 화면은 wrapper에 is-read를 추가해 뱃지를 숨기면 된다. */
+.gnb__notif { position: relative; display: flex; width: 16px; height: 16px; flex-shrink: 0; }
+.gnb__notif-icon { width: 16px; height: 16px; }
+.gnb__notif-badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--size-radius-round);
+  background: var(--status-error-default); /* Red/500 #e5384f */
+  border: 1px solid var(--surface-white);
+}
+.gnb__notif.is-read .gnb__notif-badge { display: none; } /* 알림 없음 상태 */
+
+@media (max-width: 1050px) {
+  .gnb { padding: 0 20px; gap: 12px; }
+  .gnb > .breadcrumb { padding-left: 12px; }
+}
+@media (max-width: 600px) {
+  .gnb { flex: none; min-height: var(--layout-gnb-height); flex-wrap: wrap; gap: 8px 10px; padding: 8px 14px; }
+  .gnb__brand-logo { width: 112px; height: 21px; }
+  .gnb > .breadcrumb { order: 3; flex-basis: 100%; padding: 0; border: 0; }
+  .gnb__user-name-group { flex-wrap: wrap; }
+  .gnb__user-dept { display: none; }
+}
+
+.content {
+  flex: 1;
+  min-height: 0; /* flex item 기본값(auto)이면 자식 높이만큼 늘어나버려 위 height:100vh가 무의미해진다 */
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* get_design_context(232:799) 실측 — Content 프레임 자체가 gap-12 auto-layout */
+  overflow-y: auto;
+  padding: 24px var(--layout-content-padding-x); /* 상하 24px — get_design_context(232:799) 실측으로 기존 40px(추정치) 교체 */
+}
+
+/* ---- 좁고 가운데로 몰린 입력/상세 폼 화면 전용 좌우 여백 — 커뮤니티>공지사항 등록(775:2816),
+   공지사항 상세(775:3120) 실측 px-[240px](기본 40px보다 훨씬 넓다, Figma 디자인 폭 1920px 기준).
+   목록형 화면과 달리 폭이 좁은 폼 레이아웃인 화면이 2곳이라 .content 모디파이어로 등록했다
+   (2026-08-25). 240px을 고정값으로 두면 화면이 좁아져도 줄지 않아 부자연스러워(2026-08-26),
+   뷰포트 1280px(기본 목록형 화면과 같은 40px)~1920px(Figma 실측 240px) 구간에서 선형으로
+   보간한다 — 40 + (240-40)*(100vw-1280px)/(1920-1280) = 31.25vw - 360px. 1280px 미만/1920px
+   초과에서는 각각 40px/240px로 고정(clamp). ---- */
+.content--narrow {
+  padding-left: clamp(40px, calc(31.25vw - 360px), 240px);
+  padding-right: clamp(40px, calc(31.25vw - 360px), 240px);
+}
+
+/* ---- Content 내부 레이아웃 패턴 (확장 포인트) ----
+   지금까지 실측 확인된 화면은 "목록/검색형"(검색필터 + 테이블 + 페이지네이션)
+   1종류뿐이다. AI OCR 서류판독시스템 특성상 "문서뷰어 + 추출결과 폼 분할형"
+   같은 다른 화면 패턴이 이후 반드시 필요할 것으로 예상되므로, layout.css는
+   앱 셸(틀)만 담당하고 콘텐츠 내부 배치는 패턴별 클래스로 분리한다.
+   새 패턴이 필요하면 해당 Figma 프레임을 먼저 실측한 뒤 여기(또는
+   layout-patterns.css로 분리)에 추가할 것 — 값을 추측해 미리 만들지 않는다. */
+
+.layout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px; /* get_design_context(481:7576) 실측 — 기존 40px(--spacing-4xl, 추정치) 교체 */
+  container-type: inline-size; /* 2026-08-20 — 관리자>감사로그 .audit-kpi-card처럼 "뷰포트가
+    아니라 이 스택 자신의 렌더링 폭"을 기준으로 반응하는 자식이 필요해 컨테이너 쿼리 기준점을
+    여기 둔다. .layout-list의 직계 자식은 전부 width:100%라 이 스택의 inline-size = 자식들의
+    실제 렌더링 폭과 같다. 스타일에 영향 없는 선언이라 기존에 .layout-list를 쓰던 다른
+    화면에는 부작용이 없다. */
+}
+/* get_design_context(221:265, 대시보드>모니터링) 실측 — 기본 24px과 다른 16px gap 화면 전용
+   모디파이어. patterns/list-section.css의 .list-section--gap-24와 동일한 네이밍 규칙. */
+.layout-list--gap-16 { gap: 16px; }
+
+/* Frame 1707479172 실측 — Tab Header와 목록 블록(.layout-list) 사이 gap.
+   flex:1/min-height:0 — get_design_context(617:7185, 관리자>권한관리) 실측 반영(2026-08-18).
+   이게 없으면 안의 .split-view__body(flex:1)가 기댈 고정 높이가 없어 트리 펼침/닫힘 등
+   내용물 크기에 따라 상자 전체 높이가 늘었다 줄었다 했다 — 메뉴관리·OCR업무신청처럼
+   .split-view__body가 .content 바로 아래 있는 화면은 이 문제가 없었지만, 탭이 끼는
+   화면(.tab-panel로 감쌀 때)은 이 한 줄이 있어야 같은 방식(뷰포트 남은 높이를 채우고
+   내부 트리/결과 패널만 개별 스크롤)으로 동작한다. */
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 16px;
+}
+
+/* 예정(미실측, 값 없음):
+.layout-split { display: grid; grid-template-columns: ...; }
+*/

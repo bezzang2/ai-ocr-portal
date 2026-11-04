@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.agilesoda.module.batch.mapper.UserBatchMapper">
+	<select id="selectUserList" resultType="map">
+		SELECT A1.EMPNO as "empNo"
+			 ,A1.EMP_KOR_FLNM as "empKorFlnm"
+			 ,A1.BLNG_BRCD as "blngBrcd" -- 소속부점
+			 ,A1.BSORGCD as "bsorgcd" -- 모점코드
+			 ,A1.EMP_JOBCLS_CD as "empJobclsCd"
+			 ,A1.HRA_PSTN_CD as "hraPstnCd"
+			 ,A1.HRA_PSTN_NM as "hraPstnNm"
+			 ,replace(A1.RETM_DT, ' ','') as "retmDt" -- 퇴직일자
+			 ,NVL((SELECT DISTINCT 'Y'
+				   FROM V_CQHPN_JOBPA_L  B2
+				   WHERE  B2.EMPNO = A1.EMPNO
+					 AND B2.AFRS_DVDT_LCCD = '0'
+					 AND B2.AFRS_DVDT_MCCD = '000'
+					 AND B2.AFRS_DVDT_SCCD = '000005'
+					 AND B2.AFRS_DVDT_BASE_DT = (
+					   SELECT MAX(C3.AFRS_DVDT_BASE_DT)
+					   FROM V_CQHPN_JOBPA_L C3
+					   WHERE C3.EMPNO = A1.EMPNO
+						 AND C3.BLNG_BRCD !=  '0'
+			)
+            ),'N') as "autGrpCd" -- 권한그룹_감사통활책임자여부
+			 ,A1.OJBB_EMP_DVCD as "ojbbEmpDvcd"  -- 직원구분
+			 ,DECODE(A1.WORK_STCD, '3', 'R','A') as "workStcd" -- 퇴직구분
+			 ,BRDD as "brdd"
+		FROM V_CQHPN_PINFO_M A1
+	</select>
+	<update id="mergeUser" parameterType="map">
+		MERGE INTO OCUOC_USERI_M T
+		USING (
+		    SELECT #{empNo}   AS EMPNO
+		         , #{empKorFlnm}   AS EMP_KOR_FLNM
+				 , #{blngBrcd}   AS BLNG_BRCD
+				 , #{bsorgcd}   AS BSORGCD
+				 , #{empJobclsCd}   AS EMP_JOBCLS_CD
+				 , #{hraPstnCd}   AS HRA_PSTN_CD
+				 , #{hraPstnNm}   AS HRA_PSTN_NM
+				 , #{retmDt}   AS RETM_DT
+				 , #{autGrpCd}   AS AUT_GRP_CD
+				 , #{ojbbEmpDvcd}   AS OJBB_EMP_DVCD
+				 , #{workStcd}   AS WORK_STCD
+				 , #{brdd}   AS BRDD
+		     FROM DUAL
+			)S
+		    ON (
+		        T.EMPNO = S.EMPNO
+				)
+			 WHEN MATCHED THEN
+				UPDATE SET
+				       T.EMP_KOR_FLNM 	= S.EMP_KOR_FLNM
+					 , T.BLNG_BRCD    	= S.BLNG_BRCD
+					 , T.BSORGCD      	= S.BSORGCD
+					 , T.EMP_JOBCLS_CD 	= S.EMP_JOBCLS_CD
+					 , T.HRA_PSTN_CD 	= S.HRA_PSTN_CD
+					 , T.HRA_PSTN_NM 	= S.HRA_PSTN_NM
+					 , T.RETM_DT		= S.RETM_DT
+					 , T.AUT_GRP_CD 	= S.AUT_GRP_CD
+					 , T.OJBB_EMP_DVCD 	= S.OJBB_EMP_DVCD
+					 , T.WORK_STCD 		= S.WORK_STCD
+					 , T.BRDD			= S.BRDD
+					 , LAST_CHNG_DTTM	= TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		    	WHERE NVL(T.EMP_KOR_FLNM,' ') != NVL(S.EMP_KOR_FLNM,' ') OR NVL(T.BLNG_BRCD,' ') != NVL(S.BLNG_BRCD,' ')
+					  OR NVL(T.BSORGCD,' ') != NVL(S.BSORGCD,' ') OR NVL(T.EMP_JOBCLS_CD,' ') != NVL(S.EMP_JOBCLS_CD,' ')
+					  OR NVL(T.HRA_PSTN_CD,' ') != NVL(S.HRA_PSTN_CD,' ') OR NVL(T.HRA_PSTN_NM,' ') != NVL(S.HRA_PSTN_NM,' ')
+					  OR NVL(T.AUT_GRP_CD,' ') != NVL(S.AUT_GRP_CD,' ') OR NVL(T.OJBB_EMP_DVCD,' ') != NVL(S.OJBB_EMP_DVCD,' ')
+					  OR NVL(T.WORK_STCD,' ') != NVL(S.WORK_STCD,' ') OR NVL(T.RETM_DT,' ') != NVL(S.RETM_DT,' ') OR NVL(T.BRDD,' ') != NVL(S.BRDD,' ')
+			WHEN NOT MATCHED THEN
+				INSERT
+				(
+					  EMPNO
+					, EMP_KOR_FLNM
+					, BLNG_BRCD
+					, BSORGCD
+					, EMP_JOBCLS_CD
+					, HRA_PSTN_CD
+					, HRA_PSTN_NM
+		    		, RETM_DT
+					, AUT_GRP_CD
+					, OJBB_EMP_DVCD
+					, WORK_STCD
+					, BRDD
+					, FRST_REG_DTTM
+				)
+				VALUES
+				(
+					  S.EMPNO
+					, S.EMP_KOR_FLNM
+					, S.BLNG_BRCD
+					, S.BSORGCD
+					, S.EMP_JOBCLS_CD
+					, S.HRA_PSTN_CD
+					, S.HRA_PSTN_NM
+					, S.RETM_DT
+					, S.AUT_GRP_CD
+					, S.OJBB_EMP_DVCD
+					, S.WORK_STCD
+					, S.BRDD
+					, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+					)
+
+
+	</update>
+
+
+	<delete id="deleteUser" parameterType="map">
+		DELETE FROM OCUOC_USERI_M
+		WHERE EMPNO = #{empNo}
+	</delete>
+</mapper>

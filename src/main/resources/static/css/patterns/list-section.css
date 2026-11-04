@@ -1,0 +1,26 @@
+/* 목록 제목 + 테이블 + 하단 툴바(페이지네이션/개수) — 목록형 화면 공통 패턴.
+   출처: get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 232:783, 239:2177, 239:2172) 실측 —
+   원래 components/nav-search.css에 있던 것을 분리했다(2026-08-18). */
+
+.list-section { display: flex; flex-direction: column; gap: 12px; }
+.list-section__header { display: flex; align-items: center; justify-content: space-between; } /* get_design_context(481:6893) 실측 — 제목 + "내 글만 보기" 체크박스 한 줄 */
+.list-section__title { font-size: var(--font-size-16); font-weight: var(--font-weight-medium); color: var(--text-neutral-default); }
+/* get_design_context(617:9352, 617:9752, 관리자>감사로그 차트 카드) 실측 — 제목-본문 간격이
+   기본(12px)과 다른 24px인 화면이 2곳(메뉴별 접근 빈도/화면별 버튼 클릭 분포)이라 모디파이어로
+   승격했다(.input--wNN과 동일한 숫자 리터럴 네이밍 — 24px에 대응하는 의미 있는 이름이 따로 없음). */
+.list-section--gap-24 { gap: 24px; }
+
+.table-toolbar { display: flex; justify-content: flex-end; margin-bottom: var(--size-space-s); }
+
+.list-footer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr; /* get_design_context(239:2177) 실측 — pagination이 전체 폭 기준 정중앙(710/1640) */
+  align-items: center;
+}
+.list-footer .pagination { grid-column: 2; justify-self: center; }
+.list-footer__page-size { grid-column: 3; justify-self: end; } /* get_design_context(239:2172) 실측 — n개씩 보기 셀렉트, 우측 정렬 */
+.list-footer__count {
+  font-size: var(--font-size-13); /* 실측(box height 13px 패턴 일관) */
+  letter-spacing: -0.0442px;
+  color: var(--text-neutral-tertiary);
+}

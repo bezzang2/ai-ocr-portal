@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+  <meta charset="UTF-8">
+  <title>고객 통합검색 | AI OCR 서류판독시스템</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+<body>
+
+
+
+
+
+
+    <main class="content">
+
+      <div class="page-header">
+        <h1 class="page-header__title">고객 통합검색</h1>
+      </div>
+
+      <div class="layout-list">
+
+          <form class="search-area">
+            <div class="search-area__row">
+              <div class="search-area__item">
+                <label class="search-area__label">조회 구분</label>
+                <div class="toggle-group toggle-group--w128" data-toggle-group>
+                  <button type="button" class="toggle-group__btn is-active" data-toggle="by-customer-no">고객번호</button>
+                  <button type="button" class="toggle-group__btn" data-toggle="by-id-no">실명번호(개인/기업)</button>
+                </div>
+
+                <!-- data-toggle-panel은 레이아웃 클래스가 없는 순수 래퍼에만 둔다 — .search-area__item 등이
+                     이미 display:flex를 갖고 있으면 author 스타일이 [hidden]의 display:none보다 우선순위가
+                     높아 hidden이 무시된다(js/toggle-group.js가 element.hidden을 토글하는 방식이라 필요). -->
+                <div data-toggle-panel="by-customer-no">
+                  <div class="search-area__item">
+                    <label class="search-area__label" for="bank-customer-no">은행 고객번호</label>
+                    <input id="bank-customer-no" class="input input--w180" type="text" placeholder="예) 0081234567">
+                  </div>
+                </div>
+
+                <div data-toggle-panel="by-id-no" hidden>
+                  <div class="search-toggle-fields">
+                    <div class="search-area__item">
+                      <label class="search-area__label" for="id-type">실명번호 구분</label>
+                      <select id="id-type" class="input input--w120">
+                        <option>개인</option>
+                        <option>기업</option>
+                      </select>
+                    </div>
+                    <div class="search-area__item">
+                      <label class="search-area__label" for="id-no">주민등록번호</label>
+                      <input id="id-no" class="input input--w200" type="text" placeholder="901225-1******">
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="search-area__item">
+                <label class="search-area__label">기간 선택</label>
+                <div class="toggle-group toggle-group--w70" data-toggle-group>
+                  <button type="button" class="toggle-group__btn is-active" data-toggle="by-range">조회기간</button>
+                  <button type="button" class="toggle-group__btn" data-toggle="by-month">월별</button>
+                </div>
+
+                <div data-toggle-panel="by-range">
+                  <div class="search-period-row">
+                    <label class="radio">
+                      <input class="radio__input" type="radio" name="period" checked>
+                      <span class="radio__circle"></span>
+                      <span class="radio__label">1주일</span>
+                    </label>
+                    <label class="radio">
+                      <input class="radio__input" type="radio" name="period">
+                      <span class="radio__circle"></span>
+                      <span class="radio__label">1개월</span>
+                    </label>
+                    <label class="radio">
+                      <input class="radio__input" type="radio" name="period">
+                      <span class="radio__circle"></span>
+                      <span class="radio__label">3개월</span>
+                    </label>
+                    <label class="radio">
+                      <input class="radio__input" type="radio" name="period">
+                      <span class="radio__circle"></span>
+                      <span class="radio__label">6개월</span>
+                    </label>
+                    <label class="radio">
+                      <input class="radio__input" type="radio" name="period">
+                      <span class="radio__circle"></span>
+                      <span class="radio__label">직접입력</span>
+                    </label>
+                    <div class="search-area__combo">
+                      <input class="input input--w120" type="date">
+                      <span class="search-area__tilde">~</span>
+                      <input class="input input--w120" type="date">
+                    </div>
+                  </div>
+                </div>
+
+                <div data-toggle-panel="by-month" hidden>
+                  <div class="search-area__combo">
+                    <select class="input input--w120">
+                      <option>2026년</option>
+                    </select>
+                    <select class="input input--w120">
+                      <option>07월</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 재조회/조회 버튼 — .search-area__row와 나란한 형제로 둬야 다른 화면과 동일하게
+                 1줄에 다 들어가면 바로 옆에 붙고, 안 들어가면 위쪽 오른쪽에 고정된다
+                 (patterns/search-area.css 참고, 2026-08-25). 토글 상태(조회구분/기간선택)와
+                 무관하게 조회 동작은 하나뿐이라 버튼도 패널마다 두지 않고 한 번만 둔다. -->
+            <div class="search-area__actions">
+              <button type="button" class="btn-icon">
+                <img src="../../images/icons/buttons/ic-16-refresh.svg" alt="새로고침">
+              </button>
+              <button type="submit" class="btn-outline-primary">
+                <span class="btn-icon-slot"><svg width="11.5" height="11.5" viewBox="0 0 11.5 11.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10.75 10.75L8.33333 8.33333M9.63889 5.19444C9.63889 7.64904 7.64904 9.63889 5.19444 9.63889C2.73985 9.63889 0.75 7.64904 0.75 5.19444C0.75 2.73985 2.73985 0.75 5.19444 0.75C7.64904 0.75 9.63889 2.73985 9.63889 5.19444Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                조회
+              </button>
+            </div>
+          </form>
+
+          <div class="customer-summary">
+            <div class="customer-summary__group">
+              <p class="customer-summary__name">홍길동</p>
+              <div class="customer-summary__field">
+                <div class="customer-summary__field-label">
+                  <span class="customer-summary__dot"></span>
+                  <span class="customer-summary__field-label-text">고객 번호</span>
+                </div>
+                <p class="customer-summary__field-value">0071234567</p>
+              </div>
+              <div class="customer-summary__field">
+                <div class="customer-summary__field-label">
+                  <span class="customer-summary__dot"></span>
+                  <span class="customer-summary__field-label-text">실명번호</span>
+                </div>
+                <p class="customer-summary__field-value">901225-1******</p>
+              </div>
+              <div class="customer-summary__field">
+                <div class="customer-summary__field-label">
+                  <span class="customer-summary__dot"></span>
+                  <span class="customer-summary__field-label-text">구분</span>
+                </div>
+                <p class="customer-summary__field-value">개인</p>
+              </div>
+            </div>
+            <div class="customer-summary__history">
+              <p class="customer-summary__history-label">AI-OCR 처리이력</p>
+              <p class="customer-summary__history-count">7건</p>
+            </div>
+          </div>
+
+          <div class="tab-panel">
+          <nav class="tabs">
+            <button type="button" class="tabs__item">연계 에이전트</button>
+            <button type="button" class="tabs__item is-active">AI-OCR 처리이력</button>
+          </nav>
+
+          <div class="list-section">
+          <table class="table" style="table-layout:fixed; width:100%">
+            <colgroup>
+              <col style="width:5.63%">  <!-- No -->
+              <col style="width:5.63%">  <!-- 채널구분 -->
+              <col style="width:8.45%">  <!-- 단위시스템 -->
+              <col style="width:11.27%"> <!-- 업무화면 -->
+              <col style="width:8.45%">  <!-- 전문코드 -->
+              <col style="width:11.27%"> <!-- 점번호 -->
+              <col style="width:11.27%"> <!-- 성명(행원번호) -->
+              <col style="width:16.90%"> <!-- 서식명 -->
+              <col style="width:14.08%"> <!-- 처리일시 -->
+              <col style="width:7.05%">  <!-- 진행상태 -->
+            </colgroup>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>채널구분</th>
+                <th>단위시스템</th>
+                <th>업무화면</th>
+                <th>전문코드</th>
+                <th>점번호</th>
+                <th>성명(행원번호)</th>
+                <th>서식명</th>
+                <th>처리일시</th>
+                <th>결과</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>52</td>
+                <td>대면</td>
+                <td>계정계</td>
+                <td>eKEOS[62000]</td>
+                <td><a class="table-link" href="search-result.html">OCR001</a></td>
+                <td>영업1본부</td>
+                <td>홍길동[1234567]</td>
+                <td style="text-align:left">주택담보대출 신규</td>
+                <td>2026-07-03 11:30</td>
+                <td><span class="status-pill status-pill--success status-pill--fill">정상</span></td>
+              </tr>
+              <tr>
+                <td>51</td>
+                <td>대면</td>
+                <td>펀드</td>
+                <td>eKEOS[00001]</td>
+                <td><a class="table-link" href="search-result.html">OCR002</a></td>
+                <td>화정지점</td>
+                <td>홍길동[1234567]</td>
+                <td style="text-align:left">외국인 비대면 신용대출</td>
+                <td>2026-07-03 11:30</td>
+                <td><span class="status-pill status-pill--success status-pill--fill">정상</span></td>
+              </tr>
+              <tr>
+                <td>50</td>
+                <td>대면</td>
+                <td>BPR</td>
+                <td>eKEOS[00002]</td>
+                <td><a class="table-link" href="search-result.html">OCR003</a></td>
+                <td>매월동지점</td>
+                <td>홍길동[1234567]</td>
+                <td style="text-align:left">예금신규</td>
+                <td>2026-07-03 11:30</td>
+                <td><span class="status-pill status-pill--error-fill status-pill--fill">오류</span></td>
+              </tr>
+              <tr>
+                <td>49</td>
+                <td>대면</td>
+                <td>퇴직연금</td>
+                <td>eKEOS[00003]</td>
+                <td><a class="table-link" href="search-result.html">OCR004</a></td>
+                <td>영업2본부</td>
+                <td>홍길동[1234567]</td>
+                <td style="text-align:left">해외송금</td>
+                <td>2026-07-03 11:30</td>
+                <td><span class="status-pill status-pill--success status-pill--fill">정상</span></td>
+              </tr>
+              <tr>
+                <td>48</td>
+                <td>비대면</td>
+                <td>인뱅</td>
+                <td>인뱅[화면명]</td>
+                <td><a class="table-link" href="search-result.html">OCR005</a></td>
+                <td>해남지점</td>
+                <td>홍길동[1234567]</td>
+                <td style="text-align:left">신용대출</td>
+                <td>2026-07-03 11:30</td>
+                <td><span class="status-pill status-pill--success status-pill--fill">정상</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="list-footer">
+            <span class="list-footer__count">조회 결과 : <strong>1-15</strong>/263</span>
+            <nav class="pagination">
+              <button type="button" class="pagination__item" aria-label="처음"><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8.75 7.41667L5.41667 4.08333L8.75 0.75M4.08333 7.41667L0.75 4.08333L4.08333 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <button type="button" class="pagination__item" aria-label="이전"><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.75 8.75L0.75 4.75L4.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <button type="button" class="pagination__item is-current">1</button>
+              <button type="button" class="pagination__item">2</button>
+              <button type="button" class="pagination__item">3</button>
+              <button type="button" class="pagination__item" aria-label="다음"><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 8.75L4.75 4.75L0.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              <button type="button" class="pagination__item" aria-label="끝"><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 7.41667L4.08333 4.08333L0.75 0.75M5.41667 7.41667L8.75 4.08333L5.41667 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            </nav>
+            <select class="input input--w140 list-footer__page-size">
+              <option value="15">15개씩 보기</option>
+              <option value="30">30개씩 보기</option>
+              <option value="50">50개씩 보기</option>
+            </select>
+          </div>
+          </div>
+          </div>
+
+      </div>
+    </main>
+
+<script th:src="@{/js/lnb.js}"></script>
+<script th:src="@{/js/toggle-group.js}"></script>
+</body>
+</html>

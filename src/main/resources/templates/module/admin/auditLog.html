@@ -1,0 +1,1496 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+<title>감사로그 | AI OCR 서류판독시스템</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <style>
+    html,
+    body{
+      height: auto !important;
+      min-height: 100% !important;
+      overflow-y: auto !important;
+    }
+    .app-shell,
+    .app-container,
+    .content,
+    .tab-panel,
+    .tab-content,
+    .layout-list,
+    .list-section{
+      height: auto !important;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+    .audit-paging{
+      display: flex !important;
+      position: relative !important;
+
+      visibility: visible !important;
+      opacity: 1 !important;
+
+      width: 100% !important;
+      min-height: 50px !important;
+      margin-top: 0px !important;
+
+      overflow: visible !important;
+      /*z-index: 9999 !important;*/
+
+      align-items: center !important;
+      justify-content: space-between !important;
+
+    }
+    #pageNumbers {
+      display: flex !important;
+      visibility: visible !important;
+      gap: 5px !important;
+    }
+    .audit-pagination button{
+      display: flex !important;
+      visibility: visible !important;
+    }
+    .url-cell{
+      word-break: break-all;
+      white-space: normal;
+    }
+    #tab-log .list-section{
+      margin-top: 16px;
+    }
+
+    /* 도넛 그래프 */
+    .donut-chart {
+      width: 180px;
+      height: 180px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      margin: 0 auto 15px;
+      position: relative;
+
+      background: conic-gradient(
+              #2878d5 0% 50%,
+              #36a3a8 50% 75%,
+              #e67e4a 75% 90%,
+              #a0a8b5 90% 100%
+      );
+    }
+
+    .donut-chart::after{
+      content: "";
+      position: absolute;
+      width: 110px;
+      height: 110px;
+      border-radius: 50%;
+      background: white;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* 도넛 전체 영역 */
+    .action-chart-area{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      width: 100%;
+      position: relative;
+    }
+    /* 제목 위쪽 배치 */
+    .action-chart-title{
+      width: 100%;
+      text-align: left;
+      margin: 0 0 20px 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+    /* 도넛 아래 글자 */
+    .donut-legend{
+      position: static !important;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+      font-size: 12px;
+      color: #666;
+    }
+    /* 범례 항목 */
+    .donut-legend span{
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+    /* 색상 네모 */
+    .donut-legend i{
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      border-radius: 2px;
+    }
+    /* 도넛과 동일한 색상 */
+    .legend-blue{
+      background: #2878b5;
+    }
+    .legend-orange{
+      background: #e67e4a;
+    }
+    .legend-green{
+      background: #244b43;
+    }
+    .legend-sky{
+      background: #36a3d8;
+    }
+  </style>
+
+  <!-- inline JS 영역-->
+  <script th:inline="javascript" type="text/javascript">
+    /* 로그조회 페이징*/
+    let currentPage = 1; // 현제 페이지
+    let pageSize = 15; // 한 페이지 건수
+    let pageBlockSize = 5; // 페이지 번호 5개씩
+    let totalPageCount = 0;
+    let prevLogSearchKey = null;
+    /* 메뉴 화면 상세통계 페이징*/
+    let statCurrentPage = 1; // 현제 페이지
+    let statPageSize = 15; // 한 페이지 건수
+    let statPageBlockSize = 5; // 페이지 번호 5개씩
+    let statTotalPageCount = 0;
+    let prevMenuSearchKey = null;
+
+    let currentTab = "log"; // 현재 선택된 텝
+
+    document.addEventListener('DOMContentLoaded',function () {
+
+      // 메뉴 오픈시 lnb쪽 메뉴 활성화 부분
+      const params = new URLSearchParams(location.search);
+      const menuId = params.get("menuId");
+
+      if (menuId) {
+        openLnb(menuId);
+      }
+
+      // 날짜 초기세팅
+      setToday();
+      // 로그조회 텝이면 조회
+      searchAubitLog();
+
+      /**********************************************************************
+      *   로그조회 페이징 이벤트 시작
+      ***********************************************************************/
+      // 처음
+      document.getElementById("pageFirst")?.addEventListener("click", function(){movePage(1);});
+      // 이전
+      document.getElementById("pagePrev")?.addEventListener("click", function(){if(currentPage > 1){movePage(currentPage - 1);}});
+      // 다음
+      document.getElementById("pageNext")?.addEventListener("click", function(){movePage(currentPage + 1);});
+      // 끝
+      document.getElementById("pageLast")?.addEventListener("click", function(){movePage(totalPageCount);});
+      document.getElementById("pageSize")?.addEventListener("change", function(){pageSize = Number(this.value);currentPage = 1;searchAubitLog();});
+      /***********************************************************************
+      *         로그조회 페이징 이벤트 끝
+      ************************************************************************/
+
+      /***********************************************************************
+               메뉴 화면 상세통계 페이징 이벤트 시작
+      ************************************************************************/
+      // 처음
+      document.getElementById("statPageFirst")?.addEventListener("click", function(){menuMovePage(1);});
+      // 이전
+      document.getElementById("statPagePrev")?.addEventListener("click", function(){if(statCurrentPage > 1){menuMovePage(statCurrentPage - 1);}});
+      // 다음
+      document.getElementById("statPageNext")?.addEventListener("click", function(){menuMovePage(statCurrentPage + 1);});
+      // 끝
+      document.getElementById("statPageLast")?.addEventListener("click", function(){menuMovePage(statTotalPageCount);});
+      document.getElementById("statPageSize")?.addEventListener("change", function(){statPageSize = Number(this.value);statCurrentPage = 1;searchMenuStats();});
+      /**********************************************************************
+      *         메뉴 화면 상세통계 페이징 이벤트 끝
+      ***********************************************************************/
+
+
+      /***********************************************************************
+      *    화면내 모든 버튼 클릭했을때 타는 이벤트
+      ************************************************************************/
+      document.addEventListener("click",function (e) {
+        const btn = e.target.closest("[data-action-cd]");
+        if (!btn) {
+          return;
+        }
+
+        const actionCd = btn.dataset.actionCd;
+        const areaCd = btn.dataset.areaCd;
+        //console.log("actionCd===>>>",actionCd)
+        //console.log("areaCd===>>>",areaCd)
+        if(areaCd === "LOG_SEARCH") {
+          switch (actionCd) {
+            case "SEARCH":
+              searchAubitLog();
+              break;
+          }
+        }else if(areaCd === "MENU_SEARCH") {
+          switch (actionCd) {
+            case "SEARCH":
+              searchMenuStats();
+              break;
+          }
+        }else if(areaCd === "DEPT_SEARCH") {
+          switch (actionCd) {
+            case "SEARCH":
+              searchDeptStats();
+              break;
+          }
+        }else if(areaCd === "MENU_EXCEL") {
+          switch (actionCd) {
+            case "EXCEL":
+              openExcelDownloadModal(function (reason) {
+                execelDownLoad(reason);
+              })
+              break;
+          }
+        }
+
+      });
+
+      /*******************************************************
+       *  조회 조건 엔터키 이벤트
+       * *******************************************************/
+      document.addEventListener("keydown",function (e) {
+        if(e.key !== "Enter"){ return;}
+        if(!e.target.classList.contains("search-enter")){return;}
+
+        e.preventDefault();
+        const searchArea = e.target.closest(".search-area");
+        if(!searchArea){return;}
+        const searchBtn = searchArea.querySelector(".search-btn");
+        if(searchBtn){
+          searchBtn.click();
+        }
+      })
+
+      /**********************************************************************
+       *  조회 조건 더블클릭 이벤트
+       ***********************************************************************/
+      document.addEventListener("dblclick",function (e) {
+        // 로그 => 부서
+        const logBrCd = e.target.closest(".log-br-cd");
+        if(logBrCd){
+          e.preventDefault();
+          e.stopPropagation();
+
+          const targetRow = logBrCd.closest("tr");
+
+          // 모달 열기
+          openDeptSearchModal(function (selectedRows) {
+            //console.log("receiveCommonUsers 직전 => ");
+            receiveCommonLog(selectedRows);
+            //console.log("receiveCommonUsers 완료 => ");
+          });
+          return;
+        }
+
+        // 사번
+        const userId = e.target.closest(".user-id");
+        if(userId){
+          e.preventDefault();
+          e.stopPropagation();
+
+          const targetRow = userId.closest("tr");
+
+          // 모달 열기
+          openUserSearchModal(function (selectedRows) {
+            //console.log("receiveCommonUsers 직전 => ");
+            receiveCommonUsers(selectedRows);
+            //console.log("receiveCommonUsers 완료 => ");
+          });
+          return;
+        }
+        // 부서사용자 => 부서
+        const deptBrCd = e.target.closest(".dept-br-cd");
+        if(deptBrCd){
+          e.preventDefault();
+          e.stopPropagation();
+
+          const targetRow = deptBrCd.closest("tr");
+
+          // 모달 열기
+          openDeptSearchModal(function (selectedRows) {
+            //console.log("receiveCommonUsers 직전 => ");
+            receiveCommonDept(selectedRows);
+            //console.log("receiveCommonUsers 완료 => ");
+          });
+          return;
+        }
+
+      })
+
+    });
+
+    /*******************************************************
+     *  사용자정보 리턴 처리 함수
+     * *******************************************************/
+    function receiveCommonUsers(user) {
+      document.getElementById('userId').value = user.empNo;
+      document.getElementById('userNm').value = user.empKorFlnm;
+    }
+
+    /*******************************************************
+     *  부서사용자통계 부서정보 리턴 처리 함수
+     * *******************************************************/
+    function receiveCommonDept(dept) {
+      document.getElementById('deptBrCd').value = dept.brCd;
+      document.getElementById('deptBrNm').value = dept.brNm;
+    }
+
+    /*******************************************************
+     *  로그조회 부서정보 리턴 처리 함수
+     * *******************************************************/
+    function receiveCommonLog(dept) {
+      document.getElementById('logBrCd').value = dept.brCd;
+      document.getElementById('logBrNm').value = dept.brNm;
+    }
+
+
+
+
+    /***********************************************************************
+    * 메뉴화면통계 => 세로고침 버튼 이벤트
+    ************************************************************************/
+    function searchMenuRefresh(){
+      document.getElementById('date-from').value = "";
+      document.getElementById('date-to').value = "";
+      document.getElementById('top-menu').value = "";
+      // 날짜 초기세팅
+      setToday();
+    }
+
+    /***********************************************************************
+     * 부서사용자통계 => 세로고침 버튼 이벤트
+     ************************************************************************/
+    function searchDeptRefresh(){
+      document.getElementById('date-deptFrom').value = "";
+      document.getElementById('date-deptTo').value = "";
+      document.getElementById('deptBrCd').value = "";
+      document.getElementById('deptBrNm').value = "";
+      // 날짜 초기세팅
+      setToday();
+    }
+
+    /***********************************************************************
+     * 로그조회 => 세로고침 버튼 이벤트
+     ************************************************************************/
+    function searchLogRefresh(){
+      document.getElementById('fromDate').value = "";
+      document.getElementById('toDate').value = "";
+      document.getElementById('logBrCd').value = "";
+      document.getElementById('logBrNm').value = "";
+      document.getElementById('userId').value = "";
+      document.getElementById('userNm').value = "";
+      // 날짜 초기세팅
+      setToday();
+    }
+
+    /***********************************************************************
+     * 화면내 텝 이동 이벤트
+     * tabName : 텝이름
+     * button : 버튼ID
+     ************************************************************************/
+    function changeTab(tabName,button) {
+      // 1. 모든 텝 내용 숨김
+      document.querySelectorAll('.tab-content').forEach(function (content) {
+        content.style.display = 'none';
+      });
+
+      // 2. 클릭한 화면만 보이게
+      const target = document.getElementById("tab-"+tabName);
+      if(target){
+        target.style.display = 'block';
+      }
+
+      // 3. 텝 선택표시 제거
+      document.querySelectorAll('.tabs__item').forEach(function (tab) {
+        tab.classList.remove('is-active');
+      });
+
+      // 4. 클릭한 텝 선택 표시
+      button.classList.add('is-active');
+
+      currentTab = tabName;
+
+      if(tabName === 'log'){
+        console.log("로그조회 텝")
+        // 날짜 초기세팅
+        setToday();
+        // 로그조회 텝이면 조회
+        searchAubitLog();
+      }else if(tabName === 'menu'){
+        console.log("메뉴화면 통계 텝")
+        // 날짜 초기세팅
+        setToday();
+        // 메뉴화면 통계 텝이면 최상위 메뉴 조회
+        loadTopMenuList();
+        // 메뉴화면 통계 텝이면 조회
+        searchMenuStats();
+      }else if(tabName === 'dept'){
+        console.log("부서 사용자 텝")
+        // 날짜 초기세팅
+        setToday();
+        // 도넛 그래프 표시
+        drawActionChart();
+      }
+
+    }
+
+    /***********************************************************************
+    *     로그조회  => 조회 함수
+    ************************************************************************/
+    function searchAubitLog() {
+
+      const fromDate = document.getElementById('fromDate')?.value || '';
+      const toDate = document.getElementById('toDate')?.value || '';
+      const logBrCd = document.getElementById('logBrCd')?.value || '';
+      const userId = document.getElementById('userId')?.value || '';
+      const currentSearchKey = `${fromDate}|${toDate}|${logBrCd}|${userId}`;
+      if(prevLogSearchKey !== null && prevLogSearchKey !== currentSearchKey){
+        currentPage = 1;
+      }
+      prevLogSearchKey = currentSearchKey;
+
+      const param = {
+        fromDate: document.getElementById('fromDate')?.value,
+        toDate: document.getElementById('toDate')?.value,
+        logBrCd: document.getElementById('logBrCd')?.value,
+        userId: document.getElementById('userId')?.value,
+        page: currentPage,
+        pageSize: pageSize
+      };
+
+      fetch(contextPath+"module/admin/auditLog/selectLogLsit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(param)
+      })
+      .then(response => {
+        if (!response.ok) {
+          openErrorModal("조회 오류");
+          return;
+        }
+        return response.json();
+      })
+      .then(data => {
+
+        drawLogList(data.list);
+
+        drawPagination(
+                data.page,
+                data.totalPage,
+                data.totalCount,
+                data.pageSize
+        );
+      })
+      .catch(error => {
+        console.error(error);
+        return;
+      });
+    }
+
+    /***********************************************************************
+    *    메뉴화면통계 => 조회 함수
+    ************************************************************************/
+    function searchMenuStats() {
+      const topMenu = document.getElementById('top-menu')?.value || '';
+      const dateFrom = document.getElementById('date-from')?.value || '';
+      const dateTo = document.getElementById('date-to')?.value || '';
+      const currentSearchKey = `${topMenu}|${dateFrom}|${dateTo}`;
+      if(prevMenuSearchKey !== null && prevMenuSearchKey !== currentSearchKey){
+        statCurrentPage = 1;
+      }
+      prevMenuSearchKey = currentSearchKey;
+
+      const param = {
+        fromDate: document.getElementById('date-from')?.value,
+        toDate: document.getElementById('date-to')?.value,
+        menuId: document.getElementById('top-menu')?.value,
+        page: statCurrentPage,
+        pageSize: statPageSize
+      };
+
+      fetch(contextPath+"module/admin/auditLog/searchMenuStats", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(param)
+      })
+              .then(response => {
+                if (!response.ok) {
+                  openErrorModal("조회 오류");
+                  return;
+                }
+                return response.json();
+              })
+              .then(data => {
+//console.log("메뉴통계 조회결과:",data);
+                // 건수 표기
+                document.getElementById("topMenu").textContent = data.summary.topMenu ?? '-';
+                document.getElementById("topMenuCount").textContent = (data.summary.topMenuCount ?? 0).toLocaleString() + '건';
+
+                document.getElementById("topScreen").textContent = data.summary.topScreen ?? '-';
+                document.getElementById("topScreenCount").textContent = (data.summary.topScreenCount ?? 0).toLocaleString() + '건';
+
+                document.getElementById("totalAccessCount").textContent = (data.summary.totalAccessCount ?? 0).toLocaleString();
+
+                document.getElementById("topButtonScreen").textContent = data.summary.topButtonScreen ?? '-';
+                document.getElementById("topButtonCount").textContent = (data.summary.topButtonCount ?? 0).toLocaleString() + '건';
+                // 메뉴별 top5
+                renderMenuTop5(data.menuTop5);
+                // 화면별 top5
+                renderButtonTop5(data.buttonTop5);
+                // 화면별 상세 통계
+                renderDetailList(data.detailList);
+                // 페이징
+                drawMenuPagination(
+                        data.page,
+                        data.totalPage,
+                        data.totalCount,
+                        data.pageSize);
+              })
+              .catch(error => {
+                console.error(error);
+                return;
+              });
+    }
+
+    /***********************************************************************
+     *    부서사용자 통계 => 조회 함수
+     ************************************************************************/
+//     function searchDeptStats() {
+//       const dateDeptFrom = document.getElementById('date-deptFrom')?.value || '';
+//       const dateDeptTo = document.getElementById('date-deptTo')?.value || '';
+//       const deptBrCd = document.getElementById('deptBrCd')?.value || '';
+//       const currentSearchKey = `${deptBrCd}|${dateDeptFrom}|${dateDeptTo}`;
+//       if(prevMenuSearchKey !== null && prevMenuSearchKey !== currentSearchKey){
+//         statCurrentPage = 1;
+//       }
+//       prevMenuSearchKey = currentSearchKey;
+//
+//       const param = {
+//         dateDeptFrom: document.getElementById('date-deptFrom')?.value,
+//         dateDeptTo: document.getElementById('date-deptTo')?.value,
+//         deptBrCd: document.getElementById('deptBrCd')?.value,
+//         page: statCurrentPage,
+//         pageSize: statPageSize
+//       };
+//
+//       fetch(contextPath+"module/admin/auditLog/searchDeptStats", {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json"
+//         },
+//         body: JSON.stringify(param)
+//       })
+//               .then(response => {
+//                 if (!response.ok) {
+//                   openErrorModal("조회 오류");
+//                   return;
+//                 }
+//                 return response.json();
+//               })
+//               .then(data => {
+// //console.log("메뉴통계 조회결과:",data);
+//                 // 건수 표기
+//                 document.getElementById("topMenu").textContent = data.summary.topMenu ?? '-';
+//                 document.getElementById("topMenuCount").textContent = (data.summary.topMenuCount ?? 0).toLocaleString() + '건';
+//
+//                 document.getElementById("topScreen").textContent = data.summary.topScreen ?? '-';
+//                 document.getElementById("topScreenCount").textContent = (data.summary.topScreenCount ?? 0).toLocaleString() + '건';
+//
+//                 document.getElementById("totalAccessCount").textContent = (data.summary.totalAccessCount ?? 0).toLocaleString();
+//
+//                 document.getElementById("topButtonScreen").textContent = data.summary.topButtonScreen ?? '-';
+//                 document.getElementById("topButtonCount").textContent = (data.summary.topButtonCount ?? 0).toLocaleString() + '건';
+//                 // 메뉴별 top5
+//                 // renderMenuTop5(data.menuTop5);
+//                 // // 화면별 top5
+//                 // renderButtonTop5(data.buttonTop5);
+//                 // // 화면별 상세 통계
+//                 // renderDetailList(data.detailList);
+//                 // // 페이징
+//                 // drawMenuPagination(
+//                 //         data.page,
+//                 //         data.totalPage,
+//                 //         data.totalCount,
+//                 //         data.pageSize);
+//               })
+//               .catch(error => {
+//                 console.error(error);
+//                 return;
+//               });
+//     }
+
+
+    /***********************************************************************
+     *  로그조회 => 데이터 매핑처리
+     *  list : 조회 후 리던값
+    ************************************************************************/
+    function drawLogList(list){
+      const tBody = document.getElementById("logList");
+      let html = "";
+      if(!list || list.length === 0){
+        html = '<tr><td colspan="9" style="text-align: center;">조회된 데이터가 없습니다.</td></tr>';
+        tBody.innerHTML = html;
+        return;
+      }
+      list.forEach((item) => {
+        html += `<td>${item.auditId ?? ''}</td>
+                 <td>${item.userId ?? ''}</td>
+                 <td>${item.userNm ?? ''}</td>
+                 <td>${item.menuNm ?? ''}</td>
+                 <td>${item.actionCd ?? ''}</td>
+                 <td>${item.actionNm ?? ''}</td>
+                 <td class="url-cell">${item.reqUrl ?? ''}</td>
+                 <td>${item.reqIp ?? ''}</td>
+                 <td>${item.frstRegDttm ?? ''}</td>
+                 </tr>
+        `;
+      })
+      tBody.innerHTML = html;
+
+    };
+
+    /***********************************************************************
+     * 메뉴화면통계 => 최상위 메뉴 콤보조회 함수
+     ************************************************************************/
+    function loadTopMenuList(){
+      fetch(contextPath+"module/admin/auditLog/selectTopMenuList", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"}
+      })
+      .then(response => response.json())
+      .then(data => {
+          const select = document.getElementById("top-menu");
+          select.innerHTML = '<option value="">전체</option>';
+
+          data.forEach(item => {
+              const option = document.createElement("option");
+              option.value = item.menuId;
+              option.textContent = item.menuNm;
+              select.appendChild(option);
+          })
+      })
+      .catch(error => {
+        console.error(error);
+      });
+    }
+
+    /***********************************************************************
+     * 날짜 초기 세팅
+     ************************************************************************/
+    function setToday(){
+      const today = new Date();
+      const fromDay = new Date(today);
+      // 7일전 날짜
+      fromDay.setDate(fromDay.getDate() - 7);
+      const fromYyyy = fromDay.getFullYear();
+      const fromMm = String(fromDay.getMonth()+1).padStart(2,"0");
+      const fromDd = String(fromDay.getDate()).padStart(2,"0");
+      const fromStr = `${fromYyyy}-${fromMm}-${fromDd}`;
+      // 현재일자
+      const toYyyy = today.getFullYear();
+      const toMm = String(today.getMonth()+1).padStart(2,"0");
+      const toDd = String(today.getDate()).padStart(2,"0");
+      const toStr = `${toYyyy}-${toMm}-${toDd}`;
+      if(currentTab === "log"){
+        document.getElementById("fromDate").value = fromStr;
+        document.getElementById("toDate").value = toStr;
+      }else if(currentTab === "dept"){
+        document.getElementById("date-deptFrom").value = fromStr;
+        document.getElementById("date-deptTo").value = toStr;
+      }else if(currentTab === "menu"){
+        document.getElementById("date-from").value = fromStr;
+        document.getElementById("date-to").value = toStr;
+      }
+    }
+
+    /***********************************************************************
+     * 로그조회 => 페이징 이벤트
+     * page :  페이징번호
+     ************************************************************************/
+    function movePage(page) {
+      if(page < 1){
+        return;
+      }
+      if(page > totalPageCount){
+        return;
+      }
+      currentPage = page;
+      searchAubitLog();
+    }
+
+    /***********************************************************************
+     * 로그조회 => 페이징 매핑 함수
+     ************************************************************************/
+    function drawPagination(page,
+                            totalPage,
+                            totalCount,
+                            serverPageSize) {
+      currentPage = Number(page);
+      pageSize = Number(serverPageSize);
+      totalPageCount = Number(totalPage);
+      // 전체 건수 표시
+      document.getElementById("totalCount").textContent = totalCount;
+      // 조회결과가 없는 경우
+      if (totalCount === 0) {
+        document.getElementById("pageRange").textContent = "0-0";
+        document.getElementById("pageNumbers").innerHTML = "";
+        return;
+      }
+      // 시작번호
+      const startNo = (currentPage - 1) * pageSize + 1;
+      // 종료번호
+      const endNo = Math.min(currentPage * pageSize, totalCount);
+      document.getElementById("pageRange").textContent = `${startNo}-${endNo}`;
+
+      // 현재 페이지 블록
+      const blockNo = Math.floor((currentPage - 1) / pageBlockSize);
+      const startPage = blockNo * pageBlockSize + 1;
+      const endPage = Math.min(startPage + pageBlockSize - 1, totalPage);
+
+      let pageHtml = "";
+      for (let i = startPage; i <= endPage; i++) {
+        pageHtml += `<button type="button" class="pagination__item ${i === currentPage ? 'is-current' : ''}" onclick="movePage(${i})">${i}</button>`;
+      }
+      document.getElementById("pageNumbers").innerHTML = pageHtml;
+      // 처음, 이전
+      document.getElementById("pageFirst").disabled = currentPage <= 1;
+      document.getElementById("pagePrev").disabled = currentPage <= 1;
+      // 다음, 끝
+      document.getElementById("pageNext").disabled = currentPage >= totalPage;
+      document.getElementById("pageLast").disabled = currentPage >= totalPage;
+    }
+
+
+    /***********************************************************************
+     * 메뉴화면통계 => 메뉴화면별 상세 통계 페이징 함수
+     * page :  페이징 번호
+     ************************************************************************/
+    function menuMovePage(page) {
+      if(page < 1){
+        return;
+      }
+      if(page > statTotalPageCount){
+        return;
+      }
+      statCurrentPage = page;
+      searchMenuStats();
+    }
+
+    /***********************************************************************
+     * 메뉴화면통계 => 메뉴화면별 상세 통계 페이징 매핑 함수
+     ************************************************************************/
+    function drawMenuPagination(page,
+                            totalPage,
+                            totalCount,
+                            serverPageSize) {
+      statCurrentPage = Number(page);
+      statPageSize = Number(serverPageSize);
+      statTotalPageCount = Number(totalPage);
+      // 전체 건수 표시
+      document.getElementById("statTotalCount").textContent = totalCount;
+      // 조회결과가 없는 경우
+      if (Number(totalCount) === 0) {
+        document.getElementById("statPageRange").textContent = "0-0";
+        document.getElementById("statPageNumbers").innerHTML = "";
+        return;
+      }
+      // 시작번호
+      const startNo = (statCurrentPage - 1) * statPageSize + 1;
+      // 종료번호
+      const endNo = Math.min(statCurrentPage * statPageSize, Number(totalCount));
+      document.getElementById("statPageRange").textContent = `${startNo}-${endNo}`;
+
+      // 현재 페이지 블록
+      const blockNo = Math.floor((statCurrentPage - 1) / statPageBlockSize);
+      const startPage = blockNo * statPageBlockSize + 1;
+      const endPage = Math.min(startPage + statPageBlockSize - 1, statTotalPageCount);
+
+      let pageHtml = "";
+      for (let i = startPage; i <= endPage; i++) {
+        pageHtml += `<button type="button" class="pagination__item ${i === statCurrentPage ? 'is-current' : ''}" onclick="menuMovePage(${i})">${i}</button>`;
+      }
+      document.getElementById("statPageNumbers").innerHTML = pageHtml;
+      // 처음, 이전
+      document.getElementById("statPageFirst").disabled = statCurrentPage <= 1;
+      document.getElementById("statPagePrev").disabled = statCurrentPage <= 1;
+      // 다음, 끝
+      document.getElementById("statPageNext").disabled = statCurrentPage >= totalPage;
+      document.getElementById("statPageLast").disabled = statCurrentPage >= totalPage;
+    }
+
+
+    /***********************************************************************
+     * 메뉴화면통계 => 메뉴별 접근 빈도 매핑 함수
+     * menuTop5 : 조회 후 리턴값
+     ************************************************************************/
+    function renderMenuTop5(menuTop5) {
+      const labels = document.querySelector(".h-bar-chart__labels");
+      const bars = document.querySelector(".h-bar-chart__bars");
+      labels.innerHTML = "";
+      bars.innerHTML = "";
+      if(!menuTop5 || menuTop5.length === 0){
+        renderMenuTop5Axis(0);
+        return;
+      }
+      // 데이터 최대값 전달
+      const maxaVlue = Math.max(0,...menuTop5.map(item => Number(item.cnt)||0));
+      // 그래프 아래 숫자 생성
+      const axisMax = renderMenuTop5Axis(maxaVlue);
+
+      const maxCount = Math.max(...menuTop5.map(item => Number(item.cnt)));
+      menuTop5.forEach(function (item) {
+        // 메뉴명
+        const label = document.createElement('span');
+        label.textContent = item.menuNm;
+        labels.appendChild(label);
+        // 막대
+        const bar = document.createElement('div');
+        bar.className = 'h-bar-chart__bar';
+        const count = Number(item.cnt);
+        bar.style.width = ((count/maxCount)*100)+'%';
+        // 건수
+        const value = document.createElement('span');
+        value.className = 'h-bar-chart__bar-value';
+        value.textContent = count.toLocaleString();
+        bar.appendChild(value);
+        bars.appendChild(bar);
+      })
+    }
+
+    /***********************************************************************
+     * 메뉴화면통계 => 화면별 버튼 클릭 분포 매핑 함수
+     * buttonTop5 : 조회 후 리턴값
+     ************************************************************************/
+    function renderButtonTop5(buttonTop5) {
+      const tbody = document.getElementById('buttonTop5Body');
+      tbody.innerHTML = '';
+      if(!buttonTop5 || buttonTop5.length === 0){
+        tbody.innerHTML = '<tr><td colspan="5">조회 데이터가 없습니다.</td></tr>';
+        return;
+      }
+      buttonTop5.forEach(function (item) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${item.menuNm ?? '-'}</td>
+                        <td>${formatCount(item.searchCnt)}</td>
+                        <td>${formatCount(item.saveCnt)}</td>
+                        <td>${formatCount(item.deleteCnt)}</td>
+                        <td>${formatCount(item.excelCnt)}</td>`;
+        tbody.appendChild(tr);
+      })
+    }
+
+    /***********************************************************************
+     * 숫자변한 함수
+     ************************************************************************/
+    function formatCount(value) {
+      const count = Number(value || 0);
+      return count === 0 ? '-' : count.toLocaleString();
+    }
+
+    /***********************************************************************
+     * 메뉴화면통계 => 메뉴화면별 상세 통계 매핑 함수
+     * detailList : 조회 후 리턴값
+     ************************************************************************/
+    function renderDetailList(detailList) {
+      const tbody = document.getElementById('detailListBody');
+      tbody.innerHTML = '';
+      if(!detailList || detailList.length === 0){
+        tbody.innerHTML = '<tr><td colspan="6">조회 데이터가 없습니다.</td></tr>';
+        return;
+      }
+      detailList.forEach(function (item) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${item.no ?? '-'}</td>
+                        <td>${item.menuNm ?? '-'}</td>
+                        <td>${item.screenNm ?? '-'}</td>
+                        <td>${item.accessType}</td>
+                        <td>${item.btnId}</td>
+                        <td>${item.lastAccessDt ?? '-'}</td>`;
+        tbody.appendChild(tr);
+      })
+    }
+
+    /***********************************************************************
+     * 메뉴화면통계 => 엑셀다운 버튼 함수
+     * reason : 다운로드 사유값
+     ************************************************************************/
+    function execelDownLoad(reason) {
+      const params = new URLSearchParams(location.search);
+      const menuIdSub = params.get("menuId");
+
+      const param = {fromDate:document.getElementById("data-from")?.value || "",
+                     toDate:document.getElementById("data-to")?.value || "",
+                     menuId:document.getElementById("top-menu")?.value || "",
+                     menuIdSub:menuIdSub,
+                     downloadReason:reason,
+                     currentTab:currentTab
+      };
+      fetch(contextPath+"module/admin/auditLog/execelDownLoad", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(param)
+      })
+      .then(response => {
+        if (!response.ok) {
+          openErrorModal("엑셀 다운로드 오류");
+          return;
+        }
+        return response.blob();
+      })
+      .then(blob => {
+
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "감사로그.xlsx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+
+        window.URL.revokeObjectURL(url);
+      })
+      .catch(error => {
+        console.error(error);
+        openErrorModal("엑셀 다운로드 중 오류가 발생했습니다.");
+        return;
+      });
+    }
+
+    /***********************************************************************
+     * 메뉴화면통계 => 그래프 아래 숫자 자동 생성
+     * maxValue :  접근빈도 max값
+     ************************************************************************/
+    function renderMenuTop5Axis(maxValue) {
+      const axis = document.getElementById("menuTop5Axls");
+      axis.innerHTML = "";
+      // 최대값에 따른 눈금 간격
+      const step = Math.max(1,Math.ceil(maxValue/6));
+      const axisMax = step * 6;
+      for(let i=0; i<=6; i++){
+        const span = document.createElement("span");
+        span.textContent = (step * i).toLocaleString();
+        axis.appendChild(span);
+      }
+    }
+
+    function drawActionChart() {
+      const chart = document.getElementById("actionChart");
+      if(!chart){return;}
+      chart.style.display = "block";
+    }
+
+  </script>
+</head>
+<body>
+
+
+
+    <main class="content">
+
+      <!-- 페이지 헤더 — get_design_context(617:8571) 실측, 버튼 없음 -->
+      <div class="page-header">
+        <h1 class="page-header__title">감사로그</h1>
+      </div>
+
+      <!-- 탭 + 본문 — get_design_context(617:8573) 실측. "메뉴·화면 통계"만 실제 콘텐츠가
+           설계돼 있어 활성 탭으로 반영했다. "로그 조회"·"부서·사용자 통계" 탭은 프레임이
+           따로 없어(OCR서식조회 탭과 동일하게) 정적 탭만 두고 데이터 연동은 하지 않았다. -->
+      <div class="tab-panel">
+        <nav class="tabs">
+          <button type="button" class="tabs__item is-active" data-tab="log" onclick="changeTab('log',this)">로그 조회</button>
+          <button type="button" class="tabs__item" data-tab="dept" onclick="changeTab('dept',this)">부서·사용자 통계</button>
+          <button type="button" class="tabs__item" data-tab="menu" onclick="changeTab('menu',this)">메뉴·화면 통계</button>
+        </nav>
+
+        <!--로그 조회 -->
+        <div id="tab-log" class="tab-content" style="display:block;">
+          <div class="layout-list">
+            <!-- 검색영역 — get_design_context(617:8983) 실측 -->
+            <form class="search-area">
+              <div class="search-area__row">
+                <div class="search-area__item">
+                  <label class="search-area__label">기간</label>
+                  <div class="search-area__combo">
+                    <input id="fromDate" class="input input--w120 search-enter" type="date">
+                    <span class="search-area__tilde">~</span>
+                    <input id="toDate" class="input input--w120 search-enter" type="date">
+                  </div>
+                </div>
+                <div class="search-area__item">
+                  <label class="search-area__label">부서</label>
+                  <input id="logBrCd" class="input input--w120 search-enter log-br-cd" type="text" placeholder="부서코드">
+                  <input id="logBrNm" class="input input--w120 search-enter" type="text" placeholder="부서명" readonly>
+                  <div class="search-area__combo">
+                    <label class="search-area__label" >사용자</label>
+                    <input id="userId" class="input input--w120 search-enter user-id" type="text" placeholder="사번">
+                    <input id="userNm" class="input input--w120 search-enter user-nm" type="text" placeholder="성명" readonly>
+                    <button type="button" class="btn-icon" aria-label="새로고침" id="btnLogRefresh" onclick="searchLogRefresh()">
+                      <img th:src="@{/images/icons/buttons/ic-16-refresh.svg}" alt="">
+                    </button>
+                    <button th:each="btn : ${session.buttonList}"
+                            th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'LOG_SEARCH'}"
+                            type="button"
+                            class="btn-outline-primary search-btn"
+                            style="width:80px"
+                            th:id="${btn.btnCd}"
+                            data-audit="Y"
+                            th:data-area-cd="${btn.areaCd}"
+                            th:data-menu-id="${btn.menuId}"
+                            th:data-btn-cd="${btn.btnCd}"
+                            th:data-action-cd="${btn.actionCd}"
+                            th:data-action-nm="${btn.btnNm}">
+                      <span class="btn-icon-slot"><svg width="11.5" height="11.5" viewBox="0 0 11.5 11.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10.75 10.75L8.33333 8.33333M9.63889 5.19444C9.63889 7.64904 7.64904 9.63889 5.19444 9.63889C2.73985 9.63889 0.75 7.64904 0.75 5.19444C0.75 2.73985 2.73985 0.75 5.19444 0.75C7.64904 0.75 9.63889 2.73985 9.63889 5.19444Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                      <span th:text="${btn.btnNm}"></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+          </div>
+          <div class="list-section">
+            <div class="list-section__header">
+              <h2 class="list-section__title">조회결과 목록</h2>
+            </div>
+            <table class="table" style="table-layout:fixed; width:100%" data-col-select-all data-row-link>
+              <colgroup>
+                <col style="width:8%">  <!-- 로그ID -->
+                <col style="width:8%">  <!-- 사용자ID -->
+                <col style="width:8%"> <!-- 이름 -->
+                <col style="width:10%"> <!-- 메뉴명 -->
+                <col style="width:10%"> <!-- 행위코드 -->
+                <col style="width:10%"> <!-- 행위명 -->
+                <col style="width:20%"> <!-- 요청URL -->
+                <col style="width:11%"> <!-- 요청IP -->
+                <col style="width:15%"> <!-- 등록일시 -->
+              </colgroup>
+              <thead>
+              <tr>
+                <th>로그ID</th>
+                <th>사용자ID</th>
+                <th>이름</th>
+                <th>메뉴명</th>
+                <th>행위코드</th>
+                <th>행위명</th>
+                <th>요청URL</th>
+                <th>요청IP</th>
+                <th>등록일시</th>
+              </tr>
+              </thead>
+              <tbody id="logList"></tbody>
+            </table>
+            <div class="audit-paging">
+              <span class="list-footer__count">조회 결과 : <strong id="pageRange">0-0</strong>/<span id="totalCount"></span></span>
+              <nav class="pagination">
+                <button type="button" class="pagination__item" aria-label="처음" id="pageFirst"><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8.75 7.41667L5.41667 4.08333L8.75 0.75M4.08333 7.41667L0.75 4.08333L4.08333 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button type="button" class="pagination__item" aria-label="이전" id="pagePrev"><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.75 8.75L0.75 4.75L4.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <span id="pageNumbers"></span>
+                <button type="button" class="pagination__item" aria-label="다음" id="pageNext"><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 8.75L4.75 4.75L0.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                <button type="button" class="pagination__item" aria-label="끝" id="pageLast"><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 7.41667L4.08333 4.08333L0.75 0.75M5.41667 7.41667L8.75 4.08333L5.41667 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+              </nav>
+              <select class="input input--w140 list-footer__page-size" id="pageSize">
+                <option value="15">15개씩 보기</option>
+                <option value="30">30개씩 보기</option>
+                <option value="50">50개씩 보기</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+
+        <!--부서·사용자 통계 -->
+        <div id="tab-dept" class="tab-content" style="display:none;">
+          <div class="layout-list">
+            <!-- 검색영역 — get_design_context(617:8983) 실측 -->
+            <form class="search-area">
+              <div class="search-area__row">
+                <div class="search-area__item">
+                  <label class="search-area__label" for="date-from">기간</label>
+                  <div class="search-area__combo">
+                    <input id="date-deptFrom" class="input input--w120 search-enter" type="date">
+                    <span class="search-area__tilde">~</span>
+                    <input id="date-deptTo" class="input input--w120 search-enter" type="date">
+                  </div>
+                </div>
+                <div class="search-area__item">
+                  <label class="search-area__label" for="top-menu">부서</label>
+                  <div class="search-area__combo">
+                    <input id="deptBrCd" class="input input--w120 search-enter dept-br-cd" type="text" placeholder="부서코드">
+                    <input id="deptBrNm" class="input input--w120 search-enter" type="text" placeholder="부서명" readonly>
+                    <button type="button" class="btn-icon" aria-label="새로고침" id="btnDeptRefresh" onclick="searchDeptRefresh()">
+                      <img th:src="@{/images/icons/buttons/ic-16-refresh.svg}" alt="">
+                    </button>
+                    <button th:each="btn : ${session.buttonList}"
+                            th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'MENU_SEARCH'}"
+                            type="button"
+                            class="btn-outline-primary search-btn"
+                            style="width:80px"
+                            th:id="${btn.btnCd}"
+                            data-audit="Y"
+                            th:data-area-cd="${btn.areaCd}"
+                            th:data-menu-id="${btn.menuId}"
+                            th:data-btn-cd="${btn.btnCd}"
+                            th:data-action-cd="${btn.actionCd}"
+                            th:data-action-nm="${btn.btnNm}">
+                      <span class="btn-icon-slot"><svg width="11.5" height="11.5" viewBox="0 0 11.5 11.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10.75 10.75L8.33333 8.33333M9.63889 5.19444C9.63889 7.64904 7.64904 9.63889 5.19444 9.63889C2.73985 9.63889 0.75 7.64904 0.75 5.19444C0.75 2.73985 2.73985 0.75 5.19444 0.75C7.64904 0.75 9.63889 2.73985 9.63889 5.19444Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                      <span th:text="${btn.btnNm}"></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+
+            <!-- KPI 카드 4개 — get_design_context(617:9069) 실측 -->
+            <div class="audit-kpi">
+              <div class="audit-kpi-card">
+                <span class="audit-kpi-card__title">총 조회 건수</span>
+                <div class="audit-kpi-card__value-group">
+                  <span class="audit-kpi-card__value audit-kpi-card__value--blue" >48,239건</span>
+                </div>
+              </div>
+              <div class="audit-kpi-card">
+                <span class="audit-kpi-card__title">활성 사용자 수</span>
+                <div class="audit-kpi-card__value-group">
+                  <span class="audit-kpi-card__value audit-kpi-card__value--blue" > 86명</span>
+                </div>
+              </div>
+              <div class="audit-kpi-card">
+                <span class="audit-kpi-card__title">버튼 클릭 건수</span>
+                <div class="audit-kpi-card__value-group">
+                  <span class="audit-kpi-card__value audit-kpi-card__value--red" > 1,920건</span>
+                </div>
+              </div>
+              <div class="audit-kpi-card">
+                <span class="audit-kpi-card__title">권한오류/실패 건수</span>
+                <div class="audit-kpi-card__value-group">
+                  <span class="audit-kpi-card__value audit-kpi-card__value--blue" > 37건</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 차트 카드 2개 — get_design_context(617:9351) 실측 -->
+            <div class="audit-chart-row">
+              <div class="card card--flex">
+                <!-- 차트라 표/목록이 아니다 — list-section/task-section을 빌리지 않고 이미
+                     범용으로 쓰이는 .layout-list(24px gap 스택)만 재사용한다. -->
+                <div class="layout-list">
+                  <h2 style="display:flex; align-items:center; height:16px; font-size:var(--font-size-16); font-weight:var(--font-weight-medium); color:var(--text-neutral-secondary); letter-spacing:-0.0544px">부서별 조회 카운터</h2>
+                  <div class="dept-bar-chart">
+                    <div id="deptTop5Labels" class="dept-bar-chart__labels">
+                    </div>
+                    <div class="dept-bar-chart__bars" id="deptTop5Bars">
+                    </div>
+                    <div id="deptTop5Axls" class="dept-bar-chart__axis">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card card--flex">
+                <div class="list-section">
+                  <div id="actionChartArea" class="action-chart-area">
+                    <h2 class="action-chart-title">액션 유형별 비중</h2>
+                    <div id="actionChart" class="donut-chart">
+                    </div>
+                    <div class="donut-legend">
+                      <span><i class="legend-blue"></i>조회 </span>
+                      <span><i class="legend-orange"></i>등록/수정 </span>
+                      <span><i class="legend-green"></i>삭제 </span>
+                      <span><i class="legend-sky"></i>로그인/기타 </span>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+            <!-- 사용자별 조회 순위 -->
+            <div class="card card--flex">
+              <div class="task-section">
+                <div class="task-section__header">
+                  <span class="task-section__title" style="font-size:var(--font-size-16); letter-spacing:-0.0544px">사용자별 조회 순위</span>
+                  <div class="task-section__actions">
+                    <button th:each="btn : ${session.buttonList}"
+                            th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'MENU_EXCEL'}"
+                            type="button"
+                            class="btn-outline-primary"
+                            style="width:80px"
+                            th:id="${btn.btnCd}"
+                            data-audit="Y"
+                            data-excel-type="dept"
+                            th:data-area-cd="${btn.areaCd}"
+                            th:data-menu-id="${btn.menuId}"
+                            th:data-btn-cd="${btn.btnCd}"
+                            th:data-action-cd="${btn.actionCd}"
+                            th:data-action-nm="${btn.btnNm}">
+                      <span th:text="${btn.btnNm}"></span>
+                    </button>
+                  </div>
+                </div>
+                <table class="table" style="table-layout:fixed; width:100%">
+                  <colgroup>
+                    <col style="width:12.9%">
+                    <col style="width:16.13%">
+                    <col style="width:22.58%">
+                    <col style="width:16.13%">
+                    <col style="width:16.13%">
+                    <col style="width:16.13%">
+                  </colgroup>
+                  <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>사용자</th>
+                    <th>부서</th>
+                    <th>조회 건수</th>
+                    <th>버튼 클릭 건수</th>
+                    <th>최근 접속 일시</th>
+                  </tr>
+                  </thead>
+                  <tbody id="detailDeptListBody">
+                  </tbody>
+                </table>
+                <div class="list-footer">
+                  <span class="list-footer__count">조회 결과 : <strong id="statDeptPageRange">0-0</strong>/<span id="statDeptTotalCount"></span></span>
+                  <nav class="pagination">
+                    <button type="button" class="pagination__item" aria-label="처음" id="statDeptPageFirst"><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8.75 7.41667L5.41667 4.08333L8.75 0.75M4.08333 7.41667L0.75 4.08333L4.08333 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <button type="button" class="pagination__item" aria-label="이전" id="statDeptPagePrev"><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.75 8.75L0.75 4.75L4.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <span id="statDeptPageNumbers"></span>
+                    <button type="button" class="pagination__item" aria-label="다음" id="statDeptPageNext"><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 8.75L4.75 4.75L0.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <button type="button" class="pagination__item" aria-label="끝" id="statDeptPageLast"><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 7.41667L4.08333 4.08333L0.75 0.75M5.41667 7.41667L8.75 4.08333L5.41667 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  </nav>
+                  <select class="input input--w140 list-footer__page-size" id="statDeptPageSize">
+                    <option value="15">15개씩 보기</option>
+                    <option value="30">30개씩 보기</option>
+                    <option value="50">50개씩 보기</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+
+        <!--메뉴·화면 통계 -->
+        <div id="tab-menu" class="tab-content" style="display:none;">
+          <div class="layout-list">
+            <!-- 검색영역 — get_design_context(617:8983) 실측 -->
+            <form class="search-area">
+              <div class="search-area__row">
+                <div class="search-area__item">
+                  <label class="search-area__label" for="date-from">기간</label>
+                  <div class="search-area__combo">
+                    <input id="date-from" class="input input--w120 search-enter" type="date">
+                    <span class="search-area__tilde">~</span>
+                    <input id="date-to" class="input input--w120 search-enter" type="date">
+                  </div>
+                </div>
+                <div class="search-area__item">
+                  <label class="search-area__label" for="top-menu">최상위 메뉴</label>
+                  <div class="search-area__combo">
+                    <select id="top-menu" class="input input--w120 search-enter">
+                      <option value="">전체</option>
+                    </select>
+                    <button type="button" class="btn-icon" aria-label="새로고침" id="btnMenuRefresh" onclick="searchMenuRefresh()">
+                      <img th:src="@{/images/icons/buttons/ic-16-refresh.svg}" alt="">
+                    </button>
+                    <button th:each="btn : ${session.buttonList}"
+                            th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'MENU_SEARCH'}"
+                            type="button"
+                            class="btn-outline-primary search-btn"
+                            style="width:80px"
+                            th:id="${btn.btnCd}"
+                            data-audit="Y"
+                            th:data-area-cd="${btn.areaCd}"
+                            th:data-menu-id="${btn.menuId}"
+                            th:data-btn-cd="${btn.btnCd}"
+                            th:data-action-cd="${btn.actionCd}"
+                            th:data-action-nm="${btn.btnNm}">
+                      <span class="btn-icon-slot"><svg width="11.5" height="11.5" viewBox="0 0 11.5 11.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10.75 10.75L8.33333 8.33333M9.63889 5.19444C9.63889 7.64904 7.64904 9.63889 5.19444 9.63889C2.73985 9.63889 0.75 7.64904 0.75 5.19444C0.75 2.73985 2.73985 0.75 5.19444 0.75C7.64904 0.75 9.63889 2.73985 9.63889 5.19444Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                      <span th:text="${btn.btnNm}"></span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </form>
+
+            <!-- KPI 카드 4개 — get_design_context(617:9069) 실측 -->
+            <div class="audit-kpi">
+              <div class="audit-kpi-card">
+                <span class="audit-kpi-card__title">최다 접근 메뉴</span>
+                <div class="audit-kpi-card__value-group">
+                  <span class="audit-kpi-card__value audit-kpi-card__value--blue" id="topMenu">통합검색</span>
+                  <div class="audit-kpi-card__meta">
+                    <span class="audit-kpi-card__meta-muted">전체 접근의</span>
+                    <span class="audit-kpi-card__meta-accent" id="topMenuCount">32%</span>
+                  </div>
+                </div>
+              </div>
+              <div class="audit-kpi-card">
+                <span class="audit-kpi-card__title">최다 사용 화면</span>
+                <div class="audit-kpi-card__value-group">
+                  <span class="audit-kpi-card__value audit-kpi-card__value--blue" id="topScreen">고객 통합 검색</span>
+                  <div class="audit-kpi-card__meta">
+                    <span class="audit-kpi-card__meta-accent" id="topScreenCount">2,690건</span>
+                    <span class="audit-kpi-card__meta-muted">접근</span>
+                  </div>
+                </div>
+              </div>
+              <div class="audit-kpi-card">
+                <span class="audit-kpi-card__title">전체 화면 접근 건수</span>
+                <div class="audit-kpi-card__value-inline">
+                  <span class="audit-kpi-card__value audit-kpi-card__value--red" id="totalAccessCount">8,402</span>
+                  <span class="audit-kpi-card__value-unit">건</span>
+                </div>
+              </div>
+              <div class="audit-kpi-card">
+                <span class="audit-kpi-card__title">버튼 클릭 최다 화면</span>
+                <div class="audit-kpi-card__value-group">
+                  <span class="audit-kpi-card__value audit-kpi-card__value--blue" id="topButtonScreen">권한 부여</span>
+                  <div class="audit-kpi-card__meta">
+                    <span class="audit-kpi-card__meta-muted">등록/수정</span>
+                    <span class="audit-kpi-card__meta-accent" id="topButtonCount">412건</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 차트 카드 2개 — get_design_context(617:9351) 실측 -->
+            <div class="audit-chart-row">
+              <div class="card card--flex">
+                <!-- 차트라 표/목록이 아니다 — list-section/task-section을 빌리지 않고 이미
+                     범용으로 쓰이는 .layout-list(24px gap 스택)만 재사용한다. -->
+                <div class="layout-list">
+                  <h2 style="display:flex; align-items:center; height:16px; font-size:var(--font-size-16); font-weight:var(--font-weight-medium); color:var(--text-neutral-secondary); letter-spacing:-0.0544px">메뉴별 접근 빈도 (TOP 5)</h2>
+                  <div class="h-bar-chart">
+                    <div id="menuTop5Labels" class="h-bar-chart__labels">
+                    </div>
+                    <div class="h-bar-chart__bars" id="menuTop5Bars">
+                    </div>
+                    <div id="menuTop5Axls" class="h-bar-chart__axis">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="card card--flex">
+                <div class="list-section">
+                  <div class="list-section__header">
+                    <h2 class="list-section__title" style="color:var(--text-neutral-secondary); letter-spacing:-0.0544px">화면별 버튼 클릭 분포 (TOP 5)</h2>
+                  </div>
+                  <table class="table" style="table-layout:fixed; width:100%">
+                    <colgroup><col><col><col><col><col></colgroup>
+                    <thead>
+                    <tr>
+                      <th>화면명</th>
+                      <th>조회</th>
+                      <th>등록/수정</th>
+                      <th>삭제</th>
+                      <th>엑셀다운</th>
+                    </tr>
+                    </thead>
+                    <tbody id="buttonTop5Body">
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- 메뉴·화면별 상세 통계 카드 — get_design_context(617:9448) 재실측(2026-08-19,
+               Figma에서 "서식별 처리 현황"이 이 표로 교체됨). "최근 접속 일시" 첫 행 값이
+               Figma에 "1yyyy-mm-dd1"로 돼 있던 건 사용자가 Figma에서 직접 확인해 오타(정답은
+               다른 행들과 동일한 "yyyy-mm-dd")였음을 확인해줘서 2026-08-20 수정했다.
+               [TEST] 코드관리(code-management.html)와 동일한 방식으로 table-layout:fixed +
+               colgroup %로 바꿔 화면 폭에 비례해 칼럼이 같이 줄고 늘게 했다. %는 기존 실측
+               폭(No160/메뉴200/접근건수200/버튼클릭합계200/최근접속일시200)과, 원래
+               auto였던 화면명 칼럼에 부여한 추정 폭(280, 서술형 텍스트라 다른 칼럼보다
+               넉넉하게) 합계(1240) 기준 비율. -->
+            <div class="card card--flex">
+              <div class="task-section">
+                <div class="task-section__header">
+                  <span class="task-section__title" style="font-size:var(--font-size-16); letter-spacing:-0.0544px">메뉴·화면별 상세 통계</span>
+                  <div class="task-section__actions">
+                    <button th:each="btn : ${session.buttonList}"
+                            th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'MENU_EXCEL'}"
+                            type="button"
+                            class="btn-outline-primary"
+                            style="width:80px"
+                            th:id="${btn.btnCd}"
+                            data-audit="Y"
+                            data-excel-type="menu"
+                            th:data-area-cd="${btn.areaCd}"
+                            th:data-menu-id="${btn.menuId}"
+                            th:data-btn-cd="${btn.btnCd}"
+                            th:data-action-cd="${btn.actionCd}"
+                            th:data-action-nm="${btn.btnNm}">
+                      <span th:text="${btn.btnNm}"></span>
+                    </button>
+                  </div>
+                </div>
+                <table class="table" style="table-layout:fixed; width:100%">
+                  <colgroup>
+                    <col style="width:12.9%">
+                    <col style="width:16.13%">
+                    <col style="width:22.58%">
+                    <col style="width:16.13%">
+                    <col style="width:16.13%">
+                    <col style="width:16.13%">
+                  </colgroup>
+                  <thead>
+                  <tr>
+                    <th>No</th>
+                    <th>메뉴</th>
+                    <th>화면명</th>
+                    <th>접근 타입</th>
+                    <th>버튼ID</th>
+                    <th>최근 접속 일시</th>
+                  </tr>
+                  </thead>
+                  <tbody id="detailListBody">
+                  </tbody>
+                </table>
+                <div class="list-footer">
+                  <span class="list-footer__count">조회 결과 : <strong id="statPageRange">0-0</strong>/<span id="statTotalCount"></span></span>
+                  <nav class="pagination">
+                    <button type="button" class="pagination__item" aria-label="처음" id="statPageFirst"><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8.75 7.41667L5.41667 4.08333L8.75 0.75M4.08333 7.41667L0.75 4.08333L4.08333 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <button type="button" class="pagination__item" aria-label="이전" id="statPagePrev"><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.75 8.75L0.75 4.75L4.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <span id="statPageNumbers"></span>
+                    <button type="button" class="pagination__item" aria-label="다음" id="statPageNext"><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 8.75L4.75 4.75L0.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                    <button type="button" class="pagination__item" aria-label="끝" id="statPageLast"><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 7.41667L4.08333 4.08333L0.75 0.75M5.41667 7.41667L8.75 4.08333L5.41667 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+                  </nav>
+                  <select class="input input--w140 list-footer__page-size" id="statPageSize">
+                    <option value="15">15개씩 보기</option>
+                    <option value="30">30개씩 보기</option>
+                    <option value="50">50개씩 보기</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+<div th:replace="~{common/commonModals :: commonModals}"></div>
+<script th:src="@{/js/modal.js}"></script>
+<script th:src="@{/js/lnb.js}"></script>
+<script th:src="@{/js/date-input.js}"></script>
+<script th:src="@{/js/common.js}"></script>
+</body>
+</html>

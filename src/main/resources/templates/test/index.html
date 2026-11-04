@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+	  xmlns:th="http://www.thymeleaf.org"
+	  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	  layout:decorate="~{common/layouts/defaultLayout}"
+	  layout:fragment="Content"
+>
+<head>
+	<title>테스트 페이지 </title>
+
+	<!-- inline CSS 영역-->
+	<!-- <style th:inline="css" type="text/css"> -->
+	
+	</style>
+
+	<!-- inline JS 영역-->
+	<script th:inline="javascript" type="text/javascript">
+		$(document).ready(() => {
+			
+		});
+	</script>
+</head>
+
+<body class="bg-body-tertiary">
+    <div class="container mb-5 mt-5">
+        <h1 class="mt-5">AI-OCR Sample Page</h1>
+        <p class="lead">AI-OCR 포털 샘플 페이지 입니다.</p>
+        <p><a th:href="@{/test/login}" class="">로그인</a></p>
+        <p><a th:href="@{/test/file-upload}" class="">파일업로드</a></p>
+        <p><a th:href="@{/test/board}" class="">게시판</a></p>
+        <!-- 사용자 메뉴 -->
+        <!-- <p><a th:href="">대시보드</a></p> -->
+        <!-- <p><a th:href="">통합검색</a></p> -->
+        <!--<p><a th:href="@{/app0101/list}">신청관리> OCR서식조회</a></p>-->
+        <!-- <p><a th:href="">신청관리>OCR서식신청</a></p> -->
+        <!-- <p><a th:href="">신청관리>OCR업무조회</a></p> -->
+        <!-- <p><a th:href="">신청관리>OCR업무신청</a></p> -->
+        <!-- <p><a th:href="">신청관리>OCR업무사용신청</a></p> -->
+        <!-- <p><a th:href="">신청관리>결재처리</a></p> -->
+ 	</div>
+</body>
+</html>

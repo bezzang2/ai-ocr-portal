@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.agilesoda.batch.BatchMapper">
+	<select id="selectUserList" resultType="map">
+		SELECT A1.EMPNO as empNo
+			 ,A1.EMP_KOR_FLNM as empNm
+			 ,A1.BLNG_BRCD as wkBrCd -- 소속부점
+			 ,A1.BSORGCD as pobrCd -- 모점코드
+			 ,A1.EMP_JOBCLS_CD as posiCd
+			 ,A1.HRA_PSTN_CD as jblvlCd
+			 ,A1.HRA_PSTN_NM as jblvlNm
+			 ,replace(A1.RETM_DT, ' ','') as retirDt -- 퇴직일자
+			 ,NVL((SELECT DISTINCT 'Y'
+				   FROM V_CQHPN_JOBPA_L  B2
+				   WHERE  B2.EMPNO = A1.EMPNO
+					 AND B2.AFRS_DVDT_LCCD = '0'
+					 AND B2.AFRS_DVDT_MCCD = '000'
+					 AND B2.AFRS_DVDT_SCCD = '000005'
+					 AND B2.AFRS_DVDT_BASE_DT = (
+					   SELECT MAX(C3.AFRS_DVDT_BASE_DT)
+					   FROM V_CQHPN_JOBPA_L C3
+					   WHERE C3.EMPNO = A1.EMPNO
+						 AND C3.BLNG_BRCD !=  '0'
+			)
+            ),'N') as autGrpCd_yn_000005 -- 권한그룹_감사통활책임자여부
+			 ,A1.OJBB_EMP_DVCD as userDscd  -- 직원구분
+			 ,DECODE(A1.WORK_STCD, '3', 'R','A') as userStcd -- 퇴직구분
+			 ,BRDD as brdd
+		FROM V_CQHPN_PINFO_M A1
+	</select>
+</mapper>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 판독결과 화면의 Portal 데이터(업무·서식 설정)만 읽는다. 판독작업·문서·인식값은 Agent API(OcrAgentDataClient)로 받는다. -->
+<mapper namespace="com.agilesoda.module.ocr.mapper.OcrReqMapper">
+
+	<!-- 서식판독결과 화면 서식목록 - 그룹(ocuoc_ocrwf_m, wk_id 단위) -->
+    <select id="selectWkGroupList" resultType="com.agilesoda.module.ocr.vo.OcrResultWkGroupVO">
+        /* [판독결과] 조회 - selectWkGroupList */
+		SELECT
+			W.WK_ID		 AS wkId,
+			W.WK_NM		 AS wkNm,
+			W.DOC_TYP_NM AS docTypNm
+		FROM
+			ocuoc_ocrwf_m W
+		<where>
+			<if test="wkId != null and wkId != ''">
+				W.WK_ID = #{wkId}
+			</if>
+		</where>
+		ORDER BY
+			W.REG_DT DESC, W.WK_ID DESC
+    </select>
+
+	<!-- 업무(ocuoc_ocrwl_l)에 연결된 서식(ocuoc_lefrm_m). lefrmWkId 는 서식 자체의 업무(ocuoc_lefrm_m.wk_id)다. -->
+	<select id="selectWkFormList" resultType="com.agilesoda.module.ocr.vo.OcrResultLefrmVO">
+		/* [판독결과] 조회 - selectWkFormList */
+		SELECT
+			L.LEFRM_ID	 AS lefrmId,
+			L.LEFRM_NM	 AS lefrmNm,
+			L.DOC_ID     AS formId,
+			M.WK_ID      AS wkId,
+			L.REG_STA_CD AS regStaCd
+		  FROM ocuoc_ocrwl_l M
+		  JOIN ocuoc_lefrm_m L
+		    ON L.LEFRM_ID = M.LEFRM_ID
+		<where>
+			<if test="wkId != null and wkId != ''">
+				M.WK_ID = #{wkId}
+			</if>
+		</where>
+		ORDER BY
+		    L.LEFRM_ID
+	</select>
+
+	<!-- 업무에 연결된 서식 1건 -->
+	<select id="selectWkForm" resultType="com.agilesoda.module.ocr.vo.OcrResultLefrmVO">
+		/* [판독결과] 조회 - selectWkForm */
+		SELECT
+			L.LEFRM_ID	 AS lefrmId,
+			L.LEFRM_NM	 AS lefrmNm,
+			L.DOC_ID     AS formId,
+			M.WK_ID      AS wkId,
+			L.REG_STA_CD AS regStaCd
+		  FROM ocuoc_ocrwl_l M
+		  JOIN ocuoc_lefrm_m L
+		    ON L.LEFRM_ID = M.LEFRM_ID
+		 WHERE M.LEFRM_ID = #{lefrmId}
+		   AND M.WK_ID = #{wkId}
+	</select>
+</mapper>

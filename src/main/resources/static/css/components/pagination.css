@@ -1,0 +1,41 @@
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--pagination-gap); /* 4px — get_design_context(243:2184) 재실측 */
+}
+.pagination__item {
+  width: var(--pagination-item-size); /* 28px */
+  height: var(--control-height-md);   /* 30px — 정사각형 아님, 기존 28px(정사각) 오적용 수정 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  border-radius: var(--radius-control);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-none); /* body의 1.5 상속 시 줄박스가 버튼 높이보다 커져 텍스트가 위로 쏠려 보임 */
+  letter-spacing: -0.0442px;
+  color: var(--text-neutral-tertiary); /* Neutral/500 — 페이지 번호(현재 아님) */
+  cursor: pointer;
+}
+.pagination__item:hover:not(.is-current) {
+  background: var(--surface-neutral-faint); /* Neutral/50 — btn-icon/btn-neutral hover와 동일 톤 */
+  color: var(--text-neutral-secondary);      /* Neutral/700 */
+}
+.pagination__item.is-current {
+  background: var(--surface-neutral-faint); /* Neutral/50 — 기존 채움(Primary-Default) 오적용 수정 */
+  color: var(--text-neutral-secondary);      /* Neutral/700 */
+  font-weight: var(--font-weight-semibold);
+}
+.pagination__item svg { flex-shrink: 0; } /* 이전/다음/처음/끝 화살표 — 인라인 SVG, currentColor로 hover 시 색 함께 진해짐 */
+
+/* 공용 목록 페이지네이션은 건수·페이지·표시 건수를 같은 줄에 두고 좁으면 줄바꿈한다. */
+.list-pagination.list-footer { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-top: 16px; }
+.list-pagination[hidden] { display: none; }
+.list-pagination .pagination__item:disabled { opacity: .4; cursor: default; background: none; }
+.list-pagination .pagination__item:focus-visible, .list-pagination select:focus-visible { outline: 2px solid var(--text-primary-default, #0067ac); outline-offset: 2px; }
+@media (max-width: 640px) {
+  .list-pagination .pagination { order: 3; width: 100%; justify-content: center; }
+}

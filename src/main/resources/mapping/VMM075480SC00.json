@@ -1,0 +1,1076 @@
+{
+    "mappingVersion":  "0.3",
+    "screenNo":  "VMM075480SC00",
+    "workflowId":  null,
+    "docTypeCodes":  [
+
+                     ],
+    "fieldMappings":  [
+                          {
+                              "ocrKey":  "거래구분코드1_S2",
+                              "label":  "거래구분코드1_S2",
+                              "controlType":  "combo",
+                              "required":  false,
+                              "transform":  "codeOnly",
+                              "targetLength":  2,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+                                            {
+                                                "code":  "01",
+                                                "label":  "충전"
+                                            },
+                                            {
+                                                "code":  "09",
+                                                "label":  "충전취소"
+                                            },
+                                            {
+                                                "code":  "99",
+                                                "label":  "충전(잔액보정)"
+                                            }
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "cbx_TX_DVCD1_S2"
+                          },
+                          {
+                              "ocrKey":  "입력구분코드_S1",
+                              "label":  "입력구분코드_S1",
+                              "controlType":  "combo",
+                              "required":  false,
+                              "transform":  "codeOnly",
+                              "targetLength":  0,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+                                            {
+                                                "code":  "1",
+                                                "label":  "번호직접입력"
+                                            },
+                                            {
+                                                "code":  "2",
+                                                "label":  "발급기Read - 차세대제외"
+                                            }
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "cbx_INPUT_DVCD_S1"
+                          },
+                          {
+                              "ocrKey":  "상품권카드번호",
+                              "label":  "상품권카드번호",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  16,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_MCBN_CARD_NO"
+                          },
+                          {
+                              "ocrKey":  "상품권카드번호1",
+                              "label":  "상품권카드번호1",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  16,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_MCBN_CARD_NO1"
+                          },
+                          {
+                              "ocrKey":  "연말정산등록여부",
+                              "label":  "연말정산등록여부",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  1,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_YNTA_REG_YN"
+                          },
+                          {
+                              "ocrKey":  "연말정산사용등록일자",
+                              "label":  "연말정산사용등록일자",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "dateTo8",
+                              "targetLength":  8,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_YNTA_UZ_REG_DT"
+                          },
+                          {
+                              "ocrKey":  "인터넷사용등록여부",
+                              "label":  "인터넷사용등록여부",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  1,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_INET_UZ_REG_YN"
+                          },
+                          {
+                              "ocrKey":  "인터넷사용등록일자",
+                              "label":  "인터넷사용등록일자",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "dateTo8",
+                              "targetLength":  8,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_INET_UZ_REG_DT"
+                          },
+                          {
+                              "ocrKey":  "주민사업자등록번호",
+                              "label":  "주민사업자등록번호",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  13,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_RSDT_BISNO"
+                          },
+                          {
+                              "ocrKey":  "고객한글명",
+                              "label":  "고객한글명",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  100,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CUST_KOR_NM"
+                          },
+                          {
+                              "ocrKey":  "카드상품권권종구분코드",
+                              "label":  "카드상품권권종구분코드",
+                              "controlType":  "combo",
+                              "required":  false,
+                              "transform":  "codeOnly",
+                              "targetLength":  4,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "cbx_CARD_MCBN_CTBL_DVCD"
+                          },
+                          {
+                              "ocrKey":  "판매일자",
+                              "label":  "판매일자",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "dateTo8",
+                              "targetLength":  8,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_SLE_DT"
+                          },
+                          {
+                              "ocrKey":  "해지일자",
+                              "label":  "해지일자",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "dateTo8",
+                              "targetLength":  8,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CLS_DT"
+                          },
+                          {
+                              "ocrKey":  "개설부점코드",
+                              "label":  "개설부점코드",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  4,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_OPEN_BRCD"
+                          },
+                          {
+                              "ocrKey":  "관리부점코드",
+                              "label":  "관리부점코드",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  4,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_MGMT_BRCD"
+                          },
+                          {
+                              "ocrKey":  "유효기간만기년월",
+                              "label":  "유효기간만기년월",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "dateTo8",
+                              "targetLength":  8,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_VLD_TRM_EXPR_YM"
+                          },
+                          {
+                              "ocrKey":  "상품권카드상태코드",
+                              "label":  "상품권카드상태코드",
+                              "controlType":  "combo",
+                              "required":  false,
+                              "transform":  "codeOnly",
+                              "targetLength":  4,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "cbx_MCBN_CARD_STCD"
+                          },
+                          {
+                              "ocrKey":  "상품권판매구분코드",
+                              "label":  "상품권판매구분코드",
+                              "controlType":  "combo",
+                              "required":  false,
+                              "transform":  "codeOnly",
+                              "targetLength":  4,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "cbx_MCBN_SLE_DVCD"
+                          },
+                          {
+                              "ocrKey":  "최종사용일자",
+                              "label":  "최종사용일자",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "dateTo8",
+                              "targetLength":  8,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_LAST_UZ_DT"
+                          },
+                          {
+                              "ocrKey":  "권유자직원번호",
+                              "label":  "권유자직원번호",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  7,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_SGSR_EMPNO"
+                          },
+                          {
+                              "ocrKey":  "비밀번호오류횟수",
+                              "label":  "비밀번호오류횟수",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  2,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_PSWD_ERR_TMCNT"
+                          },
+                          {
+                              "ocrKey":  "상품권금액",
+                              "label":  "상품권금액",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_MCBN_AMT"
+                          },
+                          {
+                              "ocrKey":  "상품권잔액",
+                              "label":  "상품권잔액",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_MCBN_BAL"
+                          },
+                          {
+                              "ocrKey":  "충전가능금액",
+                              "label":  "충전가능금액",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CAG_POSB_AMT"
+                          },
+                          {
+                              "ocrKey":  "지역화폐보유잔액",
+                              "label":  "지역화폐보유잔액",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_AREA_CRNC_HOLD_BAL"
+                          },
+                          {
+                              "ocrKey":  "지역화폐보유한도금액",
+                              "label":  "지역화폐보유한도금액",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_AREA_CRNC_HOLD_LIMT_AMT"
+                          },
+                          {
+                              "ocrKey":  "결제방법",
+                              "label":  "결제방법",
+                              "controlType":  "combo",
+                              "required":  false,
+                              "transform":  "codeOnly",
+                              "targetLength":  0,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+                                            {
+                                                "code":  "1",
+                                                "label":  "현금"
+                                            },
+                                            {
+                                                "code":  "2",
+                                                "label":  "대체(계좌)"
+                                            },
+                                            {
+                                                "code":  "3",
+                                                "label":  "카드"
+                                            }
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "cbx_MCBN_CAG_DVCD"
+                          },
+                          {
+                              "ocrKey":  "협약비율",
+                              "label":  "협약비율",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  9,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_PAC_RATE_3"
+                          },
+                          {
+                              "ocrKey":  "계좌번호",
+                              "label":  "계좌번호",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  16,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_ACNO"
+                          },
+                          {
+                              "ocrKey":  "카드번호",
+                              "label":  "카드번호",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  16,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CARD_NO"
+                          },
+                          {
+                              "ocrKey":  "고객할인지원가능금액",
+                              "label":  "고객할인지원가능금액",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_SUPR_POSB_AMT"
+                          },
+                          {
+                              "ocrKey":  "비밀번호",
+                              "label":  "비밀번호",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  4,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_PSWD"
+                          },
+                          {
+                              "ocrKey":  "카드사용구분코드",
+                              "label":  "카드사용구분코드",
+                              "controlType":  "combo",
+                              "required":  false,
+                              "transform":  "codeOnly",
+                              "targetLength":  2,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+                                            {
+                                                "code":  "02",
+                                                "label":  "일시불"
+                                            },
+                                            {
+                                                "code":  "03",
+                                                "label":  "할부"
+                                            }
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "cbx_CARD_UZ_DVCD"
+                          },
+                          {
+                              "ocrKey":  "할부개월수",
+                              "label":  "할부개월수",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  5,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_INS_MCNT"
+                          },
+                          {
+                              "ocrKey":  "충전금액",
+                              "label":  "충전금액",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CAG_AMT"
+                          },
+                          {
+                              "ocrKey":  "CVV값",
+                              "label":  "CVV값",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  3,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CVV_VAL"
+                          },
+                          {
+                              "ocrKey":  "지원금액",
+                              "label":  "지원금액",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_SUPR_AMT"
+                          },
+                          {
+                              "ocrKey":  "결제금액",
+                              "label":  "결제금액",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_SETL_AMT"
+                          },
+                          {
+                              "ocrKey":  "실명구분코드",
+                              "label":  "실명구분코드",
+                              "controlType":  "combo",
+                              "required":  false,
+                              "transform":  "codeOnly",
+                              "targetLength":  0,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+                                            {
+                                                "code":  "1",
+                                                "label":  "주민등록번호"
+                                            },
+                                            {
+                                                "code":  "2",
+                                                "label":  "사업자등록번호"
+                                            }
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "cbx_RLNM_DVCD"
+                          },
+                          {
+                              "ocrKey":  "현금거래실명번호",
+                              "label":  "현금거래실명번호",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  13,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CASH_TX_RNNO"
+                          },
+                          {
+                              "ocrKey":  "현금거래고객한글명",
+                              "label":  "현금거래고객한글명",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  100,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CASH_TX_CUST_KOR_NM"
+                          },
+                          {
+                              "ocrKey":  "실명구분코드",
+                              "label":  "실명구분코드",
+                              "controlType":  "combo",
+                              "required":  false,
+                              "transform":  "codeOnly",
+                              "targetLength":  0,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+                                            {
+                                                "code":  "1",
+                                                "label":  "주민등록번호"
+                                            }
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "cbx_RLNM_DVCD_3"
+                          },
+                          {
+                              "ocrKey":  "대리인실명번호_S13",
+                              "label":  "대리인실명번호_S13",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  13,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CASH_TX_RNNO_3"
+                          },
+                          {
+                              "ocrKey":  "한글명",
+                              "label":  "한글명",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  100,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CASH_TX_CUST_KOR_NM_3"
+                          },
+                          {
+                              "ocrKey":  "핸드폰번호",
+                              "label":  "핸드폰번호",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  20,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CPNO2"
+                          },
+                          {
+                              "ocrKey":  "핸드폰번호",
+                              "label":  "핸드폰번호",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  20,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CPNO3"
+                          },
+                          {
+                              "ocrKey":  "edx_CARDNO",
+                              "label":  "edx_CARDNO",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  100,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CARDNO"
+                          },
+                          {
+                              "ocrKey":  "edx_TLNO2",
+                              "label":  "edx_TLNO2",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  20,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_TLNO2"
+                          },
+                          {
+                              "ocrKey":  "edx_TLNO3",
+                              "label":  "edx_TLNO3",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  20,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_TLNO3"
+                          },
+                          {
+                              "ocrKey":  "일련번호",
+                              "label":  "일련번호",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  10,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_SEQNO"
+                          },
+                          {
+                              "ocrKey":  "기프트카드충전목록Dto",
+                              "label":  "기프트카드충전목록Dto",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  5,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_GRD_ROWCOUNT"
+                          },
+                          {
+                              "ocrKey":  "은행코드",
+                              "label":  "은행코드",
+                              "controlType":  "combo",
+                              "required":  false,
+                              "transform":  "codeOnly",
+                              "targetLength":  3,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "cbx_BANK_CD"
+                          },
+                          {
+                              "ocrKey":  "BIN번호",
+                              "label":  "BIN번호",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  6,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_BIN_NO"
+                          },
+                          {
+                              "ocrKey":  "협약비율",
+                              "label":  "협약비율",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  9,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_PAC_RATE"
+                          },
+                          {
+                              "ocrKey":  "지원금잔액",
+                              "label":  "지원금잔액",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_SPMN_BAL"
+                          },
+                          {
+                              "ocrKey":  "고객한도금액",
+                              "label":  "고객한도금액",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CUST_LIMT_AMT"
+                          },
+                          {
+                              "ocrKey":  "잔여한도금액",
+                              "label":  "잔여한도금액",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_REMD_LIMT_AMT"
+                          },
+                          {
+                              "ocrKey":  "협약비율1_N9",
+                              "label":  "협약비율1_N9",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  9,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_PAC_RATE1_N9"
+                          },
+                          {
+                              "ocrKey":  "지원금잔액1_N17",
+                              "label":  "지원금잔액1_N17",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_SPMN_BAL1_N17"
+                          },
+                          {
+                              "ocrKey":  "고객한도금액1_N17",
+                              "label":  "고객한도금액1_N17",
+                              "controlType":  "text",
+                              "required":  false,
+                              "transform":  "text",
+                              "targetLength":  17,
+                              "defaultValue":  "",
+                              "confidenceThreshold":  0.7,
+                              "items":  [
+
+                                        ],
+                              "valueMap":  {
+
+                                           },
+                              "controlName":  "edx_CUST_LIMT_AMT1_N17"
+                          }
+                      ]
+}

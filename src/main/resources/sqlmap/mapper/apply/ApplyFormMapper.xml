@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.agilesoda.module.apply.mapper.FormApplyMapper">
+
+    <select id="selectProcStatList" resultType="com.agilesoda.module.apply.vo.CodeDtlVO">
+		/* [신청관리 > OCR신청조회] 조건 진행상태 - selectProcStatList */
+		SELECT
+			CD_GROUP	AS cdGrpId,
+			CD_VAL		AS cd,
+			CD_NM		AS cdNm
+		  FROM ocuoc_ccdtl_l
+		 WHERE 1=1
+		   AND CD_GROUP = 'PRGS_ST_CD'
+		   AND UZ_YN = 'Y'
+		 ORDER BY LNUP_SER ASC
+    </select>
+    
+    <sql id="formApplWhere">
+    	<where>
+    		<if test="procStatCd != null and procStatCd != ''">
+    			AND A.PRGS_ST_CD = #{procStatCd}
+    		</if>
+    		<if test="applDeptNm != null and applDeptNm != ''">
+    			AND U.EMP_KOR_FLNM LIKE '%' || #{applDeptNm} || '%'
+    		</if>
+			<if test="applicantNm != null and applicantNm != ''">
+				AND U.EMP_KOR_FLNM  = #{applicantNm}
+			</if>
+    		<if test="applDateFrom != null and applDateFrom != ''">
+    			AND A.REG_DT &gt;= TO_DATE(REPLACE(#{applDateFrom}, '-', ''), 'YYYYMMDD')
+    		</if>
+    		<if test="applDateTo != null and applDateTo != ''">
+    			AND A.REG_DT &lt; TO_DATE(REPLACE(#{applDateTo}, '-', ''), 'YYYYMMDD')+1
+    		</if>
+    		<if test="keyword != null and keyword != '' and keywordType == 'FORM_NM'">
+    			AND A.LEFRM_NM LIKE '%' || #{keyword} || '%'
+    		</if>
+    		<if test="keyword != null and keyword != '' and keywordType == 'APPLICANT'">
+    			AND U.EMP_KOR_FLNM LIKE '%' || #{keyword} || '%'
+    		</if>
+			<if test="onlyMine and loginUserId != null and loginUserId != ''">
+				AND A.APCT_ID = #{loginUserId}
+			</if>
+    	</where>
+    </sql>
+    
+    <select id="selectFormApplList" resultType="com.agilesoda.module.apply.vo.FormApplVO">
+		/* [신청관리 > OCR신청조회] OCR서식신청 조회 - selectFormApplList */
+		SELECT
+			A.APPC_ID		AS no,
+			A.PRGS_ST_CD	AS procStatCd,
+			C.CD_NM			AS procStatNm,
+			A.LEFRM_NM		AS formNm,
+			U.EMP_KOR_FLNM	AS applicantNm,
+			D.BR_NM	AS applDeptNm,
+			A.REG_DT		AS applDate,
+			A.CHNG_DT		AS updateDate
+		FROM ocuoc_lfapp_m A
+		LEFT JOIN ocuoc_ccdtl_l C
+		  ON C.CD_GROUP = 'PRGS_ST_CD'
+		 AND C.CD_VAL = A.PRGS_ST_CD
+	    LEFT JOIN ocuoc_useri_m U
+		  ON U.EMPNO = A.APCT_ID
+	    LEFT JOIN ocuoc_dprmi_m D
+		  ON D.BR_CD = U.BLNG_BRCD
+		<include refid="formApplWhere" />
+	   ORDER BY A.REG_DT DESC, A.APPC_ID DESC
+    </select>
+
+    <select id="selectFormApplCount" resultType="int">
+		/* [신청관리 > OCR신청조회] 페이징 - selectFormApplCount */
+		SELECT
+			COUNT(*)
+		  FROM ocuoc_lfapp_m A
+		  LEFT JOIN ocuoc_ccdtl_l C
+		    ON C.CD_GROUP = 'PRGS_ST_CD'
+		   AND C.CD_VAL = A.PRGS_ST_CD
+		  LEFT JOIN ocuoc_useri_m U
+		    ON U.EMPNO = A.APCT_ID
+		  LEFT JOIN ocuoc_dprmi_m D
+		    ON D.BR_CD = U.BLNG_BRCD
+		<include refid="formApplWhere" />
+    </select>
+
+	<select id="selectFormApplListAll" resultType="com.agilesoda.module.apply.vo.FormApplVO">
+		/* [신청관리 > OCR신청조회] 엑셀다운 - selectFormApplListAll */
+		SELECT
+		    A.APPC_ID 		AS no,
+			A.PRGS_ST_CD 	AS procStatCd,
+			C.CD_NM			AS procStatNm,
+			A.LEFRM_NM		AS formNm,
+			U.EMP_KOR_FLNM 	AS applicantNm,
+		    D.BR_NM 	AS applDeptNm,
+			A.REG_DT 		AS applDate,
+			A.CHNG_DT 		AS updateDate
+		  FROM ocuoc_lfapp_m A
+		  LEFT JOIN ocuoc_ccdtl_l C
+		    ON C.CD_GROUP = 'PRGS_ST_CD'
+		   AND C.CD_VAL = A.PRGS_ST_CD
+		  LEFT JOIN ocuoc_useri_m U
+		    ON U.EMPNO = A.APCT_ID
+		  LEFT JOIN ocuoc_dprmi_m D
+		    ON D.BR_CD = U.BLNG_BRCD
+		<include refid="formApplWhere" />
+		 ORDER BY A.REG_DT DESC, A.APPC_ID DESC
+	</select>
+</mapper>

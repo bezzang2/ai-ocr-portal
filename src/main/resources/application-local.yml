@@ -1,0 +1,65 @@
+# 개발자 노트북 전용. 실행 작업 폴더는 portal/이며, 설정 방법은 devenv/README.md을 따른다.
+server:
+  port: ${AIOCR_PORTAL_PORT:9090}
+  servlet:
+    context-path: /aiportal
+
+spring:
+  datasource:
+    # BPR
+    bpr:
+      hikari:
+        driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+        jdbc-url: jdbc:log4jdbc:oracle:thin:@//${DB_HOST:127.0.0.1}:${ORACLE_PORT:1521}/${ORACLE_SERVICE:FREEPDB1}
+        username: ${APP_DB_USERNAME:UOCAPP}
+        password: "${APP_DB_PASSWORD}"
+        maximum-pool-size: 5
+        minimum-idle: 1
+        connection-timeout: 10000
+        max-lifetime: 1800000
+        # 개인 개발 DB의 업무 테이블은 UOCADM 소유다. 접속 계정에는 별도 객체 권한이 필요하다.
+        connection-init-sql: ALTER SESSION SET CURRENT_SCHEMA=UOCADM
+    # 은행 인사 DB 대신 개인 개발 Oracle의 합성 인사 스키마를 사용한다.
+    phrms:
+      hikari:
+        driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+        jdbc-url: jdbc:log4jdbc:oracle:thin:@//${DB_HOST:127.0.0.1}:${ORACLE_PORT:1521}/${ORACLE_SERVICE:FREEPDB1}
+        username: ${HR_DB_USERNAME:PHRMS_MOCK}
+        password: "${HR_DB_PASSWORD}"
+        maximum-pool-size: 2
+        minimum-idle: 1
+        connection-timeout: 10000
+        max-lifetime: 1800000
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+  thymeleaf:
+    cache: false
+
+sso:
+  # 은행 SSO 없이 /index에서 TEST 사용자 세션을 만든다.
+  dev-user-enabled: ${AIOCR_SSO_DEV_USER_ENABLED:true}
+  uurl: ${server.servlet.context-path}
+  server-url: http://127.0.0.1:${server.port}${server.servlet.context-path}
+  # 개발용 사용자로 진입할 때는 NLS를 호출하지 않는다.
+  nls-url: http://127.0.0.1
+  nls-port: 13890
+
+aiocr:
+  # 노트북에는 단말이 없으므로 검증완료 결과를 단말 mock 수신함으로 보낸다.
+  terminal:
+    verify-url: ${AIOCR_TERMINAL_VERIFY_URL:http://127.0.0.1:${server.port}${server.servlet.context-path}/device-mock/terminal/verify}
+  # Agent와 같은 저장 위치를 사용하므로 모듈 실행 폴더에 영향을 받지 않는다.
+  file:
+    path: ${AIOCR_DATA_DIR:${user.home}/.aiocr}/upload/
+    result: ${AIOCR_DATA_DIR:${user.home}/.aiocr}/result/
+  agent:
+    url: ${AIOCR_AGENT_URL:http://127.0.0.1:${AIOCR_AGENT_PORT:9091}/aiocr}
+    id: aiocr_agent
+    passwd: ouHjBh80hjsFiqKEO8uxdQ==
+    token-enabled: false
+
+  mapping:
+    # 선택 기능인 화면번호별 매핑 JSON의 위치. 파일이 없으면 기존 기본 매핑을 사용한다.
+    dir: ${AIOCR_MAPPING_DIR:${AIOCR_DATA_DIR:${user.home}/.aiocr}/mapping}

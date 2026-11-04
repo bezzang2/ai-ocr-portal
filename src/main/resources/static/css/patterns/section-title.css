@@ -1,0 +1,14 @@
+/* 섹션 제목(14px medium, height 30) — OCR서식신청 추출설명(기본 필드/본인정보/요청내용/첨부파일)과
+   커뮤니티>공지사항 등록(기본정보/내용/첨부)이 공통으로 써서 patterns/로 승격했다(2026-08-25,
+   기존 pages/extract.css의 .extract-basic__title·.extract-result__footer-title 병합).
+   출처: get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 492:9602) 실측. */
+.section-title {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-secondary);
+}
+.section-title--row { justify-content: space-between; } /* 우측에 액션 버튼(업로드 등)이 붙는 경우 */
+.section-title__btn-group { display: flex; align-items: center; gap: var(--gap-sm); } /* 우측 액션 버튼이 여러 개일 때 서로 붙여 그룹화 */

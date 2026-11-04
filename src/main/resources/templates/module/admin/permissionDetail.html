@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+  <meta charset="UTF-8">
+<title>권한관리 상세설정 || AI OCR 서류판독시스템</title>
+  <style>
+    .permission-table{
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+    .permission-table thead th{
+      background: #f2f2f2;
+      border: 1px solid #ddd;
+      height: 32px;
+      padding: 0 10px;
+      text-align: center;
+    }
+    .permission-table tbody td{
+      padding: 6px 10px;
+    }
+    .permission-table th.
+    .permission-table td{
+      border: 1px solid #ddd;
+      padding: 8px 10px;
+      box-sizing: border-box;
+    }
+    .permission-table th:nth-child(1).
+    .permission-table tb:nth-child(1){
+      width: 30%;
+      text-align: center;
+    }
+    .permission-table th:nth-child(2).
+    .permission-table td:nth-child(2){
+      width: 50%;
+    }
+    .permission-table th:nth-child(3).
+    .permission-table td:nth-child(3){
+      width: 20%;
+      text-align: center;
+    }
+    .parent-menu{
+      font-weight: 600;
+    }
+
+    .child-menu{
+      display: inline-block;
+      padding-left: 25px;
+    }
+    .child-row{
+      display: none;
+    }
+    .child-row.selected{
+      background-color: #dbeafe;
+    }
+  </style>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <!-- inline JS 영역-->
+  <script th:inline="javascript" type="text/javascript">
+    let selectedMenuId = null;
+
+    document.addEventListener('DOMContentLoaded',function () {
+      // 메뉴 오픈시 lnb쪽 메뉴 활성화 부분
+      const params = new URLSearchParams(location.search);
+      const menuId = params.get("menuId");
+
+      if (menuId) {
+        openLnb(menuId);
+      }
+
+      /**********************************************************************
+       * 부모 체크 => 해당자식 전체 체크/해제
+       ***********************************************************************/
+      document.querySelectorAll(".parentChk").forEach(function (parentChk) {
+        parentChk.addEventListener("change",function () {
+          const parentId =this.dataset.menuId;
+          const children = document.querySelectorAll('.childChk[data-parent-id="'+parentId+'"]');
+          children.forEach(function (childChk) {
+            childChk.checked = parentChk.checked;
+          });
+        });
+      });
+
+
+      /**********************************************************************
+       * 자식 체크 => 자식이 전부 체크되면 부모 체크
+       ***********************************************************************/
+      document.querySelectorAll(".childChk").forEach(function (childChk) {
+        childChk.addEventListener("change",function () {
+          const parentId =this.dataset.parentId;
+          const children = document.querySelectorAll('.childChk[data-parent-id="'+parentId+'"]');
+          const parentChk = document.querySelector('.parentChk[data-menu-id="'+parentId+'"]');
+          if(parentChk){
+            parentChk.checked = Array.from(children).every(function (chk) {
+              return chk.checked;
+            });
+          }
+        });
+      });
+
+      /**********************************************************************
+       * 1레벨 부모 클릭 => 자식 펼치기/접기
+       ***********************************************************************/
+      document.querySelectorAll(".parent-row").forEach(function (parentRow) {
+        parentRow.addEventListener("click",function (e) {
+         if(e.target.classList.contains("parentChk")){
+           return;
+         }
+         const parentId = this.dataset.menuId;
+         const children = document.querySelectorAll('.child-row[data-parent-id="'+parentId+'"]');
+         if(children.length === 0){
+           return;
+         }
+         const isOpen = children[0].style.display === "table-row";
+         children.forEach(function (child) {
+           child.style.display = isOpen ? "none" : "table-row";
+         });
+         const arrow = this.querySelector(".menu-arrow");
+         if(arrow){
+           arrow.textContent = isOpen ? "▶" : "▼";
+         }
+        });
+      });
+
+      /**********************************************************************
+       * 부모/자식 클릭 이벤트
+       ***********************************************************************/
+      document.addEventListener("click",function (e) {
+        const row = e.target.closest(".parent-row,.child-row");
+        if(!row){return;}
+        if(e.target.type === "checkbox"){return;}
+
+        // 기존 선택 row해제
+        document.querySelectorAll(".parent-row,.child-row").forEach(r => r.classList.remove("selected"));
+        // 현재 row 선택
+        row.classList.add("selected");
+        selectedMenuId = row.dataset.menuId;
+        if(row.classList.contains("child-row")){
+          const menuId = row.dataset.menuId;
+          if(!menuId){return;}
+          selectUserBtnLsit(menuId);
+        }
+        document.getElementById("btnCheckAll").checked = false;
+      })
+
+      /**********************************************************************
+       * 헤더 전체선택 이벤트
+       ***********************************************************************/
+      document.getElementById("btnCheckAll")?.addEventListener("change",function () {
+        const checked = this.checked;
+        document.querySelectorAll(".btnChk").forEach(function (checkbox) {
+          checkbox.checked = checked;
+        })
+      })
+
+      /**********************************************************************
+       * 화면내 모든 버튼 이벤트 처리
+       ***********************************************************************/
+      document.addEventListener("click",function (e) {
+
+        const btn = e.target.closest("[data-action-cd]");
+
+        if(!btn){ return;}
+
+        const actionCd = btn.dataset.actionCd;
+        const areaCd = btn.dataset.areaCd;
+        //console.log("actionCd===>>>",actionCd)
+        //console.log("areaCd===>>>",areaCd)
+        if(areaCd === "DETAIL_1"){
+          switch (actionCd){
+            case "SAVE":
+              saveMenuParmission();
+              break;
+          }
+        }else if(areaCd === "DETAIL_2"){
+          switch (actionCd){
+            case "SAVE":
+              saveMenuBtnParmission();
+              break;
+          }
+        }else if(areaCd === "HEADER_1"){
+          switch (actionCd){
+            case "LIST":
+              location.href = contextPath+"module/admin/permissionManagement"+"?menuId="+encodeURIComponent(menuId||"");
+              break;
+          }
+        }
+      })
+
+    });
+
+    /**********************************************************************
+     *  메뉴권한 등록 함수
+     ***********************************************************************/
+    function saveMenuParmission() {
+      const params = new URLSearchParams(window.location.search);
+      const roleId = params.get("roleId");
+      const checkedMenus = [];
+      document.querySelectorAll(".menuChk:checked").forEach(function (chk) {
+        checkedMenus.push(chk.value);
+      });
+      console.log("checkedMenus===>>>",checkedMenus)
+
+      openConfirmModal("등록 하시겠습니까?",function (){
+
+        fetch(contextPath+"module/admin/saveMenuParmission", {
+          method: "POST",
+          headers:{"Content-Type":"application/json"
+          },
+          body: JSON.stringify({
+            roleId:roleId,
+            menuIds:checkedMenus
+          })
+        })
+                .then(response => {
+                  if (!response.ok) {
+                    openErrorModal("등록 실패",function (){
+                    });
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  if(data.result === "SUCCESS"){
+                    openSuccessModal("등록되었습니다.");
+                  }else{
+                    openErrorModal("등록 실패 :"+data.message);
+                    return;
+                  }
+                })
+                .catch(error => {
+                  console.error(error);
+                  openErrorModal("등록 중 오류가 발행했습니다.");
+                  return;
+                });
+      });
+    }
+
+    /**********************************************************************
+     *  버튼권한 조회 함수
+     ***********************************************************************/
+    function selectUserBtnLsit(menuId) {
+      const params = new URLSearchParams(window.location.search);
+      const roleId = params.get("roleId");
+
+      const body = new URLSearchParams();
+      body.append("roleId",roleId);
+      body.append("menuId",menuId);
+      fetch(contextPath+"module/admin/selectUserBtnLsit", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: body
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("조회 오류");
+        }
+        return response.json();
+      })
+      .then(data => {
+        drawUserBtnList(data.list);
+
+      })
+      .catch(error => {
+        console.error(error);
+      })
+    }
+
+    /**********************************************************************
+     *  버튼권한 조회 후 매핑 처리함수
+     ***********************************************************************/
+    function drawUserBtnList(list) {
+      const tbody = document.getElementById("btnListBody");
+      tbody.innerHTML = "";
+      if(!list || list.length === 0){
+        return;
+      }
+
+      list.forEach(function (btn) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td style="text-align:center;">
+                        <input type="checkbox"
+                               class="btnChk"
+                               value="${btn.btnCd}"
+                               ${btn.useYn === 'Y' ? 'checked' : ""}>
+                        </td>
+                        <td>${btn.btnCd}</td>
+                        <td>${btn.btnNm}</td>
+                        <td>${btn.areaCd}</td>
+                        <td>${btn.actionCd}</td>
+                        <td>${btn.iocnUrl}</td>`;
+
+        tbody.appendChild(tr);
+      })
+    }
+
+    /**********************************************************************
+     *  버튼권한 등록 함수
+     ***********************************************************************/
+    function saveMenuBtnParmission() {
+      const params = new URLSearchParams(window.location.search);
+      const roleId = params.get("roleId");
+      if(!roleId){
+        openErrorModal("역할ID가 없습니다.");
+        return;
+      }
+      if(!selectedMenuId){
+        openInformationModal("메뉴를 선택해주세요.");
+        return;
+      }
+      const btnList = [];
+      document.querySelectorAll(".btnChk:checked").forEach(chk => {
+        btnList.push(chk.value);
+      });
+
+      openConfirmModal("등록 하시겠습니까?",function (){
+
+        fetch(contextPath+"module/admin/saveMenuBtnParmission", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            roleId:roleId,
+            menuId:selectedMenuId,
+            btnList:btnList
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            openErrorModal("저장 실패");
+            return;
+          }
+          return response.json();
+        })
+        .then(data => {
+          if(data.result === "SUCCESS"){
+            openSuccessModal("버튼 권한이 저장되었습니다.");
+          }else{
+            openErrorModal("등록 실패 :"+data.message);
+            return;
+          }
+        })
+        .catch(error => {
+          console.error(error);
+          openErrorModal("저장 중 오류가 발행했습니다.");
+          return;
+        });
+      });
+    }
+
+
+  </script>
+</head>
+<body>
+
+
+
+    <main class="content">
+
+      <!-- 페이지 헤더 — get_design_context(617:10047) 실측. "Btn" 슬롯(617:10049)이 빈 채로
+           실측돼 버튼 없이 제목만 반영했다. -->
+      <div class="page-header">
+        <h1 class="page-header__title">사용자권한 상세설정</h1>
+        <div class="page-header__actions">
+          <button th:each="btn : ${session.buttonList}"
+                  th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'HEADER_1'}"
+                  type="button"
+                  class="btn-outline-primary"
+                  style="width:80px"
+                  th:id="${btn.btnCd}"
+                  data-audit="Y"
+                  th:data-area-cd="${btn.areaCd}"
+                  th:data-menu-id="${btn.menuId}"
+                  th:data-btn-cd="${btn.btnCd}"
+                  th:data-action-cd="${btn.actionCd}"
+                  th:data-action-nm="${btn.btnNm}">
+            <span th:text="${btn.btnNm}"></span>
+          </button>
+        </div>
+      </div>
+
+      <div class="layout-list">
+
+        <div style="display:flex; gap:24px; align-items:flex-start; width:100%">
+
+          <div class="task-section" style="flex:0 0 calc(38.33% - 12px)">
+            <div class="task-section__header">
+              <span class="task-section__title">메뉴 권한</span>
+              <div class="task-section__actions">
+                <button th:each="btn : ${session.buttonList}"
+                        th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'DETAIL_1'}"
+                        type="button"
+                        class="btn-neutral"
+                        style="width:80px"
+                        th:id="${btn.btnCd}"
+                        data-audit="Y"
+                        th:data-area-cd="${btn.areaCd}"
+                        th:data-menu-id="${btn.menuId}"
+                        th:data-btn-cd="${btn.btnCd}"
+                        th:data-action-cd="${btn.actionCd}"
+                        th:data-action-nm="${btn.btnNm}">
+                  <img th:src="@{${btn.iocnUrl}}" alt="">
+                  <span th:text="${btn.btnNm}"></span>
+                </button>
+              </div>
+            </div>
+            <table class="permission-table" style="table-layout:fixed; width:100%" data-row-select data-edit-trigger="dblclick">
+              <colgroup>
+                <col style="width:30.43%">
+                <col style="width:49.57%">
+                <col style="width:20.00%">
+              </colgroup>
+              <thead>
+              <tr>
+                <th>메뉴ID</th>
+                <th>메뉴명</th>
+                <th>사용여부</th>
+              </tr>
+              </thead>
+              <tbody>
+              <!-- 1레벨 부모 메뉴-->
+              <th:block th:each="parent : ${menulist}" th:if="${parent.menuLevel == 1}">
+                <tr class="parent-row" th:data-menu-id="${parent.menuId}">
+                  <td th:text="${parent.menuId}"></td>
+                  <td>
+                    <span class="menu-arrow">▶</span>
+                    <span th:text="${parent.menuNm}"></span>
+                  </td>
+                  <td>
+                    <input type="checkbox" class="menuChk parentChk" th:value="${parent.menuId}" th:data-menu-id="${parent.menuId}" th:checked="${parent.useYn == 'Y'}">
+                  </td>
+                </tr>
+                <th:block th:each="child : ${menulist}" th:if="${child.uprnMenuId == parent.menuId}">
+                  <tr class="child-row" th:data-parent-id="${parent.menuId}" th:data-menu-id="${child.menuId}">
+                    <td th:text="${child.menuId}"></td>
+                    <td>
+                      <span style="display:inline-block; padding-left: 30px;">
+                      ㄴ
+                      <span th:text="${child.menuNm}"></span>
+                        </span>
+                    </td>
+                    <td>
+                      <input type="checkbox" class="menuChk childChk" th:value="${child.menuId}" th:data-menu-id="${child.menuId}" th:data-parent-id="${parent.menuId}" th:checked="${child.useYn == 'Y'}">
+                    </td>
+                  </tr>
+                </th:block>
+              </th:block>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- 우측: 코드값 목록 — get_design_context(617:10872) 재실측(2026-08-20,
+               "신청부서"/"최종변경일자" → "유효시작일"/"유효마감일"로 라벨 교체. 두 칼럼 다
+               날짜값이라 지금까지의 "부서명인데 날짜가 들어있는 오류"가 아니라 원래부터
+               유효기간 칼럼이었던 것으로 확인됐다 — 이전 코멘트의 "Figma 원본 오류" 추정은
+               철회한다. "유효마감일"도 이번에 Figma에서 새로 datepicker(ic/24/insert_invitation)로
+               바뀌어 유효시작일과 동일하게 cell-text/cell-input(type=date) 쌍을 갖는다.
+               코드번호는 항상 텍스트(고유 식별자라 미편집), 나머지 5칼럼은 전 행에
+               cell-text/cell-input을 둬서 어떤 행이든 편집 가능하게 했다(이전엔 첫 행만
+               가능했는데, 사용자가 "더블클릭하면 셀이 활성화"라고 확인해줘 특정 행 하나로
+               고정할 이유가 없어짐). 편집 트리거는 table-row-edit.js 기본값인 click이 아니라
+               data-edit-trigger="dblclick"로 오버라이드했다 — 이 표가 속한 화면은 좌측
+               코드그룹 표에서 "한 번 클릭 = 행 선택(코드상세 연동)"을 이미 쓰고 있어, 오른쪽도
+               같은 규칙(클릭=선택/포커스, 더블클릭=편집)으로 통일했다. -->
+          <div class="task-section" style="flex:0 0 calc(61.67% - 12px)">
+            <div class="task-section__header">
+              <span class="task-section__title">버튼 권한</span>
+              <div class="task-section__actions">
+                <button th:each="btn : ${session.buttonList}"
+                        th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'DETAIL_2'}"
+                        type="button"
+                        class="btn-neutral"
+                        style="width:80px"
+                        th:id="${btn.btnCd}"
+                        data-audit="Y"
+                        th:data-area-cd="${btn.areaCd}"
+                        th:data-menu-id="${btn.menuId}"
+                        th:data-btn-cd="${btn.btnCd}"
+                        th:data-action-cd="${btn.actionCd}"
+                        th:data-action-nm="${btn.btnNm}">
+                  <img th:src="@{${btn.iocnUrl}}" alt="">
+                  <span th:text="${btn.btnNm}"></span>
+                </button>
+              </div>
+            </div>
+            <table class="table" style="table-layout:fixed; width:100%" data-edit-trigger="dblclick">
+              <colgroup>
+                <col style="width:5%">
+                <col style="width:20%">
+                <col style="width:10%">
+                <col style="width:15%">
+                <col style="width:15%">
+                <col style="width:35%">
+              </colgroup>
+              <thead>
+              <tr>
+                <th>
+                  <label class="checkbox">
+                    <input type="checkbox" class="checkbox__input" id="btnCheckAll">
+                    <span class="checkbox__box">
+                    <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.83263 3.64645C10.0558 3.84171 10.0558 4.15829 9.83263 4.35355L5.2612 8.35355C5.03805 8.54882 4.67624 8.54882 4.45308 8.35355L2.16737 6.35355C1.94421 6.15829 1.94421 5.84171 2.16737 5.64645C2.39052 5.45118 2.75233 5.45118 2.97549 5.64645L4.85714 7.29289L9.02451 3.64645C9.24767 3.45118 9.60948 3.45118 9.83263 3.64645Z" fill="currentColor"/></svg>
+                  </span>
+                  </label>
+                </th>
+                <th>코드</th>
+                <th>명</th>
+                <th>영역코드</th>
+                <th>액션코드</th>
+                <th>아이콘경로</th>
+              </tr>
+              </thead>
+              <tbody id="btnListBody">
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+<div th:replace="~{common/commonModals :: commonModals}"></div>
+<script th:src="@{/js/modal.js}"></script>
+<script th:src="@{/js/lnb.js}"></script>
+<script th:src="@{/js/menu-tree.js}"></script>
+<script th:src="@{/js/table-col-select-all.js}"></script>
+<script th:src="@{/js/common.js}"></script>
+</body>
+</html>

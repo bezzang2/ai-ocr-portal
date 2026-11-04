@@ -3,32 +3,51 @@
 <html lang="en"
       xmlns:th="http://www.thymeleaf.org"
       th:fragment="HeaderFragment">
-<header>
-  <!-- Fixed navbar -->
-  <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
-    <div class="container-fluid">
-      <a class="navbar-brand" href="#">Fixed navbar</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="navbarCollapse">
-        <ul class="navbar-nav me-auto mb-2 mb-md-0">
-          <li class="nav-item">
-            <a class="nav-link active" aria-current="page" href="#">Home</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="#">Link</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link disabled" aria-disabled="true">Disabled</a>
-          </li>
-        </ul>
-        <form class="d-flex" role="search">
-          <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
-          <button class="btn btn-outline-success" type="submit">Search</button>
-        </form>
-      </div>
+
+<script th:inline="javascript" type="text/javascript">
+    document.addEventListener("DOMContentLoaded",function () {
+        // 서버가 확정한 업무 화면에서는 이전 메뉴의 저장 상태로 경로를 덮지 않는다.
+        const navigation = document.querySelector("[data-navigation-context], [data-navigation-current]");
+        if (navigation) {
+            try {
+                sessionStorage.setItem("gnbParentMenuNm", document.getElementById("gnbParentMenuNm").textContent.trim());
+                sessionStorage.setItem("gnbMenuNm", document.getElementById("gnbMenuNm").textContent.trim());
+            } catch (error) {
+                console.warn("[업무 메뉴] 현재 경로를 저장하지 못했습니다.", error);
+            }
+            return;
+        }
+        const parentMenuNm = sessionStorage.getItem("gnbParentMenuNm");
+        const menuNm = sessionStorage.getItem("gnbMenuNm");
+
+        //console.log("상위메뉴 = ",parentMenuNm);
+        //console.log("하위메뉴 = ",menuNm);
+        if(parentMenuNm){
+            document.getElementById("gnbParentMenuNm").textContent = parentMenuNm;
+            document.getElementById("gnbMenuNm").textContent = menuNm;
+        }
+    });
+</script>
+
+<!-- include: common/gnb.html -->
+<header class="gnb">
+    <a class="gnb__brand" th:href="@{/index}" title="홈으로 이동"><img class="gnb__brand-logo" th:src="@{/images/kjbank-logo.png}" alt="광주은행 홈"></a>
+    <nav class="breadcrumb">
+        <span class="breadcrumb__item" id="gnbParentMenuNm" th:text="${parentMenuNm}">커뮤니티</span>
+        <img class="breadcrumb__arrow" th:src="@{/images/icons/gnb/ic-16-breadcrumb-arrow.svg}" alt="">
+        <span class="breadcrumb__item breadcrumb__item--current" id="gnbMenuNm" th:text="${menuNm}">게시판</span>
+        <span class="gnb__review-help" hidden><button type="button" aria-current="page" data-review-help aria-controls="review-guidance" aria-describedby="review-guidance" aria-expanded="false">판독결과 검토 <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="8" cy="8" r="6"/><path d="M8 7v4M8 4.7v.6"/></svg></button><span id="review-guidance" class="gnb__review-tooltip" role="tooltip" hidden>원본과 인식값을 대조하고, 필요한 항목을 수정한 후 검증을 완료하세요.</span></span>
+    </nav>
+    <div class="gnb__user">
+        <div class="gnb__user-name-group">
+            <img class="gnb__user-icon" th:src="@{/images/icons/gnb/ic-16-user.svg}" alt="">
+            <span class="gnb__user-name" th:text="${session.ssoLoginUser != null ? session.ssoLoginUser.userName + ' (' + session.ssoLoginUser.userId + ')' : '로그인 정보 없음'}"></span>
+            <span class="gnb__user-dept" th:text="${session.ssoLoginUser != null ? session.ssoLoginUser.deptName : ''}"></span>
+        </div>
+        <div class="gnb__notif">
+            <img class="gnb__notif-icon" th:src="@{/images/icons/gnb/ic-16-notification.svg}" alt="알림">
+            <span class="gnb__notif-badge" aria-hidden="true" th:if="${hasUnreadNotifications == true}"></span>
+        </div>
     </div>
-  </nav>
 </header>
 </html>

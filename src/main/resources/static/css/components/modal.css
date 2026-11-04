@@ -1,0 +1,182 @@
+/* ---- 모달 오버레이 — 실제 화면에서 버튼 클릭으로 열고 닫는 상호작용용(js/modal.js).
+   modals.html 카탈로그는 이 오버레이 없이 .modal만 정적으로 전시한다. ---- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow-y: auto; /* 작은 화면에서 모달/얼럿 높이가 뷰포트보다 커지면 오버레이 자체가 스크롤되도록(2026-08-26) */
+  padding: 24px 0; /* 스크롤될 때 모달이 뷰포트 위/아래 끝에 바로 붙지 않도록 여백 확보 */
+  background: var(--color-alpha-black-60);
+  z-index: 1000;
+}
+.modal-overlay[hidden] { display: none; }
+/* "팝업창형식" — get_design_context(856:6329) 실측. 모달과 마크업이 완전히 같고 뒤 배경 딤만
+   없다(별도 창처럼 뜬다) — 위치/스크롤/z-index는 그대로 두고 배경색만 투명하게 뺀다. */
+.modal-overlay--no-dim { background: transparent; }
+
+/* ---- 모달 — get_design_context(508:15009) 실측("엑셀 다운 사유" 모달). ---- */
+.modal {
+  display: flex;
+  flex-direction: column;
+  width: 480px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.modal--sm { width: 360px; } /* get_design_context(853:5678) 실측 — "업무내 서식 목록"처럼 기본(480px)보다 좁은 단순 안내 모달 */
+.modal--md { width: 500px; } /* get_design_context(517:15884) 실측 — 규칙 등록처럼 기본(480px)보다 살짝 넓은 폼 모달 */
+.modal--xl { width: 1340px; } /* get_design_context(522:16459) 실측 — 서식간 규칙 등록처럼 4열 카드 그리드를 담는 넓은 모달 */
+.modal--w600 { width: 600px; } /* get_design_context(617:8001) 재실측(2026-08-20) — 일괄변경 상세 모달, 원래 --lg(1200px)였으나 폭이 줄었다 */
+.modal--w640 { width: 640px; } /* get_design_context(522:16898) 실측 — 서식 항목 규칙 선택 */
+.modal--w1000 { width: 1000px; } /* get_design_context(517:15533, 604:6313) 재실측(2026-08-20) — 결재선 지정·역할권한 상세 모달, 둘 다 원래 더 넓은 값(1200/1340px)이었으나 이 값으로 줄었다 */
+
+.modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--border-neutral-subtle);
+}
+.modal__title {
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  color: var(--text-neutral-secondary);
+}
+.modal__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 24px;
+  border: none;
+  background: none;
+  border-radius: var(--size-radius-s);
+  color: var(--icon-neutral-default);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.modal__close:hover { background: var(--surface-neutral-faint); }
+.modal__close svg { width: calc(var(--icon-size-md) - 2 * var(--icon-inset-md)); height: calc(var(--icon-size-md) - 2 * var(--icon-inset-md)); } /* 다른 버튼 아이콘과 동일하게 12px */
+
+.modal__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-lg); /* 12px */
+  padding: 16px 24px;
+}
+.modal__row { display: flex; gap: 24px; align-items: center; }
+.modal__row--textarea { align-items: flex-start; }
+.modal__row-label {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md); /* 8px */
+  flex: 0 0 82px;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.325px;
+  color: var(--text-neutral-tertiary);
+}
+.modal__row-label::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  flex-shrink: 0;
+  border-radius: var(--size-radius-round);
+  background: var(--icon-neutral-subtle);
+}
+.modal__row-value {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-13);
+  color: var(--text-neutral-default);
+  letter-spacing: -0.0442px;
+}
+.modal__textarea {
+  display: block; /* textarea 기본값(inline-block)이면 line box의 디센더 공간 때문에 부모 컨테이너가 실제 높이보다 살짝 커 보인다 */
+  flex: 1;
+  min-width: 0;
+  height: 64px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: var(--radius-control);
+  background: var(--surface-white);
+  color: var(--text-neutral-default);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  letter-spacing: -0.0442px;
+  resize: none;
+}
+.modal__textarea::placeholder { color: var(--text-neutral-quaternary); }
+.modal__textarea:focus { border-color: var(--border-primary-default); outline: none; }
+
+/* 글자수 카운터가 붙는 textarea — 신청사유(OCR업무 사용 신청).
+   textarea가 .modal__row의 직접 flex 자식이 아니라 이 래퍼 안으로 들어가므로, 밑에서
+   상속되는 flex:1(flex-basis:0%)이 높이 64px과 충돌하지 않도록 별도로 없애준다.
+   카운터는 textarea 안쪽 우측 하단에 겹쳐 띄우고, 오프셋은 textarea 자체 padding(6px 8px)과 맞춘다. */
+.modal__textarea-wrap { position: relative; flex: 1; min-width: 0; }
+.modal__textarea-wrap .modal__textarea { flex: none; width: 100%; height: 85px; padding-bottom: 18px; } /* 13px/line-height 1.5 기준 3줄(58.5px) + padding(6+18) + border(2) ≈ 85px. 카운터 자리 확보로 padding-bottom을 늘린 만큼 기본 64px보다 커졌다 */
+.modal__textarea-count {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  font-size: 11px;
+  letter-spacing: -0.0374px;
+  pointer-events: none;
+}
+.modal__textarea-count-current { font-weight: var(--font-weight-semibold); color: var(--text-neutral-secondary); }
+.modal__textarea-count-max { color: var(--text-neutral-tertiary); }
+
+.modal__footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 24px;
+  border-top: 1px solid var(--border-neutral-subtle);
+}
+.modal__footer-actions { display: flex; align-items: center; gap: var(--gap-md); } /* 8px */
+
+/* ---- 결재선 지정 모달 전용 — 검색+목록 좌/우 패널과 가운데 이동 버튼(get_design_context(517:15533) 실측).
+   검색바 자체(.approval-picker__search)는 다른 모달·페이지에서도 재사용돼 patterns/sub-search-area.css의
+   .sub__search-area로 분리·개명했다(2026-08-18) — 여기 남은 것은 이 모달에서만 쓰는 좌/우 목록 배치뿐이다. ---- */
+.approval-picker { display: flex; align-items: flex-start; gap: 16px; width: 100%; }
+.approval-picker__col { display: flex; flex-direction: column; gap: var(--gap-lg); flex: 1; min-width: 0; } /* 12px — 다른 모달(.modal__body 등)과 동일 토큰 */
+.approval-picker__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-sm);
+  justify-content: center;
+  align-self: stretch;
+  flex-shrink: 0;
+}
+.approval-picker__add { display: flex; align-items: center; justify-content: flex-end; padding: 6px 0; box-sizing: border-box; } /* 왼쪽 .sub__search-area와 높이(42px)를 맞춰 아래 두 테이블 시작선이 정렬되게 함 */
+
+/* ---- 규칙 등록 모달 전용 — 폼 필드 행/항목(get_design_context(517:15884) 실측) ---- */
+.modal__summary {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-xl); /* 16px */
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surface-neutral-faint);
+  border-radius: 8px;
+}
+.modal__summary-value {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-secondary);
+  letter-spacing: -0.0442px;
+}
+.modal__field-row { display: flex; align-items: center; gap: 24px; width: 100%; } /* 필수여부+데이터유형처럼 두 필드가 한 줄에 나란히 올 때만 감싼다 */
+.modal__field-item { display: flex; align-items: center; gap: var(--gap-xl); flex: 1; min-width: 0; } /* 16px — 라벨은 .modal__row-label 재사용(불릿 동일), 폭만 아래에서 이 모달 전용으로 재정의 */
+.modal__field-item .modal__row-label { flex-basis: 104px; } /* 가장 긴 라벨 "일치 Input 항목" 기준 — 다른 필드 라벨도 전부 이 폭에 맞춰 정렬 */
+
+/* 서식 항목 규칙 선택 모달 전용 — 항목/구분/규칙 3열은 왼쪽 정렬(적용여부 체크박스 열은 .table 기본값인 가운데 정렬 유지) */
+.modal__rule-table td:nth-child(-n+3) { text-align: left; }

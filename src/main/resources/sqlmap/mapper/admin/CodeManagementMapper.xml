@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.agilesoda.module.admin.mapper.CodeManagementMapper">
+
+	<select id="searchGropCode" resultType="com.agilesoda.module.admin.vo.CodeManagementResVO">
+		/* 관리자 (코드관리:그룹) 조회 쿼리 (searchGropCode)*/
+		select CD_GROUP 		as cdGroup
+			  ,CD_GROUP_NM   	as cdGroupNm
+			  ,LAST_CHNG_EMPNO 	as lastChngEmpno
+		from ocuoc_ccgrp_m
+		where 1=1
+		<if test="cdGroup != null and cdGroup != ''">
+			and CD_GROUP like '%'||#{cdGroup}||'%'
+		</if>
+		<if test="cdGroupNm != null and cdGroupNm != ''">
+			and CD_GROUP_NM like '%'||#{cdGroupNm}||'%'
+		</if>
+	</select>
+
+	<select id="selectCodeDetail" resultType="com.agilesoda.module.admin.vo.CodeManagementDetailResVO">
+		/* 관리자 (코드관리:상세) 조회 쿼리 (selectCodeDetail)*/
+		select  CD_GROUP 			as cdGroup
+			  , CD_VAL   			as cdVal
+		      , CD_NM 				as cdNm
+		      , CD_DESC 			as cdDesc
+		      , LNUP_SER 			as lnupSer
+		      , UZ_YN 				as uzYn
+		      , VLD_STDD 			as vldStdd
+		      , VLD_ENDT 			as vldEndt
+			  , LAST_CHNG_EMPNO 	as lastChngEmpno
+		from ocuoc_ccdtl_l
+		where 1=1
+		and CD_GROUP = #{cdGroup}
+	</select>
+
+	<insert id="insertGroupCode" parameterType="com.agilesoda.module.admin.vo.CodeManagementResVO">
+		/* 관리자 (코드관리:그룹) 저장 쿼리 (insertGroupCode)*/
+		INSERT INTO ocuoc_ccgrp_m
+		( CD_GROUP
+		, CD_GROUP_NM
+		, LAST_CHNG_EMPNO
+		, LAST_CHNG_DTTM
+		, FRST_REG_EMPNO
+		, FRST_REG_DTTM
+		)
+		VALUES (
+				 #{cdGroup}
+			   , #{cdGroupNm}
+			   , #{lastChngEmpno}
+			   , TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			   , #{lastChngEmpno}
+			   , TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			   )
+	</insert>
+
+	<insert id="insertGroupDetail" parameterType="com.agilesoda.module.admin.vo.CodeManagementDetailResVO" >
+		/* 관리자 (코드관리:상세) 저장 쿼리 (insertGroupDetail)*/
+		INSERT INTO ocuoc_ccdtl_l
+		( CD_GROUP
+		, CD_VAL
+		, CD_NM
+		, CD_DESC
+		, LNUP_SER
+		, UZ_YN
+		, VLD_STDD
+		, VLD_ENDT
+		, LAST_CHNG_EMPNO
+		, LAST_CHNG_DTTM
+		, FRST_REG_EMPNO
+		, FRST_REG_DTTM
+		)
+		VALUES (
+				 #{cdGroup}
+			   , #{cdVal}
+			   , #{cdNm}
+			   , #{cdDesc}
+			   , #{lnupSer}
+			   , #{uzYn}
+			   , #{vldStdd}
+			   , #{vldEndt}
+			   , #{lastChngEmpno}
+			   , TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			   , #{lastChngEmpno}
+			   , TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			   )
+	</insert>
+
+	<delete id="deleteCodeDetailByGroup">
+		/* 관리자 (코드관리:그룹삭제시 상세까직) 삭제 쿼리 (deleteCodeDetailByGroup)*/
+		DELETE
+		FROM ocuoc_ccdtl_l
+		WHERE CD_GROUP = #{cdGroup}
+	</delete>
+
+	<delete id="deleteGroupCode">
+		/* 관리자 (코드관리:그룹) 삭제 쿼리 (deleteGroupCode)*/
+		DELETE
+		FROM ocuoc_ccgrp_m
+		WHERE CD_GROUP = #{cdGroup}
+	</delete>
+
+	<delete id="deleteCodeDetail" parameterType="map">
+		/* 관리자 (코드관리:단일상세) 삭제 쿼리 (deleteCodeDetail)*/
+		DELETE
+		FROM ocuoc_ccdtl_l
+		WHERE CD_GROUP = #{cdGroup}
+		and CD_VAL = #{cdVal}
+	</delete>
+
+	<select id="groupCnt" resultType="int">
+		/* 관리자 (코드관리:그룹) 총카운토 조회 쿼리 (groupCnt)*/
+		select count(*)
+		from ocuoc_ccgrp_m
+		where 1=1
+		  and CD_GROUP = #{cdGroup}
+	</select>
+
+</mapper>

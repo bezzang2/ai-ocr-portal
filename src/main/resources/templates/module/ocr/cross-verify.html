@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+  <meta charset="UTF-8">
+  <title>서식간 검증 결과 | AI OCR 서류판독시스템</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+    <!-- 통합검색 > 서식간 검증 결과. 판독작업마다 업무의 서식간 규칙 판정을 요약한다(Agent /cross-verifications, CrossVerifyController).
+         판독 완료·확인값 저장 때 Agent 가 판정해 두므로 이 화면은 조회만 한다. -->
+    <main class="content" data-navigation-context="server" th:attr="data-navigation-current=${menuId}">
+      <div class="page-header">
+        <h1 class="page-header__title">서식간 검증 결과</h1>
+      </div>
+
+      <div class="layout-list">
+        <form class="search-area" method="get" th:action="@{/module/ocr/crossVerify}" data-cfv-search>
+          <input type="hidden" name="menuId" th:value="${menuId}">
+          <input type="hidden" name="pageSize" value="15">
+          <div class="search-area__row">
+            <div class="search-area__item">
+              <label class="search-area__label" for="cfv-task">업무명</label>
+              <select id="cfv-task" name="wkId" class="input input--w180">
+                <option value="">전체</option>
+                <option th:each="wk : ${workflowList}" th:value="${wk.wkId}" th:text="${wk.wkNm}"
+                        th:selected="${wk.wkId == wkId}">업무명</option>
+              </select>
+            </div>
+            <div class="search-area__item">
+              <label class="search-area__label" for="cfv-result">검증결과</label>
+              <select id="cfv-result" name="result" class="input input--w120">
+                <option value="">전체</option>
+                <option value="MATCH" th:selected="${result == 'MATCH'}">일치</option>
+                <option value="MISMATCH" th:selected="${result == 'MISMATCH'}">불일치</option>
+                <option value="UNVERIFIABLE" th:selected="${result == 'UNVERIFIABLE'}">검증불가</option>
+              </select>
+            </div>
+            <div class="search-area__item">
+              <label class="search-area__label" for="cfv-from">스캔기간</label>
+              <div class="search-area__combo">
+                <input id="cfv-from" name="from" class="input input--w120" type="date" th:value="${from}" aria-label="시작일">
+                <span class="search-area__tilde">~</span>
+                <input name="to" class="input input--w120" type="date" th:value="${to}" aria-label="종료일">
+              </div>
+            </div>
+          </div>
+          <div class="search-area__actions">
+            <a class="btn-icon" th:href="@{/module/ocr/crossVerify(menuId=${menuId})}" title="조건 초기화">
+              <img th:src="@{/images/icons/buttons/ic-16-refresh.svg}" alt="조건 초기화">
+            </a>
+            <button type="submit" class="btn-outline-primary">
+              <span class="btn-icon-slot"><svg width="11.5" height="11.5" viewBox="0 0 11.5 11.5" fill="none" aria-hidden="true"><path d="M10.75 10.75L8.33333 8.33333M9.63889 5.19444C9.63889 7.64904 7.64904 9.63889 5.19444 9.63889C2.73985 9.63889 0.75 7.64904 0.75 5.19444C0.75 2.73985 2.73985 0.75 5.19444 0.75C7.64904 0.75 9.63889 2.73985 9.63889 5.19444Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              조회
+            </button>
+          </div>
+        </form>
+
+        <div class="list-section">
+          <p class="cfv-message" th:if="${loadError}" th:text="${loadError}" role="alert">조회 오류</p>
+          <div class="cfv-list-bar">
+            <p class="cfv-list-note" th:unless="${loadError}">
+              총 <strong th:text="${#lists.size(summaries)}">0</strong>건 · 최근 스캔 순, 최대 500건
+            </p>
+            <!-- 조회한 업무·스캔기간(결과 조건 제외)의 판독작업을 지금 규칙으로 다시 판정한다(js/cross-verify.js). -->
+            <button type="button" class="btn-neutral" data-cfv-evaluate-all
+                    th:attr="data-wk-id=${wkId}, data-from=${from}, data-to=${to}">조회 기간 다시 판정</button>
+          </div>
+          <table class="table cfv-list" style="table-layout:fixed; width:100%">
+            <colgroup>
+              <col style="width:5%">
+              <col style="width:22%">
+              <col style="width:18%">
+              <col style="width:14%">
+              <col style="width:13%">
+              <col style="width:17%">
+              <col style="width:11%">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>No</th>
+                <th>판독작업</th>
+                <th>업무명</th>
+                <th title="규칙 수: 불일치 / 검증불가 / 전체">불일치/검증불가/전체</th>
+                <th>스캔일시</th>
+                <th>판정일시</th>
+                <th>검증결과</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:if="${loadError == null and #lists.isEmpty(summaries)}">
+                <td colspan="7" class="cfv-empty">조건에 맞는 서식간 검증 결과가 없습니다.</td>
+              </tr>
+              <tr th:each="row, stat : ${summaries}" data-cfv-row
+                  th:with="scan=${row.scannedAt}, total=${row.matchCount + row.mismatchCount + row.unverifiableCount + row.notApplicableCount}">
+                <td th:text="${stat.count}">1</td>
+                <td class="cfv-list__trans">
+                  <a class="table-link" th:href="@{/module/ocr/crossVerify/{transId}(transId=${row.transactionId}, menuId=${menuId})}"
+                     th:text="${row.transactionId}">판독작업 ID</a>
+                </td>
+                <td style="text-align:left" th:text="${row.workflowName ?: row.workflowId}">업무명</td>
+                <td>
+                  <span class="cfv-result-count">
+                    <span class="cfv-result-count__ng" th:text="${row.mismatchCount}">0</span>/
+                    <span th:text="${row.unverifiableCount}">0</span>/
+                    <span th:text="${total}">0</span>
+                  </span>
+                </td>
+                <td th:text="${scan != null and #strings.length(scan) >= 12}
+                      ? ${#strings.substring(scan,0,4) + '-' + #strings.substring(scan,4,6) + '-' + #strings.substring(scan,6,8) + ' ' + #strings.substring(scan,8,10) + ':' + #strings.substring(scan,10,12)}
+                      : ${scan}">2026-10-26 10:42</td>
+                <td>
+                  <span th:text="${row.evaluatedAt}">2026-10-26 10:43</span>
+                  <span class="cfv-stale" th:if="${row.staleCount > 0}" title="판정 뒤 규칙이 바뀌었습니다. 상세에서 다시 판정해 주세요.">규칙 변경</span>
+                </td>
+                <td th:switch="${row.result}">
+                  <span th:case="'MISMATCH'" class="status-pill status-pill--error-fill status-pill--fill">불일치</span>
+                  <span th:case="'UNVERIFIABLE'" class="status-pill status-pill--neutral-fill">검증불가</span>
+                  <span th:case="'NOT_APPLICABLE'" class="status-pill status-pill--neutral-fill">해당없음</span>
+                  <span th:case="*" class="status-pill status-pill--success">일치</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <div class="list-footer" data-cfv-pagination th:unless="${loadError}"></div>
+        </div>
+      </div>
+    </main>
+<div th:insert="~{common/commonModals :: commonModals}"></div>
+<script th:src="@{/js/modal.js}"></script>
+<script th:src="@{/js/list-pagination.js}"></script>
+<script th:src="@{/js/cross-verify.js}"></script>
+<script th:src="@{/js/lnb.js}"></script>
+</body>
+</html>

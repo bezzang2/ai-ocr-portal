@@ -1,0 +1,72 @@
+/* 검색바(선택) + 좌우/다단으로 나뉜 본문 — 목록·트리·뷰어 등 사이드 패널과 메인 영역을
+   나란히 두는 화면들이 공통으로 쓰는 뼈대. OCR서식신청 추출화면·OCR업무신청·관리자 메뉴관리·
+   역할권한 상세 모달까지 4곳이 동일 구조라 patterns/로 뒀다(2026-08-18, 원래 pages/extract.css에
+   있던 것을 분리 — pages/의 것이 2개 이상 화면에서 재사용되고 있어 규칙 위반이었다).
+   출처: get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 481:7577 등) 실측.
+
+   - .split-view: 검색바+본문을 한 컨테이너로 묶어 .content의 gap이 둘 사이에 끼지 않게 한다.
+     검색바가 없는 화면(메뉴관리/역할권한 모달)은 이 래퍼 없이 .split-view__body만 바로 쓴다.
+   - .split-view__body: 기본값은 검색바 바로 아래 붙는 형태(위쪽 모서리/테두리 없음).
+     검색바 없이 단독으로 쓸 때는 .split-view__body--boxed를 더해 4면 다 두르고 배경을 채운다. */
+
+.split-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.split-view__search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap-md) var(--gap-2xl); /* 세로갭 8px, 가로갭 36px */
+  padding: 12px 16px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: 8px 8px 0 0;
+}
+.split-view__search-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.split-view__search-item--tight {
+  gap: 12px;
+}
+.split-view__search-label {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-tertiary);
+  letter-spacing: -0.0442px;
+  white-space: nowrap;
+}
+.split-view__search-combo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.split-view__body {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  border: 1px solid var(--border-neutral-subtle);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+/* 검색바 없이 단독으로 쓰이는 변형 — get_design_context(604:5189, 604:6449) 실측
+   (관리자 메뉴관리, 역할권한 상세 모달). 4면 테두리 + 전체 라운드 + 흰 배경. */
+.split-view__body--boxed {
+  width: 100%;
+  background: var(--surface-white);
+  border-top: 1px solid var(--border-neutral-subtle);
+  border-radius: 8px;
+}
+.split-view__body-main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+} /* 리스트(고정폭) 뺀 나머지 폭 — 뷰어/결과 비율 계산 기준. 2분할(목록+본문)만 있는 화면은 안 써도 된다 */

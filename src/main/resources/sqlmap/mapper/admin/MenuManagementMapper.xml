@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.agilesoda.module.admin.mapper.MenuManagementMapper">
+
+
+	<select id="getMenuList"  parameterType="string" resultType="com.agilesoda.module.admin.vo.MenuManagementVO">
+		/* 메뉴관리: 메뉴 조회 쿼리 (getMenuList)*/
+		select A.MENU_ID 			as menuId
+			 ,A.MENU_NM 			as menuNm
+			 ,A.MENU_LEVEL 			as menuLevel
+			 ,A.UPRN_MENU_ID 		as uprnMenuId
+			 ,A.MENU_SER 			as menuSer
+			 ,A.MENU_URL 			as menuUrl
+			 ,A.USE_YN   			as useYn
+			 ,M.EMP_KOR_FLNM		AS empKorFlnm
+			 ,A.LAST_CHNG_EMPNO 	as lastChngEmpno
+			 ,TO_CHAR(TO_DATE(A.LAST_CHNG_DTTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD HH24:MI:SS') as lastChngDttm
+		from ocuoc_menun_m A
+		LEFT OUTER JOIN OCUOC_USERI_M M on A.LAST_CHNG_EMPNO = M.EMPNO
+		where 1=1
+		order by case when A.MENU_LEVEL = 1 then A.MENU_ID
+					  else A.UPRN_MENU_ID
+					 end, A.MENU_LEVEL, A.MENU_SER ASC
+	</select>
+
+	<insert id="insertMenu" parameterType="com.agilesoda.module.admin.vo.MenuManagementVO">
+		/* 메뉴관리: 메뉴 저장 쿼리 (insertMenu)*/
+		<choose>
+			<when test="menuId != null and menuId != ''">
+				update ocuoc_menun_m
+				set MENU_NM			= #{menuNm}
+				, MENU_LEVEL		= '2'
+				, UPRN_MENU_ID		= #{uprnMenuId}
+				, MENU_SER			= #{menuSer}
+				, MENU_URL			= #{menuUrl}
+				, USE_YN			= #{useYn}
+				, LAST_CHNG_EMPNO	= #{lastChngEmpno}
+				, LAST_CHNG_DTTM	= TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+				where MENU_ID = #{menuId}
+			</when>
+
+			<otherwise>
+				INSERT INTO ocuoc_menun_m
+				(
+				  MENU_ID
+				, MENU_NM
+				, MENU_LEVEL
+				, UPRN_MENU_ID
+				, MENU_SER
+				, MENU_URL
+				, USE_YN
+				, LAST_CHNG_EMPNO
+				, LAST_CHNG_DTTM
+				, FRST_REG_EMPNO
+				, FRST_REG_DTTM
+				)
+				VALUES
+				(
+				(select 'MENU'||LPAD(NVL(MAX(TO_NUMBER(SUBSTR(MENU_ID, 5))),TO_NUMBER(SUBSTR(#{uprnMenuId},5)))+1,4,'0')
+				   from ocuoc_menun_m	-- 메뉴관리
+				  where UPRN_MENU_ID = #{uprnMenuId})
+				, #{menuNm}
+				, '2'
+				, #{uprnMenuId}
+				, #{menuSer}
+				, #{menuUrl}
+				, #{useYn}
+				, #{lastChngEmpno}
+				, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+				, #{lastChngEmpno}
+				, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+				)
+			</otherwise>
+		</choose>
+	</insert>
+
+	<delete id="deleteMenu">
+		/* 메뉴관리: 메뉴 삭제 쿼리 (deleteMenu)*/
+		DELETE
+		FROM ocuoc_menun_m
+		WHERE MENU_ID = #{menuId}
+	</delete>
+
+	<select id="selectBtnList" resultType="com.agilesoda.module.admin.vo.MenuManagementBtnVO">
+		/* 메뉴관리: 버튼 조회 쿼리 (selectBtnList)*/
+		select  MENU_ID 			as menuId
+			   ,BTN_SEQ 			as btnSeq
+			   ,BTN_CD 				as btnCd
+			   ,BTN_NM 				as btnNm
+			   ,AREA_CD 			as areaCd
+			   ,ACTION_CD 			as actionCd
+			   ,USE_YN 				as useYn
+		       ,IOCN_URL 			AS iocnUrl
+		       ,AUDIT_YN 			AS auditYn
+			   ,LAST_CHNG_EMPNO 	as lastChngEmpno
+		  from ocuoc_buttn_m   -- 버튼정보
+		 where MENU_ID = #{menuId}
+		 order by AREA_CD,BTN_SEQ
+	</select>
+
+	<insert id="insertBtnList">
+		/* 메뉴관리: 버튼 저장 쿼리 (insertBtnList)*/
+		MERGE INTO ocuoc_buttn_m T
+		USING (
+		    SELECT
+		        #{menuId} AS MENU_ID,
+		        #{btnSeq} AS BTN_SEQ,
+				#{areaCd} AS AREA_CD
+		    FROM DUAL
+			)S
+		    ON (
+		        T.MENU_ID = S.MENU_ID
+		        AND T.BTN_SEQ = S.BTN_SEQ
+				AND T.AREA_CD = S.AREA_CD
+				)
+		    WHEN MATCHED THEN
+		    UPDATE SET
+		         T.USE_YN = #{useYn}
+				,T.LAST_CHNG_EMPNO = #{lastChngEmpno}
+				,T.LAST_CHNG_DTTM = TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+		    WHEN NOT MATCHED THEN
+				INSERT(
+						  MENU_ID
+						, BTN_SEQ
+						, BTN_CD
+						, BTN_NM
+						, AREA_CD
+						, ACTION_CD
+						, USE_YN
+						, IOCN_URL
+						, AUDIT_YN
+						, LAST_CHNG_EMPNO
+						, LAST_CHNG_DTTM
+						, FRST_REG_EMPNO
+						, FRST_REG_DTTM)
+				VALUES ( #{menuId}
+					   ,  (select nvl(max(t.btn_seq), 0) + 1
+						   from (select btn_seq
+								 from ocuoc_buttn_m
+								 where menu_id = #{menuId}
+								   and AREA_CD = #{areaCd}) t)
+					   ,  #{btnCd}
+					   ,  #{btnNm}
+					   ,  #{areaCd}
+					   ,  #{actionCd}
+					   ,  #{useYn}
+					   ,  #{iocnUrl}
+					   ,  #{auditYn}
+					   ,  #{lastChngEmpno}
+					   ,  TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+					   ,  #{lastChngEmpno}
+					   ,  TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+					   )
+	</insert>
+
+	<delete id="deleteBtnList">
+		/* 메뉴관리: 버튼 삭제 쿼리 (deleteBtnList)*/
+		DELETE
+		FROM ocuoc_buttn_m
+		WHERE MENU_ID = #{menuId}
+		  AND BTN_SEQ = #{btnSeq}
+		  AND AREA_CD = #{areaCd}
+	</delete>
+
+	<delete id="deleteRoleBtn">
+		/* 메뉴관리: 버튼 삭제시 권한도 삭제 쿼리 (deleteRoleBtn)*/
+		DELETE
+		FROM ocuoc_USBTN_m
+		WHERE MENU_ID = #{menuId}
+		  AND BTN_CD = #{btnCd}
+	</delete>
+    
+</mapper>

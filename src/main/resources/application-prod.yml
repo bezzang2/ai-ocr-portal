@@ -1,0 +1,54 @@
+﻿server:
+  port: 9090
+  servlet:
+    context-path: /aiportal
+
+spring:
+  datasource:
+    # Write(Master) Pool ?ㅼ젙
+    write:
+      hikari:
+        #driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+        #jdbc-url: jdbc:log4jdbc:oracle:thin:@172.31.35.90:1599:DBPR
+        driver-class-name: oracle.jdbc.OracleDriver
+        jdbc-url: jdbc:oracle:thin:@172.31.35.90:1599:DBPR
+        username: uocapp
+        password: UOCAPP123!
+        maximum-pool-size: 10
+        minimum-idle: 5
+        connection-timeout: 3000
+        max-lifetime: 1800000
+    # read(Slave) Pool ?ㅼ젙
+    read:
+      hikari:
+        #driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+        #jdbc-url: jdbc:log4jdbc:oracle:thin:@172.31.35.90:1599:DBPR
+        driver-class-name: oracle.jdbc.OracleDriver
+        jdbc-url: jdbc:oracle:thin:@172.31.35.90:1599:DBPR
+        username: uocapp
+        password: UOCAPP123!
+        maximum-pool-size: 20
+        minimum-idle: 10
+        connection-timeout: 3000
+        max-lifetime: 1800000
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+sso:
+  uurl: https://smartit.kjbank.com/aiportal/
+  server-url: https://smartit.kjbank.com/aiportal
+  nls-url: http://sso.kjbank.com
+  nls-port: 13890
+
+aiocr:
+  file:
+    path: /Data/aiocr/upload
+    result: /Data/aiocr/result
+  agent:
+    url: https://smartit.kjbank.com/aiocr
+    id: aiocr_agent
+    passwd: ouHjBh80hjsFiqKEO8uxdQ==
+    token-enabled: false
+

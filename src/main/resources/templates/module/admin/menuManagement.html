@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+	  xmlns:th="http://www.thymeleaf.org"
+	  xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+	  layout:decorate="~{common/layouts/defaultLayout}"
+	  layout:fragment="Content"
+>
+<head>
+<meta charset="UTF-8">
+<title>메뉴관리 | AI OCR 서류판독시스템</title>
+<link rel="stylesheet" th:href="@{/css/main.css}">
+
+	<!-- inline JS 영역-->
+    <script th:inline="javascript" type="text/javascript">
+      var item = [[${list}]];
+
+      //console.log(item);
+      let selectedParentEl = null;
+      let selectedParentId = null;
+      let newMenuEl = null;   //현제 신규 메뉴
+      let isNewMenu = false; //신규 메뉴 생성여부
+      let selectedMenuId = null; // 삭제할 메뉴ID
+
+      let selectedBtnMenuId = null; // 삭제할 메뉴ID
+      let selectedBtnSeq = null; // 삭제할 순번
+      let selectedBtnRow = null; // 삭제할 로우
+      let selectedBtnCd = null; // 삭제할 ID
+
+      document.addEventListener('DOMContentLoaded',function (){
+
+        // 메뉴 오픈시 lnb쪽 메뉴 활성화 부분
+        const params = new URLSearchParams(location.search);
+        const menuId = params.get("menuId");
+
+        if(menuId) {
+          openLnb(menuId);
+        }
+
+        /***********************************************************************
+         *    화면내 모든 버튼 클릭했을때 타는 이벤트
+         ************************************************************************/
+        document.addEventListener("click",function (e) {
+          const btn = e.target.closest("[data-action-cd]");
+          if (!btn) {
+            return;
+          }
+
+          const actionCd = btn.dataset.actionCd;
+          const areaCd = btn.dataset.areaCd;
+          console.log("actionCd===>>>",actionCd)
+          console.log("areaCd===>>>",areaCd)
+          if(areaCd === "HEADER") {
+            switch (actionCd) {
+              case "ADD":
+                addChildMenu();
+                break;
+              case "DELETE":
+                deleteMenu();
+                break;
+              case "SAVE":
+                saveNewMenu();
+                break;
+            }
+          }else if(areaCd === "DETAIL") {
+            switch (actionCd) {
+              case "ADD":
+                addBtnRow();
+                break;
+              case "DELETE":
+                deleteBtnList();
+                break;
+              case "SAVE":
+                saveBtnList();
+                break;
+            }
+          }
+
+        });
+      });
+
+      /**********************************************************************
+       * 메뉴트리 => 클릭 이벤트
+       ***********************************************************************/
+      function selectPrarentMenu(el, event){
+        const clickParentId = el.dataset.menuId;
+        //console.log("기존 부모 : "+selectedParentId);
+        //console.log("클릭한 부모 : "+clickParentId);
+        //console.log("신규 여부 : "+isNewMenu);
+        // 삭제버튼 비활성화
+        const deleteBtn = document.querySelector("#menuDelete");
+        if(deleteBtn){
+          deleteBtn.disabled = true;
+        }
+
+        //1.신규 메뉴가 있는 상태에서 다른상위메뉴 클릭했는지 확인
+        if(isNewMenu === true && selectedParentId !== clickParentId){
+            const oldParentId = String(selectedParentId);
+            const result = confirm("신규 메뉴에 입력한 내용이있습니다.\n다른 상위 메뉴로 이동하시겠습니까?");
+            // 이동 취소
+            if(result === false){
+              if(event) {
+                event.preventDefault();
+                event.stopPropagation();
+                event.stopImmediatePropagation();
+              }
+              document.querySelectorAll('.menu-tree__item').forEach(function (item){item.classList.remove('is-active')});
+              const oldParent = document.querySelector('.menu-tree__item[data-menu-id="'+oldParentId+'"]');
+              if(oldParent){
+                oldParent.classList.add('is-active');
+                selectedParentEl = oldParent;
+                selectedParentId = oldParentId;
+              }else{
+                console.log("이동 취소 -> 기존 부모 못찾음 ");
+              }
+              //console.log("이동 취소 -> 기존 부모 유지 : ");
+              //console.log("기존 부모 : "+selectedParentId);
+              return false;
+            }
+            // 확인했거나 입력값이 없으면 기존 신규 메뉴 제거
+            if(newMenuEl){
+              newMenuEl.remove();
+            }
+            newMenuEl = null;
+            isNewMenu = false;
+        }
+        // 2.기존 부모 선택 해제
+        document.querySelectorAll('.menu-tree__item').forEach(function (item){item.classList.remove('is-active')});
+        // 3.클릭한 부모 선택
+        el.classList.add('is-active');
+        selectedParentEl = el;
+        selectedParentId = clickParentId; //현제 선택된 부모ID
+        //console.log("이동한 부모 ID====>>"+selectedParentId);
+        return true;
+
+      }
+
+      /**********************************************************************
+       * 추가버튼 클릭 이벤트
+       ***********************************************************************/
+      function addChildMenu(){
+
+        // 부모 선택 안 했을 경우
+        if(!selectedParentEl) {
+          openInformationModal("상위 메뉴를 먼저 선택하세요.");
+          return;
+        }
+
+        // 선택한 부모가 속해있는 group 찾기
+        const parentGroup = selectedParentEl.closest('.menu-tree__group');
+        if(!parentGroup){
+          console.log("상위 메뉴 영역을 찾을 수 없습니다.");
+          return;
+        }
+        const subArea = parentGroup.querySelector('.menu-tree__sub');
+        if(!subArea){
+          console.log("하위 메뉴 영역을 찾을 수 없습니다.");
+          return;
+        }
+
+        // 신규 자식 생성
+        const newChild = document.createElement("div");
+        newChild.className = "menu-tree__subitem is-active";
+        // 신규이므로 menuId는 아직 없음
+        newChild.dataset.menuId = "";
+        //부모 ID저장
+        newChild.dataset.parentId = selectedParentId;
+        //신규 여부 표시
+        newChild.dataset.isNew = "Y";
+        newChild.innerHTML = '<span class="menu-tree__subitem-dot"></span><span>신규 메뉴</span>';
+        newChild.onclick = function (){selectChildMenu(this)};
+
+        // 기존 선택 제거
+        document.querySelectorAll('.menu-tree__subitem').forEach(item => {item.classList.remove('is-active');});
+        //자식 영역에 추가
+        subArea.appendChild(newChild);
+        selectChildMenu(newChild);
+        // 상세정보 초기화
+        resetMenuForm();
+        // // 신규 메뉴 기억
+        newMenuEl = newChild;
+        isNewMenu = true;
+
+        // 신규 메뉴 상세정보 세팅
+        //setNewMenuForm(selectedParentId);
+      }
+
+      /**********************************************************************
+       * 데이터 매핑 초기화 함수
+       ***********************************************************************/
+      function resetMenuForm(){
+        document.querySelector("#menuId").value = "";
+        document.querySelector("#menuNm").value = "";
+        document.querySelector("#menuUrl").value = "";
+        document.querySelector("#menuSer").value = "";
+        document.querySelector("#useYn").value = "";
+        document.querySelector("#lastChngEmpno").value = "";
+        document.querySelector("#lastChngDttm").value = "";
+        //console.log("상세정보 초기화");
+        // 버튼정의쪽 초기화
+        const tbody = document.querySelector("#btnListBody");
+        if(!tbody){
+          return;
+        }
+        tbody.innerHTML = '<tr class="empty-row"><td colSpan="5" style="text-align:center;">등록된 버튼이 없습니다.</td> </tr>';
+      }
+
+      /**********************************************************************
+       * 필수항목 체크 함수
+       ***********************************************************************/
+      function checkNewMenuChange(){
+        const menuNm = document.querySelector("#menuNm")?.value.trim()||"";
+        const menuUrl = document.querySelector("#menuUrl")?.value.trim()||"";
+
+        return menuNm !== "" || menuUrl !== "";
+      }
+
+      /**********************************************************************
+       * 메뉴 트리 변경시 이벤트
+       ***********************************************************************/
+      function selectChildMenu(el){
+        const menuId = el.dataset.menuId;
+        const isNew = el.dataset.isNew;
+
+        selectedChildEl = el;
+        //선택 표시
+        document.querySelectorAll('.menu-tree__subitem').forEach(item => {item.classList.remove('is-active');});
+        el.classList.add('is-active');
+
+        // 상세정보 초기화
+        resetMenuForm();
+
+        selectedMenuId = menuId;
+        // 삭제버튼 비활성화
+
+        const deleteBtn = document.querySelector("#menuDelete");
+        if(deleteBtn){
+          deleteBtn.disabled = false;
+        }
+
+        // 기존 메뉴면 매핑
+        if(menuId){
+          mappingMenu(menuId);
+        }
+        // 버튼정의 조회 함수 호출
+        selectBtnList(selectedMenuId);
+      }
+
+      /**********************************************************************
+       * 데이터 매핑 함수
+       ***********************************************************************/
+      function mappingMenu(menuId){
+        const menu = item.find(function (list){return String(list.menuId) === String(menuId);});
+        if(!menu){
+          console.log("메뉴 데이터 없음 :"+menuId);
+          return;
+        }
+        document.querySelector("#menuId").value = menu.menuId||"";
+        document.querySelector("#menuNm").value = menu.menuNm||"";
+        document.querySelector("#menuUrl").value = menu.menuUrl||"";
+        document.querySelector("#menuSer").value = menu.menuSer||"";
+        document.querySelector("#useYn").value = menu.useYn||"";
+        document.querySelector("#lastChngEmpno").value = menu.lastChngEmpno||"";
+        document.querySelector("#lastChngDttm").value = menu.lastChngDttm||"";
+      }
+
+      /**********************************************************************
+       * 저장 버튼 클릭 이벤트
+       ***********************************************************************/
+      function saveNewMenu() {
+        // 신규 상태가 아니면 막기
+        // if (!isNewMenu) {
+        //   alert("신규 메뉴가 아닙니다.");
+        //   return;
+        // }
+        const menuId = document.querySelector("#menuId").value.trim();
+        const menuNm = document.querySelector("#menuNm").value.trim();
+        const menuUrl = document.querySelector("#menuUrl").value.trim();
+        const menuSer = document.querySelector("#menuSer").value.trim();
+        const useYn = document.querySelector("#useYn").value.trim();
+
+        // console.log("데이터 값 정보 menuNm : "+menuNm);
+        // console.log("데이터 값 정보 menuUrl : "+scnUrlmenuUrlNm);
+        // console.log("데이터 값 정보 menuSer : "+menuSer);
+        // console.log("데이터 값 정보 useYn : "+useYn);
+
+        if (menuNm === "") {
+          openInformationModal("메뉴명을 입력하세요.");
+          document.querySelector("#menuNm").focus();
+          return;
+        }
+
+        if (menuSer === "") {
+          openInformationModal("노출순서를 입력하세요.");
+          document.querySelector("#menuSer").focus();
+          return;
+        }
+
+        if (useYn === "") {
+          openInformationModal("사용 여부를 입력하세요.");
+          document.querySelector("#useYn").focus();
+          return;
+        }
+
+        if (menuUrl === "") {
+          openInformationModal("화면URL을 입력하세요.");
+          document.querySelector("#menuUrl").focus();
+          return;
+        }
+
+
+        const data = {
+          menuId: menuId,
+          uprnMenuId: selectedParentId,
+          menuNm: menuNm,
+          menuUrl: menuUrl,
+          useYn: useYn,
+          menuSer: menuSer
+        };
+
+        openConfirmModal("메뉴를 등록하시겠습니까?",function (){
+          fetch(contextPath+"module/admin/insert", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(data)
+            })
+            .then(response => {
+              if (!response.ok) {
+                throw new Error("등록 실패");
+                return;
+              }
+              return response.json();
+            })
+            .then(result => {
+              openSuccessModal("등록 되었습니다.");
+              //신규 상태 해제
+              isNewMenu = false;
+              newMenuEl = null;
+              // 화면 다시 조회
+              location.reload();
+            })
+            .catch(error => {
+              console.error(error);
+              openErrorModal("등록 중 오류가 발행했습니다."+data.message);
+              return;
+            });
+        });
+      }
+
+      /**********************************************************************
+       * 삭제 버튼 클릭 이벤트
+       ***********************************************************************/
+      function deleteMenu() {
+        if(!selectedMenuId){
+          if(newMenuEl){
+            newMenuEl.remove();
+            newMenuEl = null;
+          }
+          selectedMenuId = null;
+          // 상세정보 초기화
+          resetMenuForm();
+          return;
+        }
+
+        openConfirmModal("선택한 메뉴를 삭제하시겠습니까?",function (){
+          fetch(contextPath+"module/admin/delete", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                menuId: selectedMenuId
+              })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.result === "SUCCESS"){
+                  openSuccessModal("삭제 되었습니다.");
+                  location.reload();
+                }else{
+                  openErrorModal("삭제 실패했습니다."+data.message);
+                  return;
+                }
+            })
+            .catch(error => {
+              console.error(error);
+              openErrorModal("삭제 중 오류가 발행했습니다."+data.message);
+              return;
+            });
+        });
+      }
+
+      /**********************************************************************
+       *  버튼정의 조회 함수
+       ***********************************************************************/
+      function selectBtnList(menuId){
+
+        fetch(contextPath+"module/admin/selectBtnList", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                  body: JSON.stringify({
+                    menuId: menuId
+                  })
+                })
+                .then(response => {
+                  if (!response.ok) {
+                    openErrorModal("버튼정의 조회 실패");
+                    return;
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  drawBtnList(data);
+                })
+                .catch(error => {
+                  console.error(error);
+                  return;
+                });
+      }
+
+      /**********************************************************************
+       *  버튼정의 조회 후 데이터 매핑 함수
+       ***********************************************************************/
+      function drawBtnList(list) {
+        const tbody = document.querySelector("#btnListBody");
+
+        tbody.innerHTML = "";
+        // 조회 결과 없음
+        if(!list || list.length === 0){
+          tbody.innerHTML = '<tr class="empty-row"><td colSpan="6" style="text-align:center;">등록된 버튼이 없습니다.</td> </tr>';
+          return;
+        }
+
+        list.forEach(function (btn){
+          const tr = document.createElement("tr");
+          tr.dataset.isNew = "N";
+          tr.dataset.menuId = btn.menuId;
+          tr.dataset.btnSeq = btn.btnSeq;
+          tr.dataset.btnCd = btn.btnCd;
+          tr.onclick = function (){
+            selectBtnRow(this);
+          }
+          tr.dataset.original = JSON.stringify({
+            useYn: btn.useYn ?? "Y",
+          })
+          tr.innerHTML = `<td><span class="call-text">${btn.btnCd || ""}</span>
+                             <input class="input call-input input--sm btn-cd" data-btn-cd="${btn.btnCd || ''}" style="display: none;" type="text" value="${btn.btnCd}">
+                         </td>
+                         <td><span class="call-text">${btn.btnNm || ""}</span>
+                             <input class="input call-input input--sm btn-nm" style="display: none;" type="text" value="${btn.btnNm}">
+                         </td>
+                         <td><span class="call-text">${btn.areaCd || ""}</span>
+                             <input class="input call-input input--sm area-cd" style="display: none;" type="text" value="${btn.areaCd}">
+                         </td>
+                         <td><span class="call-text">${btn.actionCd || ""}</span>
+                             <input class="input call-input input--sm action-cd" style="display: none;" type="text" value="${btn.actionCd}">
+                         </td>
+                         <td><span class="call-text">${btn.iocnUrl || ""}</span>
+                             <input class="input call-input input--sm iocn-url" style="display: none;" type="text" value="${btn.iocnUrl}">
+                         </td>
+                         <td>
+                            <select class="input input--sm use-yn">
+                            <option value="Y" ${btn.useYn === 'Y' ? 'selected' : ''}>Y</option>
+                            <option value="N" ${btn.useYn === 'N' ? 'selected' : ''}>N</option>
+                            </select>
+                         </td>`;
+
+          tbody.appendChild(tr);
+        });
+        const firstRow = tbody.querySelector("tr");
+        if(firstRow){
+          selectBtnRow(firstRow);
+        }
+      }
+
+      /**********************************************************************
+       *  버튼정의 추가 버튼 이벤트
+       ***********************************************************************/
+      function addBtnRow(){
+        // 메뉴가 선택되지 않은 경우
+        if(!selectedMenuId){
+          openInformationModal("메뉴를 먼저 선택해주세요.");
+          return;
+        }
+
+        const tbody = document.querySelector("#btnListBody");
+        if(!tbody){
+          console.log("btnListBody를 찾을 수 없습니다.");
+          return;
+        }
+        // 등록된 버튼이 없습니다. 행제거
+        const emptyRow =  tbody.querySelector(".empty-row");
+        if(emptyRow){
+          emptyRow.remove();
+        }
+
+        const tr = document.createElement("tr");
+
+        // 신규 행 표시
+        tr.dataset.isNew = "Y";
+        tr.dataset.menuId = selectedMenuId;
+        tr.onclick = function (){
+          selectBtnRow(this);
+        }
+
+        tr.innerHTML = '<td><span class="cell-text" style="display:none;"></span>' +
+                           '<input class="input cell-input input--sm btn-cd" style="display: block;" type="text" value="" placeholder="버튼코드">' +
+                       '</td>' +
+                       '<td><span class="cell-text" style="display:none;"></span>' +
+                       '<input class="input cell-input input--sm btn-nm" style="display: block;" type="text" value="" placeholder="버튼명">' +
+                       '</td>' +
+                       '<td><span class="cell-text" style="display:none;"></span>' +
+                       '<input class="input cell-input input--sm area-cd" style="display: block;" type="text" value="" placeholder="버튼영역코드">' +
+                       '</td>' +
+                       '<td><span class="cell-text" style="display:none;"></span>' +
+                       '<input class="input cell-input input--sm action-cd" style="display: block;" type="text" value="" placeholder="액션코드">' +
+                       '</td>' +
+                       '<td><span class="cell-text" style="display:none;"></span>' +
+                       '<input class="input cell-input input--sm iocn-url" style="display: block;" type="text" value="" placeholder="아이콘경로">' +
+                       '</td>'+
+                       '<td>' +
+                       '<select class="input cell-input input--sm use-yn" style="display:block;">' +
+                       '<option value="Y" selected>Y</option>'+
+                       '<option value="N">N</option>'+
+                       '</select>'+
+                       '</td>';
+
+        tbody.appendChild(tr);
+
+        selectBtnRow(tr);
+        // 버튼명에 바로 포커스
+        tr.querySelector(".btn-nm").focus();
+      }
+
+      /**********************************************************************
+       *  버튼정의 로우 변경이벤트
+       ***********************************************************************/
+      function selectBtnRow(row) {
+        document.querySelectorAll("#btnListBody tr").forEach(function (item){
+          item.classList.remove("is-selected");
+        });
+
+        row.classList.add("is-selected");
+
+        selectedBtnRow = row;
+        selectedBtnMenuId = row.dataset.menuId;
+        selectedBtnSeq = row.dataset.btnSeq;
+        selectedBtnCd =  row.dataset.btnCd;
+      }
+
+      /**********************************************************************
+       *  버튼정의 저장 버튼 이벤트
+       ***********************************************************************/
+      function saveBtnList(){
+        const newRows = document.querySelectorAll('#btnListBody tr');
+
+        const btnList = [];
+        for(const row of newRows){
+          const btnNm = row.querySelector(".btn-nm").value.trim();
+          const btnCd = row.querySelector(".btn-cd").value.trim();
+          const areaCd = row.querySelector(".area-cd").value.trim();
+          const actionCd = row.querySelector(".action-cd").value.trim();
+          const iocnUrl = row.querySelector(".iocn-url").value.trim();
+          const useYn = row.querySelector(".use-yn").value;
+          const current = {
+            useYn
+          }
+          const isNew = row.dataset.isNew === "Y";
+          //기존 행 원본값
+          const original = isNew ? null : JSON.parse(row.dataset.original || "{}");
+          // 기존 행 변경 여부 확인
+          const isChanged = isNew || Object.keys(current).some(key => String(original[key] ?? "") !== String(current[key] ?? ""));
+          // 변경 없으면 저정 제외
+          if(!isChanged){
+            continue;
+          }
+          // 필수값 체크
+          if(btnNm === ""){
+            openInformationModal("버튼명을 입력하세요.");
+            row.querySelector(".btn-nm").focus();
+            return;
+          }
+
+          if(btnCd === ""){
+            openInformationModal("버튼코드을 입력하세요.");
+            row.querySelector(".btn-cd").focus();
+            return;
+          }
+
+          if(areaCd === ""){
+            openInformationModal("버튼영역코드을 입력하세요.");
+            row.querySelector(".area-cd").focus();
+            return;
+          }
+
+          if(actionCd === ""){
+            openInformationModal("액션코드을 입력하세요.");
+            row.querySelector(".action-cd").focus();
+            return;
+          }
+
+          btnList.push({
+            menuId: row.dataset.menuId,
+            btnSeq:isNew ? null : Number(row.dataset.btnSeq),
+            btnNm: btnNm,
+            btnCd: btnCd,
+            useYn: useYn,
+            areaCd:areaCd,
+            actionCd:actionCd,
+            iocnUrl:iocnUrl,
+            auditYn:"Y"
+          });
+        }
+
+        if(btnList.length === 0){
+          openInformationModal("변경된 데이터가 없습니다.");
+          return;
+        }
+
+        openConfirmModal("버튼정보를 등록하시겠습니까?",function (){
+
+          fetch(contextPath+"module/admin/insertBtnList", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(btnList)
+              })
+                .then(response => {
+                  if (!response.ok) {
+                    throw new Error("등록 실패");
+                    return;
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  if(data.result === "SUCCESS"){
+                    openSuccessModal("등록 되었습니다.");
+                    selectBtnList(selectedMenuId);
+
+                  }else{
+                    openErrorModal("등록 실패 :"+data.message);
+                    return;
+                  }
+                })
+                .catch(error => {
+                  console.error(error);
+                  openErrorModal("등록 중 오류가 발행했습니다.");
+                  return;
+                });
+        });
+      }
+
+      /**********************************************************************
+       *  버튼정의 삭제 버튼 이벤트
+       ***********************************************************************/
+      function deleteBtnList() {
+        if(!selectedBtnRow){
+          openInformationModal("삭제할 버튼를 선택해주세요.");
+          return;
+        }
+
+        // 신규 추가한 행은 db 호출 없이 화면에서 삭제
+        if(selectedBtnRow.dataset.isNew === "Y"){
+          openConfirmModal("추가한 버튼을 삭제하시겠습니까?");
+          selectedBtnRow.remove();
+          selectedBtnRow = null;
+          selectedBtnSeq = null
+          selectedBtnMenuId = null;
+          return;
+        }
+
+        openConfirmModal("선택한 버튼을 삭제하시겠습니까?",function (){
+
+          fetch(contextPath+"module/admin/deleteBtnList", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              menuId: selectedBtnMenuId,
+              btnSeq: Number(selectedBtnSeq),
+              btnCd: selectedBtnCd
+            })
+          })
+                .then(response => response.json())
+                .then(data => {
+                  if(data.result === "SUCCESS"){
+                    openSuccessModal("삭제 되었습니다.");
+                    selectedBtnRow = null;
+                    selectedBtnSeq = null
+                    selectedBtnMenuId = null;
+                    // 현제 메뉴의 버튼 제조회
+                    selectBtnList(selectedMenuId);
+                  }else{
+                    openErrorModal("삭제 실패했습니다.."+data.message);
+                    return;
+                  }
+                })
+                .catch(error => {
+                  console.error(error);
+                  openErrorModal("삭제 중 오류가 발행했습니다.");
+                  return;
+                });
+        });
+      }
+
+    </script>
+	
+</head>
+<body>
+    <main class="content">
+
+      <!-- 페이지 헤더 — get_design_context(604:5183) 실측, 버튼 없음 -->
+      <div class="page-header">
+        <h1 class="page-header__title">메뉴관리</h1>
+      </div>
+
+      <!-- 메뉴 트리 + 상세정보/버튼정의 — get_design_context(604:5189) 실측.
+           검색바 없이 단독으로 쓰이는 상자라 patterns/split-view.css의 .split-view__body에
+           --boxed 변형을 더해 재사용한다(OCR업무신청 등 검색바 있는 화면의 .split-view와 같은
+           패턴 — patterns/split-view.css 주석 참고). -->
+      <div class="split-view__body split-view__body--boxed">
+
+        <!-- 좌측 메뉴 트리 — get_design_context(604:5190) 실측 -->
+        <div class="menu-tree">
+          <div class="menu-tree__header">메뉴 트리</div>
+          <div class="menu-tree__body">
+            <div class="menu-tree__group" th:each="item:${list}" th:if="${item.menuLevel == 1}">
+              <div class="menu-tree__item" th:data-menu-id="${item.menuId}" onclick="return selectPrarentMenu(this, event)">
+                <svg class="menu-tree__chevron" viewBox="0 0 16 16" fill="none"><g transform="translate(4,5.6667)"><path d="M0.666667 0.666667L4 4L7.33333 0.666667" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+                <span th:text="${item.menuNm}"></span>
+              </div>
+              <div class="menu-tree__sub">
+                <div class="menu-tree__subitem" th:each="child:${list}"
+                                                          th:if="${child.uprnMenuId == item.menuId}"
+                                                          th:data-menu-id="${child.menuId}"
+                                                          th:data-parent-id="${item.menuId}" onclick="selectChildMenu(this)">
+                  <span class="menu-tree__subitem-dot"></span>
+                  <span th:text="${child.menuNm}"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 우측 상세정보 + 버튼정의 — get_design_context(604:5233) 실측 -->
+        <div class="menu-result">
+          <div class="menu-result__body">
+
+            <div class="task-section">
+              <div class="task-section__header">
+                <span class="task-section__title">상세정보</span>
+                <div class="task-section__actions">
+                  <button th:each="btn : ${session.buttonList}"
+                          th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'HEADER'}"
+                          type="button"
+                          class="btn-neutral"
+                          style="width:80px"
+                          th:id="${btn.btnCd}"
+                          data-audit="Y"
+                          th:data-area-cd="${btn.areaCd}"
+                          th:data-menu-id="${btn.menuId}"
+                          th:data-btn-cd="${btn.btnCd}"
+                          th:data-action-cd="${btn.actionCd}"
+                          th:data-action-nm="${btn.btnNm}">
+                    <img th:src="@{${btn.iocnUrl}}" alt="">
+                    <span th:text="${btn.btnNm}"></span>
+                  </button>
+                </div>
+              </div>
+              <!-- patterns/detail-panel.css(2026-08-20) 재실측 반영 — 이전엔 .search-area의
+                   --detail 모디파이어(회색 채움)를 썼는데, 실제로는 흰 배경+Neutral/100
+                   보더인 다른 화면들과 같은 성격의 패널이라 공용 클래스로 교체했다. 내부 줄/항목
+                   구조(.search-area__row--detail, __item--equal, __label--fixed)는 그대로 재사용. -->
+              <div class="detail-panel detail-panel--column">
+                <div class="search-area__row search-area__row--detail">
+                  <div class="search-area__item search-area__item--equal">
+                    <span class="search-area__label search-area__label--fixed">메뉴ID</span>
+                    <input class="input" id="menuId" name="menuId" type="text" value="" readonly>
+                  </div>
+                  <div class="search-area__item search-area__item--equal">
+                    <span class="search-area__label search-area__label--fixed search-area__label--required">메뉴명</span>
+                    <input class="input" type="text" value="" id="menuNm" name="menuNm">
+                  </div>
+                  <div class="search-area__item search-area__item--equal">
+                    <span class="search-area__label search-area__label--fixed search-area__label--required">화면 URL</span>
+                    <input class="input" type="text" value="" id="menuUrl" name="menuUrl">
+                  </div>
+                </div>
+                <div class="search-area__row search-area__row--detail">
+                  <div class="search-area__item search-area__item--equal">
+                    <span class="search-area__label search-area__label--fixed">노출 순서</span>
+                    <input class="input" type="text" value="" id="menuSer" name="menuSer">
+                  </div>
+                  <div class="search-area__item search-area__item--equal">
+                    <span class="search-area__label search-area__label--fixed">사용 여부</span>
+                    <select class="input" id="useYn" name="useYn"><option value="">선택</option>
+                                          <option value="Y">사용</option>
+                                          <option value="N">미사용</option></select>
+                  </div>
+                  <!-- "신청자"(읽기전용 단일 텍스트) → "등록자"(아이디+이름 2개 입력)로 교체 —
+                       get_design_context(604:5165) 재실측(2026-08-20). Figma에 두 입력 다
+                       Readonly 상태가 아니라(메뉴ID처럼 status="Readonly"가 없음) 편집 가능한
+                       필드로 반영했다. 두 인풋을 묶는 데 새 클래스를 안 만들고 기존
+                       .search-area__combo(6px gap, 검색바에서 이미 쓰던 패턴)를 재사용했다. -->
+                  <div class="search-area__item search-area__item--equal">
+                    <span class="search-area__label search-area__label--fixed">등록자</span>
+                    <div class="search-area__combo" style="flex:1; min-width:0">
+                      <input class="input" type="text" value="" id="empKorFlnm" name="empKorFlnm" readonly>
+                      <input class="input" type="text" value="" id="lastChngEmpno" name="lastChngEmpno" readonly>
+                    </div>
+                  </div>
+                  <div class="search-area__item search-area__item--equal">
+                    <span class="search-area__label search-area__label--fixed">등록일시</span>
+                    <input class="input" type="text" value="" id="lastChngDttm" name="lastChngDttm" readonly>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="task-section">
+              <div class="task-section__header">
+                <span class="task-section__title">버튼정의</span>
+                <div class="task-section__actions">
+                  <button th:each="btn : ${session.buttonList}"
+                          th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'DETAIL'}"
+                          type="button"
+                          class="btn-neutral"
+                          style="width:80px"
+                          th:id="${btn.btnCd}"
+                          data-audit="Y"
+                          th:data-area-cd="${btn.areaCd}"
+                          th:data-menu-id="${btn.menuId}"
+                          th:data-btn-cd="${btn.btnCd}"
+                          th:data-action-cd="${btn.actionCd}"
+                          th:data-action-nm="${btn.btnNm}">
+                    <img th:src="@{${btn.iocnUrl}}" alt="">
+                    <span th:text="${btn.btnNm}"></span>
+                  </button>
+                </div>
+              </div>
+              <table class="table" style="table-layout:fixed; width:100%">
+                <colgroup>
+                  <col style="width:15%">
+                  <col style="width:10%">
+                  <col style="width:15%">
+                  <col style="width:15%">
+                  <col style="width:25%">
+                  <col style="width:10%">
+                </colgroup>
+                <thead>
+                <tr>
+                  <th>코드</th>
+                  <th>명</th>
+                  <th>영역코드</th>
+                  <th>액션코드</th>
+                  <th>아이콘경로</th>
+                  <th>사용여부</th>
+                </tr>
+                </thead>
+                <tbody id="btnListBody">
+                </tbody>
+              </table>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </main>
+
+
+<div th:replace="~{common/commonModals :: commonModals}"></div>
+<script th:src="@{/js/modal.js}"></script>
+<script th:src="@{/js/lnb.js}"></script>
+<script th:src="@{/js/menu-tree.js}"></script>
+<script th:src="@{/js/table-row-edit.js}"></script>
+<script th:src="@{/js/common.js}"></script>
+</body>
+</html>

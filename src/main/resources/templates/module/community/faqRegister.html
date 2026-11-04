@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+  <meta charset="UTF-8">
+  <title>FAQ 등록 | AI OCR 서류판독시스템</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+
+
+
+  <!-- inline JS 영역-->
+  <script th:inline="javascript" type="text/javascript">
+    let uploadFiles = [];
+
+    document.addEventListener('DOMContentLoaded',function (){
+      const params = new URLSearchParams(window.location.search);
+      const mode = params.get("mode");
+      const menuId = params.get("menuId");
+      // 신규 등록 화면 초기화
+      if(mode === "insert"){
+        initNoticeForm();
+      }
+
+      /**********************************************************************
+       *  화면내 모든 버튼 클릭 이벤트
+       ***********************************************************************/
+      document.addEventListener("click",function (e) {
+        const btn = e.target.closest("[data-action-cd]");
+
+        if(!btn){ return;}
+
+        const actionCd = btn.dataset.actionCd;
+        const areaCd = btn.dataset.areaCd;
+        //console.log("actionCd===>>>",actionCd)
+        //console.log("areaCd===>>>",areaCd)
+
+        switch (actionCd){
+          case "SAVE":
+            saveNotice();
+            break;
+          case "LIST":
+            location.href = contextPath+"module/community/faq"+"?menuId="+encodeURIComponent(menuId||"");
+            break;
+        }
+      })
+    });
+
+    /**********************************************************************
+     *  제목 내용 초기화 함수
+     ***********************************************************************/
+    function initNoticeForm() {
+      // 1. 제목 초기화
+      const  title = document.querySelector('.search-area__item input[type="text"]:not(readonly)');
+      if(title){
+        title.value = "";
+      }
+
+
+      // 5. 내용 초기화
+      const textarea = document.querySelector('.notice-register__textarea');
+      if(textarea){
+        textarea.value = "";
+      }
+
+    }
+
+    /**********************************************************************
+     *  저장 필수항목 체크 함수
+     ***********************************************************************/
+    function saveNotice() {
+
+      const noticeTtlObj = document.getElementById("noticeTtl");
+      const noticeCnObj = document.getElementById("noticeCn");
+
+      // 필수값 체크
+      const title = noticeTtlObj.value.trim();
+      if(title === ""){
+        openInformationModal("제목을 입력하세요.");
+        noticeTtlObj.focus();
+        return;
+      }
+      const noticeCn = noticeCnObj.value.trim();
+      if(noticeCn === ""){
+        openInformationModal("질문 내용을 입력하세요.");
+        noticeCnObj.focus();
+        return;
+      }
+
+      insertNotice();
+
+    }
+
+    /**********************************************************************
+     *  저장 함수
+     ***********************************************************************/
+    function insertNotice() {
+      const formData = new FormData();
+      // 3. 날짜 세팅
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth()+1).padStart(2,"0");
+      const dd = String(today.getDate()).padStart(2,"0");
+
+      const todayStr = `${yyyy}${mm}${dd}`;
+      // 공지사항 데이터
+      formData.append("noticeTtl",document.getElementById("noticeTtl").value.trim());
+      formData.append("noticeCn",document.getElementById("noticeCn").value.trim());
+      formData.append("faqAnsmer",document.getElementById("faqAnsmer").value.trim());
+      formData.append("noticeMsgDvcd","Y");
+      formData.append("useYn","Y");
+      formData.append("stdd",todayStr);
+      formData.append("endt","99991231");
+      formData.append("noticeTypeCd","FAQ");
+      formData.append("files","");
+
+      openConfirmModal("등록 하시겠습니까?",function (){
+
+        fetch(contextPath+"module/community/insertNotice", {
+          method: "POST",
+          body:formData
+        })
+                .then(response => {
+                  if (!response.ok) {
+                    openErrorModal("등록 실패");
+                    return;
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  if(data.result === "SUCCESS"){
+                    openSuccessModal("등록되었습니다.");
+                    const params = new URLSearchParams(window.location.search);
+                    const menuId = params.get("menuId");
+                    location.href = contextPath+"module/community/faq"+"?menuId="+encodeURIComponent(menuId||"");
+
+                  }else{
+                    openErrorModal("등록 실패 :"+data.message);
+                    return;
+                  }
+                })
+                .catch(error => {
+                  console.error(error);
+                  openErrorModal("등록 중 오류가 발행했습니다.");
+                  return;
+                });
+      });
+    }
+
+  </script>
+</head>
+<body th:classappend="${param.popup != null and param.popup[0] == 'Y'} ? 'popup-mode' : ''">
+
+    <main class="content content--narrow">
+
+      <div class="page-header">
+        <h1 class="page-header__title">FAQ 등록</h1>
+        <div class="page-header__actions">
+          <button th:each="btn : ${session.buttonList}"
+                  th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'DETAIL_1'}"
+                  type="button"
+                  th:class="${btn.actionCd == 'SAVE'} ? 'btn btn-primary' : 'btn-outline-primary'"
+                  style="width:80px"
+                  th:id="${btn.btnCd}"
+                  data-audit="Y"
+                  th:data-area-cd="${btn.areaCd}"
+                  th:data-menu-id="${btn.menuId}"
+                  th:data-btn-cd="${btn.btnCd}"
+                  th:data-action-cd="${btn.actionCd}"
+                  th:data-action-nm="${btn.btnNm}">
+            <span th:text="${btn.btnNm}"></span></button>
+        </div>
+      </div>
+
+      <div class="notice-register">
+
+        <!-- 기본정보 — get_design_context(775:2816) 실측 -->
+        <div class="notice-register__section">
+          <h2 class="section-title">기본정보</h2>
+          <div class="detail-panel detail-panel--column">
+            <div class="search-area__row search-area__row--detail">
+              <div class="search-area__item" style="flex:1; min-width:0">
+                <span class="search-area__label search-area__label--required" style="width:80px; flex-shrink:0">제목</span>
+                <input class="input" type="text" style="flex:1" placeholder="제목을 입력해주세요" id="noticeTtl">
+              </div>
+            </div>
+            <div class="search-area__row search-area__row--detail">
+              <div class="search-area__item">
+                <span class="search-area__label" style="width:80px; flex-shrink:0">작성자</span>
+                <input class="input input--w200" type="text" th:value="${session.ssoLoginUser != null ? session.ssoLoginUser.userName + ' (' + session.ssoLoginUser.userId + ')' : ''}" readonly>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 내용 — get_design_context(775:2816) 실측 -->
+        <div class="faq-register">
+          <div class="faq-reqister__row">
+            <div class="faq-register__label required">
+              질문
+            </div>
+            <div class="faq-register__content">
+              <textarea id="noticeCn" name="noticeCn" class="faq-register__textarea" placeholder="질문 내용을 입력해주세요"></textarea>
+            </div>
+          </div>
+          <div class="faq-reqister__row faq-reqister__row--answer">
+            <div class="faq-register__label">
+              답변
+            </div>
+            <div class="faq-register__content">
+              <textarea id="faqAnsmer" name="faqAnsmer" class="faq-register__textarea faq-register__textarea--answer" placeholder="답변 내용을 입력해주세요"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </main>
+
+
+<div th:replace="~{common/commonModals :: commonModals}"></div>
+<script th:src="@{/js/modal.js}"></script>
+<script th:src="@{/js/common.js}"></script>
+</body>
+</html>

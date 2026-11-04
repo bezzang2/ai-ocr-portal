@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>서식간 검증 결과 | AI OCR 서류판독시스템</title>
+<link rel="stylesheet" href="../../css/main.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- include: common/lnb.html (실제 운영 시 JSP include로 대체, 내용은 common/lnb.html과 동일) -->
+  <aside class="lnb">
+    <div class="lnb__logo">
+      <img class="lnb__logo-img" src="../../images/icons/logo-aiocr.svg" alt="AI OCR 서류판독시스템">
+    </div>
+    <nav class="lnb__menu">
+      <div class="nav-group">
+        <div class="nav-item">
+          <svg class="nav-item__icon" viewBox="0 0 16 16" fill="none"><g transform="translate(2,2)"><path d="M11.3333 5.33333H7.33333C6.96667 5.33333 6.66667 5.63333 6.66667 6V11.3333C6.66667 11.7 6.96667 12 7.33333 12H11.3333C11.7 12 12 11.7 12 11.3333V6C12 5.63333 11.7 5.33333 11.3333 5.33333ZM10.6667 10.6667H8V6.66667H10.6667V10.6667ZM4.66667 8H0.666667C0.3 8 0 8.3 0 8.66667V11.3333C0 11.7 0.3 12 0.666667 12H4.66667C5.03333 12 5.33333 11.7 5.33333 11.3333V8.66667C5.33333 8.3 5.03333 8 4.66667 8ZM4 10.6667H1.33333V9.33333H4V10.6667ZM11.3333 0H7.33333C6.96667 0 6.66667 0.3 6.66667 0.666667V3.33333C6.66667 3.7 6.96667 4 7.33333 4H11.3333C11.7 4 12 3.7 12 3.33333V0.666667C12 0.3 11.7 0 11.3333 0ZM10.6667 2.66667H8V1.33333H10.6667V2.66667ZM4.66667 0H0.666667C0.3 0 0 0.3 0 0.666667V6C0 6.36667 0.3 6.66667 0.666667 6.66667H4.66667C5.03333 6.66667 5.33333 6.36667 5.33333 6V0.666667C5.33333 0.3 5.03333 0 4.66667 0ZM4 5.33333H1.33333V1.33333H4V5.33333Z" fill="currentColor"/></g></svg>
+          <span class="nav-item__label">대시보드</span>
+          <svg class="nav-item__chevron" viewBox="0 0 16 16" fill="none"><g transform="translate(4,5.6667)"><path d="M0.666667 0.666667L4 4L7.33333 0.666667" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+        </div>
+        <div class="nav-submenu">
+          <a class="nav-subitem" href="dashboard.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">모니터링</span>
+          </a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-item">
+          <svg class="nav-item__icon" viewBox="0 0 16 16" fill="none"><g transform="translate(0.7088,3.3296)"><path d="M13.5172 1.1114C12.8373 0.429856 11.9232 0.0331131 10.961 0.00198079C9.99888 -0.0291515 9.06103 0.307669 8.33852 0.943838C7.61601 1.58001 7.16318 2.46768 7.07227 3.42604C6.98135 4.38441 7.25919 5.34139 7.8492 6.10207L6.68253 7.5614C6.60835 7.64915 6.55252 7.75087 6.51831 7.86056C6.4841 7.97024 6.47222 8.08567 6.48337 8.20003C6.49452 8.31438 6.52847 8.42535 6.58321 8.52636C6.63796 8.62738 6.71239 8.7164 6.80212 8.78817C6.89184 8.85994 6.99504 8.91301 7.10561 8.94423C7.21618 8.97545 7.33189 8.9842 7.4459 8.96996C7.55991 8.95572 7.66992 8.91878 7.76941 8.86132C7.86891 8.80385 7.95588 8.72704 8.0252 8.6354L9.18253 7.18874C9.9872 7.57956 10.9043 7.67278 11.7711 7.45185C12.638 7.23092 13.3986 6.71013 13.9181 5.98184C14.4375 5.25355 14.6823 4.36482 14.6089 3.47327C14.5355 2.58172 14.1487 1.74496 13.5172 1.1114ZM9.1392 2.08473C9.36275 1.86118 9.62815 1.68385 9.92023 1.56286C10.2123 1.44188 10.5254 1.37961 10.8415 1.37961C11.1577 1.37961 11.4707 1.44188 11.7628 1.56286C12.0549 1.68385 12.3203 1.86118 12.5439 2.08473C12.7674 2.30829 12.9447 2.57369 13.0657 2.86577C13.1867 3.15786 13.249 3.47092 13.249 3.78707C13.249 4.10322 13.1867 4.41628 13.0657 4.70836C12.9447 5.00045 12.7674 5.26585 12.5439 5.4894C12.3203 5.71296 12.0548 5.89028 11.7627 6.01125C11.4706 6.13222 11.1575 6.19446 10.8413 6.19443C10.2027 6.19437 9.59035 5.94064 9.13886 5.48907C8.91531 5.26547 8.73798 5.00003 8.61701 4.7079C8.49605 4.41578 8.4338 4.10268 8.43383 3.7865C8.43389 3.14794 8.68762 2.53622 9.1392 2.08473ZM2.53853 1.3914C1.86154 1.40229 1.21596 1.67886 0.741061 2.16145C0.266159 2.64405 0 3.29399 0 3.97107C0 4.64814 0.266159 5.29809 0.741061 5.78068C1.21596 6.26328 1.86154 6.53985 2.53853 6.55074H5.28986C5.42671 6.55074 5.55796 6.49637 5.65473 6.3996C5.7515 6.30283 5.80586 6.17159 5.80586 6.03474C5.80586 5.89788 5.7515 5.76664 5.65473 5.66987C5.55796 5.5731 5.42671 5.51874 5.28986 5.51874H2.53786C2.33192 5.52301 2.12719 5.48614 1.93568 5.41028C1.74416 5.33442 1.56971 5.22111 1.42255 5.07697C1.27539 4.93283 1.15848 4.76077 1.07867 4.57087C0.998851 4.38098 0.957739 4.17706 0.957739 3.97107C0.957739 3.76508 0.998851 3.56116 1.07867 3.37126C1.15848 3.18136 1.27539 3.00931 1.42255 2.86517C1.56971 2.72103 1.74416 2.60771 1.93568 2.53186C2.12719 2.456 2.33192 2.41913 2.53786 2.4234H6.66586C6.80271 2.4234 6.93396 2.36904 7.03073 2.27227C7.1275 2.1755 7.18186 2.04425 7.18186 1.9074C7.18186 1.77055 7.1275 1.6393 7.03073 1.54253C6.93396 1.44577 6.80271 1.3914 6.66586 1.3914H2.53853Z" fill="currentColor"/></g><g transform="translate(2.5584,6.6128)"><path d="M0 0.687667C0 0.307667 0.308 0.000333352 0.687333 0.000333352H3.78333C3.87544 -0.00253486 3.96719 0.0131299 4.05312 0.0463977C4.13906 0.0796656 4.21744 0.129858 4.28361 0.193997C4.34977 0.258136 4.40238 0.334915 4.43831 0.419775C4.47423 0.504635 4.49275 0.595848 4.49275 0.688C4.49275 0.780152 4.47423 0.871364 4.43831 0.956225C4.40238 1.04108 4.34977 1.11786 4.28361 1.182C4.21744 1.24614 4.13906 1.29633 4.05312 1.3296C3.96719 1.36287 3.87544 1.37853 3.78333 1.37567H0.687333C0.307333 1.37567 0 1.06767 0 0.687667Z" fill="currentColor"/></g><g transform="translate(12.1056,5.4528)"><path d="M0.524384 0.0510883C0.448703 0.00448188 0.35792 -0.0110231 0.27106 0.00782324C0.1842 0.0266696 0.108006 0.0784041 0.0584454 0.152185C0.0088848 0.225965 -0.0101957 0.316065 0.00520363 0.403602C0.0206029 0.491139 0.0692868 0.569318 0.141051 0.621755C0.433051 0.817755 0.657051 1.11575 0.755717 1.48175C0.782459 1.56611 0.840682 1.63692 0.918285 1.67946C0.995887 1.722 1.0869 1.73299 1.1724 1.71016C1.2579 1.68732 1.33131 1.63242 1.37737 1.55685C1.42343 1.48129 1.4386 1.39088 1.41972 1.30442C1.28316 0.791881 0.964961 0.346448 0.524384 0.0510883Z" fill="currentColor"/></g></svg>
+          <span class="nav-item__label">통합검색</span>
+          <svg class="nav-item__chevron" viewBox="0 0 16 16" fill="none"><g transform="translate(4,5.6667)"><path d="M0.666667 0.666667L4 4L7.33333 0.666667" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+        </div>
+        <div class="nav-submenu">
+          <a class="nav-subitem" href="search.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">고객 통합검색</span>
+          </a>
+          <a class="nav-subitem" href="cross-form-verify.html" data-lnb-alias="cross-form-verify-result.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">서식간 검증 결과</span>
+          </a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-item">
+          <svg class="nav-item__icon" viewBox="0 0 16 16" fill="none"><g transform="translate(0.6672,1.3328)"><path d="M11.6667 12C11.6667 12.0884 11.6315 12.1732 11.569 12.2357C11.5065 12.2982 11.4217 12.3333 11.3333 12.3333H7.512C7.32127 12.6992 7.07927 13.0359 6.79333 13.3333H11.3333C11.687 13.3333 12.0261 13.1929 12.2761 12.9428C12.5262 12.6928 12.6667 12.3536 12.6667 12V5.21867C12.6666 4.86507 12.5261 4.52599 12.276 4.276L8.39 0.390667C8.13817 0.143782 7.80064 0.00380437 7.448 0H3.33333C2.97971 0 2.64057 0.140476 2.39052 0.390524C2.14048 0.640573 2 0.979711 2 1.33333V6.332C2.32085 6.19846 2.65659 6.10401 3 6.05067V1.33333C3 1.24493 3.03512 1.16014 3.09763 1.09763C3.16014 1.03512 3.24493 1 3.33333 1H7.33333V4C7.33333 4.35362 7.47381 4.69276 7.72386 4.94281C7.97391 5.19286 8.31304 5.33333 8.66667 5.33333H11.6667V12ZM8.33333 1.74733L10.9187 4.33333H8.66667C8.57826 4.33333 8.49348 4.29821 8.43096 4.2357C8.36845 4.17319 8.33333 4.08841 8.33333 4V1.74733ZM7.33333 10.3333C7.33333 10.8148 7.23849 11.2916 7.05423 11.7365C6.86996 12.1814 6.59987 12.5856 6.25939 12.9261C5.91891 13.2665 5.5147 13.5366 5.06984 13.7209C4.62498 13.9052 4.14818 14 3.66667 14C3.18515 14 2.70835 13.9052 2.26349 13.7209C1.81863 13.5366 1.41442 13.2665 1.07394 12.9261C0.73346 12.5856 0.463376 12.1814 0.279108 11.7365C0.0948411 11.2916 -7.17511e-09 10.8148 0 10.3333C1.44908e-08 9.36087 0.386309 8.42824 1.07394 7.74061C1.76158 7.05298 2.69421 6.66667 3.66667 6.66667C4.63913 6.66667 5.57176 7.05298 6.25939 7.74061C6.94703 8.42824 7.33333 9.36087 7.33333 10.3333ZM5.90267 8.764C5.8717 8.73296 5.83492 8.70833 5.79442 8.69153C5.75393 8.67472 5.71051 8.66607 5.66667 8.66607C5.62282 8.66607 5.57941 8.67472 5.53891 8.69153C5.49841 8.70833 5.46163 8.73296 5.43067 8.764L3 11.1953L1.90267 10.0973C1.84008 10.0347 1.75518 9.99958 1.66667 9.99958C1.57815 9.99958 1.49326 10.0347 1.43067 10.0973C1.36808 10.1599 1.33291 10.2448 1.33291 10.3333C1.33291 10.4219 1.36808 10.5067 1.43067 10.5693L2.764 11.9027C2.79496 11.9337 2.83175 11.9583 2.87224 11.9751C2.91274 11.9919 2.95616 12.0006 3 12.0006C3.04384 12.0006 3.08726 11.9919 3.12776 11.9751C3.16825 11.9583 3.20504 11.9337 3.236 11.9027L5.90267 9.236C5.93371 9.20504 5.95834 9.16825 5.97514 9.12776C5.99195 9.08726 6.0006 9.04385 6.0006 9C6.0006 8.95616 5.99195 8.91274 5.97514 8.87224C5.95834 8.83175 5.93371 8.79496 5.90267 8.764Z" fill="currentColor"/></g></svg>
+          <span class="nav-item__label">신청관리</span>
+          <svg class="nav-item__chevron" viewBox="0 0 16 16" fill="none"><g transform="translate(4,5.6667)"><path d="M0.666667 0.666667L4 4L7.33333 0.666667" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+        </div>
+        <div class="nav-submenu">
+          <a class="nav-subitem" href="ocr-form-search.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">OCR서식조회</span>
+          </a>
+          <a class="nav-subitem" href="ocr-form-apply.html" data-lnb-alias="ocr-form-apply-extract.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">OCR서식신청</span>
+          </a>
+          <a class="nav-subitem" href="ocr-task-search.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">OCR업무조회</span>
+          </a>
+          <a class="nav-subitem" href="ocr-task-apply.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">OCR업무신청</span>
+          </a>
+          <a class="nav-subitem" href="ocr-task-usage-apply.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">OCR업무사용신청</span>
+          </a>
+          <a class="nav-subitem" href="approval.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">결재처리</span>
+          </a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-item">
+          <svg class="nav-item__icon" viewBox="0 0 16 16" fill="none"><g transform="translate(2.6672,1.3328)"><path d="M9.37533 9.70867C9.56956 9.514 9.66667 9.27778 9.66667 9C9.66667 8.72222 9.56956 8.48622 9.37533 8.292C9.18111 8.09778 8.94489 8.00044 8.66667 8C8.38844 7.99956 8.15244 8.09689 7.95867 8.292C7.76489 8.48711 7.66756 8.72311 7.66667 9C7.66578 9.27689 7.76311 9.51311 7.95867 9.70867C8.15422 9.90422 8.39022 10.0013 8.66667 10C8.94311 9.99867 9.17933 9.90156 9.37533 9.70867ZM8.66667 12C9.01111 12 9.32778 11.9193 9.61667 11.758C9.90556 11.5967 10.1389 11.3829 10.3167 11.1167C10.0722 10.9722 9.81111 10.8611 9.53333 10.7833C9.25556 10.7056 8.96667 10.6667 8.66667 10.6667C8.36667 10.6667 8.07778 10.7056 7.8 10.7833C7.52222 10.8611 7.26111 10.9722 7.01667 11.1167C7.19444 11.3833 7.42778 11.5973 7.71667 11.7587C8.00556 11.92 8.32222 12.0004 8.66667 12ZM5.33333 13.3333C3.78889 12.9444 2.51378 12.0582 1.508 10.6747C0.502223 9.29111 -0.00044415 7.75511 2.94464e-07 6.06667V2L5.33333 0L10.6667 2V5.78333C10.4556 5.69444 10.2389 5.61378 10.0167 5.54133C9.79444 5.46889 9.56667 5.41644 9.33333 5.384V2.93333L5.33333 1.43333L1.33333 2.93333V6.06667C1.33333 6.58889 1.40289 7.11111 1.542 7.63333C1.68111 8.15556 1.87556 8.65289 2.12533 9.12533C2.37511 9.59778 2.67778 10.0338 3.03333 10.4333C3.38889 10.8329 3.78333 11.1662 4.21667 11.4333C4.33889 11.7889 4.5 12.1278 4.7 12.45C4.9 12.7722 5.12778 13.0611 5.38333 13.3167C5.37222 13.3167 5.364 13.3196 5.35867 13.3253C5.35333 13.3311 5.34489 13.3338 5.33333 13.3333ZM8.66667 13.3333C7.74444 13.3333 6.95844 13.0082 6.30867 12.358C5.65889 11.7078 5.33378 10.9218 5.33333 10C5.33289 9.07822 5.658 8.29222 6.30867 7.642C6.95933 6.99178 7.74533 6.66667 8.66667 6.66667C9.588 6.66667 10.3742 6.99178 11.0253 7.642C11.6764 8.29222 12.0013 9.07822 12 10C11.9987 10.9218 11.6736 11.708 11.0247 12.3587C10.3758 13.0093 9.58978 13.3342 8.66667 13.3333Z" fill="currentColor"/></g></svg>
+          <span class="nav-item__label">관리자</span>
+          <svg class="nav-item__chevron" viewBox="0 0 16 16" fill="none"><g transform="translate(4,5.6667)"><path d="M0.666667 0.666667L4 4L7.33333 0.666667" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+        </div>
+        <div class="nav-submenu">
+          <a class="nav-subitem" href="ocr-form-register.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">OCR서식등록</span>
+          </a>
+          <a class="nav-subitem" href="ocr-task-register.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">OCR업무등록</span>
+          </a>
+          <a class="nav-subitem" href="menu-management.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">메뉴관리</span>
+          </a>
+          <a class="nav-subitem" href="permission-management.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">권한관리</span>
+          </a>
+          <a class="nav-subitem" href="audit-log.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">감사로그</span>
+          </a>
+          <a class="nav-subitem" href="code-management.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">코드관리</span>
+          </a>
+          <a class="nav-subitem" href="incident-management.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">장애관리</span>
+          </a>
+        </div>
+      </div>
+      <div class="nav-group">
+        <div class="nav-item">
+          <svg class="nav-item__icon" viewBox="0 0 16 16" fill="none"><g transform="translate(1.3328,3.3328)"><path d="M6.66667 4C7.80667 4 8.66667 3.14 8.66667 2C8.66667 0.86 7.80667 0 6.66667 0C5.52667 0 4.66667 0.86 4.66667 2C4.66667 3.14 5.52667 4 6.66667 4ZM6.66667 1.33333C7.06667 1.33333 7.33333 1.6 7.33333 2C7.33333 2.4 7.06667 2.66667 6.66667 2.66667C6.26667 2.66667 6 2.4 6 2C6 1.6 6.26667 1.33333 6.66667 1.33333ZM7.33333 4.66667H6C4.16 4.66667 2.66667 6.16 2.66667 8V8.33333C2.66667 8.88667 3.11333 9.33333 3.66667 9.33333H9.66667C10.22 9.33333 10.6667 8.88667 10.6667 8.33333V8C10.6667 6.16 9.17333 4.66667 7.33333 4.66667ZM4 8C4 6.9 4.9 6 6 6H7.33333C8.43333 6 9.33333 6.9 9.33333 8H4ZM3 4C3.31333 4 3.6 3.92 3.84667 3.78C3.56707 3.33483 3.39604 2.83016 3.34741 2.30672C3.29877 1.78328 3.37387 1.25573 3.56667 0.766667C3.39333 0.706667 3.2 0.666667 3 0.666667C2.04 0.666667 1.33333 1.37333 1.33333 2.33333C1.33333 3.29333 2.04 4 3 4ZM2.74 4.66667H2.33333C1.04667 4.66667 0 5.71333 0 7V7.66667C0 7.85333 0.146667 8 0.333333 8H1.33333C1.33333 6.69333 1.87333 5.51333 2.74 4.66667ZM10.3333 4C11.2933 4 12 3.29333 12 2.33333C12 1.37333 11.2933 0.666667 10.3333 0.666667C10.1267 0.666667 9.94 0.706667 9.76667 0.766667C9.95946 1.25573 10.0346 1.78328 9.98593 2.30672C9.93729 2.83016 9.76627 3.33483 9.48667 3.78C9.73333 3.92 10.0133 4 10.3333 4ZM11 4.66667H10.5933C11.0388 5.09998 11.3928 5.61825 11.6344 6.1908C11.876 6.76335 12.0003 7.37856 12 8H13C13.1867 8 13.3333 7.85333 13.3333 7.66667V7C13.3333 5.71333 12.2867 4.66667 11 4.66667Z" fill="currentColor"/></g></svg>
+          <span class="nav-item__label">커뮤니티</span>
+          <svg class="nav-item__chevron" viewBox="0 0 16 16" fill="none"><g transform="translate(4,5.6667)"><path d="M0.666667 0.666667L4 4L7.33333 0.666667" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+        </div>
+        <div class="nav-submenu">
+          <a class="nav-subitem" href="notice.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">공지사항</span>
+          </a>
+          <a class="nav-subitem" href="faq.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">FAQ</span>
+          </a>
+          <a class="nav-subitem" href="board.html">
+            <span class="nav-subitem__dot"></span>
+            <span class="nav-subitem__label">게시판</span>
+          </a>
+        </div>
+      </div>
+    </nav>
+  </aside>
+
+  <div class="app-container">
+
+    <!-- include: common/gnb.html -->
+    <header class="gnb">
+      <nav class="breadcrumb">
+        <span class="breadcrumb__item">통합검색</span>
+        <img class="breadcrumb__arrow" src="../../images/icons/gnb/ic-16-breadcrumb-arrow.svg" alt="">
+        <span class="breadcrumb__item">서식간 검증 결과</span>
+        <img class="breadcrumb__arrow" src="../../images/icons/gnb/ic-16-breadcrumb-arrow.svg" alt="">
+        <span class="breadcrumb__item breadcrumb__item--current">상세</span>
+      </nav>
+      <div class="gnb__user">
+        <div class="gnb__user-name-group">
+          <img class="gnb__user-icon" src="../../images/icons/gnb/ic-16-user.svg" alt="">
+          <span class="gnb__user-name">홍길동 대리(1234567)</span>
+          <span class="gnb__user-dept">프로세스 혁신부</span>
+        </div>
+        <div class="gnb__notif">
+          <img class="gnb__notif-icon" src="../../images/icons/gnb/ic-16-notification.svg" alt="알림">
+          <span class="gnb__notif-badge" aria-hidden="true"></span>
+        </div>
+      </div>
+    </header>
+
+    <main class="content cfv-clean">
+
+      <div class="page-header">
+        <h1 class="page-header__title">서식간 검증 결과</h1>
+        <div class="page-header__actions">
+          <a class="btn-neutral" href="cross-form-verify.html">목록</a>
+          <button type="button" class="btn btn-primary" style="width:70px">검증완료</button>
+        </div>
+      </div>
+
+      <div class="cfv-summary">
+        <div class="cfv-summary__field"><span class="cfv-summary__label">접수번호</span><span class="cfv-summary__value">OCR20261026-0012</span></div>
+        <div class="cfv-summary__field"><span class="cfv-summary__label">업무명</span><span class="cfv-summary__value">기업 여신 신규</span></div>
+        <div class="cfv-summary__field"><span class="cfv-summary__label">고객</span><span class="cfv-summary__value">(주)광주테크놀로지(0081234567)</span></div>
+        <div class="cfv-summary__field"><span class="cfv-summary__label">처리일시</span><span class="cfv-summary__value">2026-10-26 10:42</span></div>
+        <div class="cfv-summary__stats">
+          <span class="cfv-stat cfv-stat--ok" data-cfv-stat="ok">일치 2</span>
+          <span class="cfv-stat cfv-stat--ng" data-cfv-stat="ng">불일치 1</span>
+          <span class="cfv-stat cfv-stat--na" data-cfv-stat="na">검증불가 1</span>
+        </div>
+      </div>
+
+      <div class="split-view__body split-view__body--boxed cfv-body">
+
+        <!-- 좌측 Rule 목록 — OCR업무신청 화면에서 등록한 서식간 규칙이 이 접수 건에 적용된 결과 -->
+        <div class="cfv-rules">
+          <div class="section-title">검증 항목 <span class="cfv-total">4</span></div>
+          <button type="button" class="cfv-rule" data-result="ok"
+            data-type="일치(EQUALS)" data-a-form="사업자등록증.jpg" data-b-form="법인인감증명서.jpg"
+            data-a-box="31,15,42,4" data-b-box="31,15,42,4" data-a-item="상호(법인명)" data-a-value="(주)광주테크놀로지" data-b-item="법인명" data-b-value="(주)광주테크놀로지"
+            data-reason="두 서식의 값이 같습니다.">
+            <span class="cfv-rule__head"><span class="cfv-rule__name">상호 일치</span><span class="status-pill status-pill--success">일치</span></span>
+            <span class="cfv-rule__forms">사업자등록증 ↔ 법인인감증명서</span>
+          </button>
+          <button type="button" class="cfv-rule is-active" data-result="ng"
+            data-type="일치(EQUALS)" data-a-form="사업자등록증.jpg" data-b-form="고유번호증.jpg"
+            data-a-box="55,20,17,3.5" data-b-box="55,36,17,3.5" data-a-item="사업자등록번호" data-a-value="123-45-67890" data-b-item="등록번호" data-b-value="123-45-67809"
+            data-reason="끝 두 자리 다름: 90 ↔ 09">
+            <span class="cfv-rule__head"><span class="cfv-rule__name">사업자등록번호 일치</span><span class="status-pill status-pill--error-fill">불일치</span></span>
+            <span class="cfv-rule__forms">사업자등록증 ↔ 고유번호증</span>
+          </button>
+          <button type="button" class="cfv-rule" data-result="ok"
+            data-type="포함(CONTAINS)" data-a-form="사업자등록증.jpg" data-b-form="주주명부.jpg"
+            data-a-box="14,20,15,3.5" data-b-box="14,36,40,8" data-a-item="대표자명" data-a-value="홍길동" data-b-item="주주 성명" data-b-value="홍길동, 김광주, 이무등"
+            data-reason="서식 B 값에 서식 A 값이 포함됩니다.">
+            <span class="cfv-rule__head"><span class="cfv-rule__name">대표자 주주 포함</span><span class="status-pill status-pill--success">일치</span></span>
+            <span class="cfv-rule__forms">사업자등록증 ↔ 주주명부</span>
+          </button>
+          <button type="button" class="cfv-rule" data-result="na"
+            data-type="일치(EQUALS)" data-a-form="사업자등록증.jpg" data-b-form="법인인감증명서.jpg"
+            data-a-box="31,15,42,4" data-b-box="38,50,30,4" data-a-item="사업장 소재지" data-a-value="광주광역시 동구(동명로)" data-b-item="본점 소재지" data-b-value=""
+            data-reason="서식 B의 항목을 인식하지 못해 비교하지 않았습니다.">
+            <span class="cfv-rule__head"><span class="cfv-rule__name">소재지 일치</span><span class="status-pill status-pill--neutral-fill">검증불가</span></span>
+            <span class="cfv-rule__forms">사업자등록증 ↔ 법인인감증명서</span>
+          </button>
+        </div>
+
+        <div class="cfv-detail">
+          <div class="cfv-compare">
+            <div class="cfv-heading">
+              <div class="cfv-heading__title"><h2 data-cfv-title>사업자등록번호 일치</h2><span data-cfv-result></span></div>
+              <div class="cfv-heading__actions"><span class="cfv-dirty" data-cfv-dirty hidden></span><button type="button" class="btn-neutral" data-cfv-reset disabled>항목 되돌리기</button><button type="button" class="btn btn-primary" data-cfv-save disabled>변경사항 저장</button></div>
+            </div>
+            <p class="cfv-compare__reason" data-cfv-reason></p>
+            <span hidden data-cfv-type></span>
+          </div>
+
+          <div class="cfv-viewers">
+            <div class="cfv-viewer">
+              <div class="cfv-viewer__label"><span class="cfv-viewer__badge">A</span><span class="cfv-viewer__name" data-cfv-a-form></span></div>
+              <div class="cfv-field"><label for="cfv-a-value" data-cfv-a-item></label><div class="cfv-edit"><input id="cfv-a-value" class="input" type="text" data-cfv-edit="a" aria-label="서식 A 판독값"><span class="cfv-edit__orig" data-cfv-orig="a"></span></div></div>
+              <div class="doc-viewer" data-zoom>
+                <div class="doc-viewer__body">
+                  <div class="cfv-page" data-zoom-target>
+                    <img class="cfv-page__image" src="../../images/illustrations/search-result-doc-preview.png" alt="서식 A 미리보기">
+                    <span class="cfv-box" data-cfv-box="a"></span>
+                  </div>
+                </div>
+                <div class="doc-viewer__zoom">
+                  <button type="button" class="btn-neutral btn-neutral--square" aria-label="축소" data-zoom-out><img src="../../images/icons/result/ic-16-minus.svg" alt=""></button>
+                  <span class="btn-neutral doc-viewer__zoom-value" data-zoom-value>100%</span>
+                  <button type="button" class="btn-neutral btn-neutral--square" aria-label="확대" data-zoom-in><img src="../../images/icons/result/ic-16-plus.svg" alt=""></button>
+                </div>
+              </div>
+            </div>
+            <div class="cfv-viewer">
+              <div class="cfv-viewer__label"><span class="cfv-viewer__badge">B</span><span class="cfv-viewer__name" data-cfv-b-form></span></div>
+              <div class="cfv-field"><label for="cfv-b-value" data-cfv-b-item></label><div class="cfv-edit"><input id="cfv-b-value" class="input" type="text" data-cfv-edit="b" aria-label="서식 B 판독값"><span class="cfv-edit__orig" data-cfv-orig="b"></span></div></div>
+              <div class="doc-viewer" data-zoom>
+                <div class="doc-viewer__body">
+                  <div class="cfv-page" data-zoom-target>
+                    <img class="cfv-page__image" src="../../images/illustrations/search-result-doc-preview.png" alt="서식 B 미리보기">
+                    <span class="cfv-box" data-cfv-box="b"></span>
+                  </div>
+                </div>
+                <div class="doc-viewer__zoom">
+                  <button type="button" class="btn-neutral btn-neutral--square" aria-label="축소" data-zoom-out><img src="../../images/icons/result/ic-16-minus.svg" alt=""></button>
+                  <span class="btn-neutral doc-viewer__zoom-value" data-zoom-value>100%</span>
+                  <button type="button" class="btn-neutral btn-neutral--square" aria-label="확대" data-zoom-in><img src="../../images/icons/result/ic-16-plus.svg" alt=""></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </main>
+
+  </div>
+</div>
+<script src="../../js/lnb.js"></script>
+<script src="../../js/doc-viewer-zoom.js"></script>
+<script src="../../js/cross-form-verify.js"></script>
+</body>
+</html>

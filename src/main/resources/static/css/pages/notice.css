@@ -1,0 +1,27 @@
+/* ---- 커뮤니티 > 공지사항 화면 전용 — get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl,
+   nodeId 617:11280) 실측. 페이지 헤더는 patterns/page-header.css의 .page-header(제목만,
+   액션 없음), 검색영역은 patterns/search-area.css의 .search-area, 표/페이지네이션/상태 태그는
+   components/table.css·pagination.css를 그대로 재사용한다(중요/예약/비공개는 각각
+   .status-pill--error-fill/--success-fill/--neutral-fill + 좁은 칼럼용 --fill — 2026-08-25,
+   별도 .notice-tag를 만들었다가 기존 .status-pill 재사용으로 정리했다). search-area와 목록
+   제목+표+툴바 묶음의 관계는 통합검색>고객 통합검색·OCR서식조회와 동일 구조로 맞췄다
+   (2026-08-26 재정리): search-area는 "제목+표+툴바" 묶음이 아니라 그 옆의 형제 요소라
+   layout.css의 .layout-list(24px gap)로 감싸고, patterns/list-section.css의 .list-section은
+   본래 용도대로 .list-section__header(제목+액션)+표+.list-footer 묶음에만 쓴다 —
+   .layout-list > .search-area + .list-section(.list-section__header + table + .list-footer).
+   이 화면에서만 쓰는 목록 액션 버튼 줄, 표 칼럼폭만 새로 정의한다. ---- */
+
+.notice-actions { display: flex; align-items: center; gap: 6px; } /* get_design_context(617:11819) 실측 — 공개/비공개/삭제/등록 버튼 묶음 */
+
+/* ---- 결과 표 칼럼폭 — 통합검색>고객 통합검색 표와 같은 방식으로 table-layout:fixed +
+   colgroup %폭을 쓴다. get_design_context 실측 px폭(체크박스 40/No 80/작성자 200/조회수 160/
+   신청일자 200)에 제목만 실측값이 없어(원래 flex-1) 다른 화면과 비슷한 300px을 임의로 얹은
+   합계 980px 기준(colgroup은 notice.html 쪽에 있다). 제목 칼럼의 좌측 정렬은 관리자>감사로그/
+   신청관리>OCR서식조회처럼 표를 CSS 클래스로 스코프하지 않고 해당 td에 인라인
+   style="text-align:left"를 직접 준다(2026-08-25, .notice-table 삭제 — 여러 화면의 표
+   스코프 방식을 이 방식으로 통일했다). ---- */
+
+/* ---- 제목 칼럼의 첨부파일 아이콘 — get_design_context(617:11365 등) 실측. "점검 공지
+   1차/2차" 두 건만 첨부파일이 있어 클립 아이콘이 붙는다(나머지 13건은 없음, 누락 아님). ---- */
+.notice-table-title { display: inline-flex; align-items: center; gap: 4px; }
+.notice-table-title img { flex-shrink: 0; }

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="approval-line-modal">
+    <!-- 결재선 지정 모달 — get_design_context(517:15533) 실측("신청관리-OCR서식신청-직원선택 팝업" 프레임,
+     실제 표시 타이틀은 "결재선 지정"). 신청관리>OCR서식신청 추출화면(ocr-form-apply-extract.html)의
+     담당자 지정 "직원선택" 버튼에서 여는 팝업 — 실제 화면 연결은 개발자가 진행.
+     2026-08-20 재실측: 폭이 1200px(.modal--lg) → 1000px로 변경돼 .modal--w1000으로 교체.
+    
+    <symbol id="svg_checkbox" viewBox="0 0 12 12">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M9.83263 3.64645C10.0558 3.84171 10.0558 4.15829 9.83263 4.35355L5.2612 8.35355C5.03805 8.54882 4.67624 8.54882 4.45308 8.35355L2.16737 6.35355C1.94421 6.15829 1.94421 5.84171 2.16737 5.64645C2.39052 5.45118 2.75233 5.45118 2.97549 5.64645L4.85714 7.29289L9.02451 3.64645C9.24767 3.45118 9.60948 3.45118 9.83263 3.64645Z" fill="currentColor"/>
+    </symbol>
+        <symbol id="svg_modal_close" viewBox="0 0 7.725 7.725">
+        <path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/>
+    </symbol>
+    <symbol id="svg_search" viewBox="0 0 11.5 11.5">
+        <path d="M10.75 10.75L8.33333 8.33333M9.63889 5.19444C9.63889 7.64904 7.64904 9.63889 5.19444 9.63889C2.73985 9.63889 0.75 7.64904 0.75 5.19444C0.75 2.73985 2.73985 0.75 5.19444 0.75C7.64904 0.75 9.63889 2.73985 9.63889 5.19444Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+    <symbol id="svg_arrow_add" viewBox="0 0 5.5 9.5">
+        <path d="M0.75 8.75L4.75 4.75L0.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+    <symbol id="svg_arrow_remove" viewBox="0 0 5.5 9.5">
+        <path d="M4.75 8.75L0.75 4.75L4.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+    </symbol>
+    -->
+    <div id="approval-line-modal" class="modal-overlay" hidden>
+        <div class="modal modal--w1000">
+            <div class="modal__header">
+                <span class="modal__title">결재선 지정</span>
+                <button type="button" class="modal__close" aria-label="닫기" data-modal-close>
+                    <svg width="7.725" height="7.725" fill="none" aria-hidden="true">
+                        <use href="#svg_modal_close" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal__body">
+                <div class="approval-picker">
+                    <!-- 좌측: 직원 검색 + 목록 -->
+                    <div class="approval-picker__col">
+                        <form class="sub__search-area">
+                            <div class="search-area__combo" style="flex: 1">
+                                <select class="input input--w120" id="gubun" name="gubun">
+                                    <option value="1">이름</option>
+                                    <option value="2">부서명</option>
+                                </select>
+                                <input class="input" type="text" id="approval_keyword" name="approval_keyword" onkeydown="fnEmpKeyDown();" value="" style="flex: 1" />
+                                <button type="button" class="btn-outline-primary" onclick="fnGetEmpInfo();">
+                                    <span class="btn-icon-slot">
+                                        <svg width="11.5" height="11.5" fill="none" aria-hidden="true">
+                                            <use href="#svg_search" />
+                                        </svg>
+                                    </span>
+                                    검색
+                                </button>
+                            </div>
+                        </form>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 32px; padding: 0 10px">
+                                        <label class="checkbox">
+                                            <input type="checkbox" class="checkbox__input" />
+                                            <span class="checkbox__box">
+                                                <svg fill="none" aria-hidden="true" >
+                                                    <use href="#svg_checkbox" />
+                                                </svg>
+                                            </span>
+                                        </label>
+                                    </th>
+                                    <th>이름</th>
+                                    <th>직위</th>
+                                    <th>직급</th>
+                                    <th>행내번호</th>
+                                </tr>
+                            </thead>
+                            <tbody id="emp_list">
+                                <tr>
+                                    <td colspan="5"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- 가운데: 이동 버튼 — 위아래 두 목록의 전체 높이 기준 세로 중앙 정렬 -->
+                    <div class="approval-picker__actions">
+                        <button type="button" class="btn-neutral" style="width: 70px" onclick="fnAddApproval();">
+                            결재
+                            <span class="btn-icon-slot">
+                                <svg width="5.5" height="9.5" fill="none" aria-hidden="true">
+                                    <use href="#svg_arrow_add" />
+                                </svg>
+                            </span>
+                        </button>
+                        <button type="button" class="btn-neutral" style="width: 70px" onclick="fnRemoveApproval();">
+                            <span class="btn-icon-slot">
+                                <svg width="5.5" height="9.5" fill="none" aria-hidden="true">
+                                    <use href="#svg_arrow_remove" />
+                                </svg>
+                            </span>
+                            삭제
+                        </button>
+                    </div>
+                    <!-- 우측: 결재선 목록 -->
+                    <div class="approval-picker__col">
+                        <div class="approval-picker__add">
+                            <button type="button" class="btn-neutral">
+                                현 결재목록을 개인결재선으로 추가
+                            </button>
+                        </div>
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 32px; padding: 0 10px">
+                                        <label class="checkbox">
+                                            <input type="checkbox" class="checkbox__input" />
+                                            <span class="checkbox__box">
+                                                <svg fill="none" aria-hidden="true">
+                                                    <use href="#svg_checkbox" />
+                                                </svg>
+                                            </span>
+                                        </label>
+                                    </th>
+                                    <th style="width: 80px">구분</th>
+                                    <th>결재자정보</th>
+                                    <th style="width: 80px">상태</th>
+                                </tr>
+                            </thead>
+                            <tbody id="approval_list">
+                                <tr id="approval_list_empty">
+                                    <td colspan="4">결재자가 선택되지 않았습니다.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <div class="modal__footer-actions">
+                    <button type="button" class="btn btn-primary" onclick="fnConfirm();" data-modal-close>
+                        <span class="btn-icon-slot">
+                            <svg width="9.2" height="6.7" fill="none" aria-hidden="true">
+                                <use href="#svg_btn_primary" />
+                            </svg>
+                        </span>
+                        확인
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script th:inline="javascript" type="text/javascript">
+        function fnEmpKeyDown(){
+            if(window.event.keyCode == 13){
+                window.event.preventDefault();
+            	fnGetEmpInfo();
+            }
+        }         
+        
+        function fnGetEmpInfo(){
+        	$("#emp_list").empty();
+        	
+            let param = 'keyword=' + encodeURIComponent($("#approval_keyword").val())
+                    + '&gubun=' + $("#gubun").val();
+            fetch(contextPath + 'api/v1/common/emp-list?' + param )
+            .then(response => response.json())
+            .then(res => {
+                if(res.status == 200) {
+                    console.log('성공', res.data);
+                    addEmpList(res.data);
+                }
+                else{
+                    alert(res.message + "[" + res.status + "]");
+                }
+            })
+            .catch(error => {
+                console.error('실패', error);
+                alert("오류가 발생했습니다.")
+            });
+        }
+        
+        function fnAddApproval(){
+            $("#approval_list_empty").hide();
+        	$(".emp-list").each(function(index, item){
+                if(item.checked){
+                    if(!checkExist(item.dataset.id)){
+                        let html = `
+                        	<tr class="appr-tr">
+                                <td style="width: 32px; padding: 0 10px">
+                                    <label class="checkbox">
+                                        <input type="checkbox" class="checkbox__input approval-list" data-id="${item.dataset.id}" data-name="${item.dataset.name}" data-posnm="${item.dataset.posnm}" data-deptnm="${item.dataset.deptnm}"/>
+                                        <span class="checkbox__box" >
+                                            <svg fill="none" aria-hidden="true">
+                                                <use href="#svg_checkbox" />
+                                            </svg>
+                                        </span>
+                                    </label>
+                                </td>
+                                <td>결재</td>
+                                <td style="text-align: left">
+                                  ${item.dataset.name} ${item.dataset.posnm} / ${item.dataset.deptnm}
+                                </td>
+                                <td>대기</td>
+                          </tr>
+                        `;
+                        
+                        $("#approval_list").append(html);
+                    }
+                }
+            });
+        }
+        
+        function fnRemoveApproval(){
+            $(".appr-tr").each(function(index, item){
+            	if(item.children[0].getElementsByTagName("input")[0].checked){
+            	    item.remove();
+            	}
+            });
+            
+            if($(".appr-tr").length == 0){
+            	$("#approval_list_empty").show();
+            }
+        }
+        
+        function fnConfirm(){
+        	$("#emp_list").empty();
+        	
+        	let apprList = [];
+        	$(".approval-list").each(function(index, item){
+        		apprList.push({
+                	seq:index + 1,
+                    empno: item.dataset.id, 
+                    empnm: item.dataset.name,
+                    posnm: item.dataset.posnm,
+                    deptnm: item.dataset.deptnm
+                });
+            });
+        	
+        	callbackApprChain(apprList);
+        }
+        
+        function addEmpList(empList){
+        	empList.forEach(function(item, index){
+        	    let tempValue = JSON.stringify(item);
+        	    let json = JSON.parse(tempValue);
+        	    let html = `
+        	    	<tr>
+        	    	    <td style="width: 32px; padding: 0 10px">
+                            <label class="checkbox">
+                                <input type="checkbox" class="checkbox__input emp-list" 
+                                    data-name="${item.EMP_KOR_FLNM}" data-id="${item.EMPNO}" data-deptnm="${item.BR_NM}" data-posnm="${item.HRA_PSTN_NM}"/>
+                                <span class="checkbox__box">
+                                    <svg fill="none" aria-hidden="true">
+                                    <use href="#svg_checkbox" />
+                                    </svg>
+                                </span>
+                            </label>
+                        </td>
+                        <td>${item.EMP_KOR_FLNM}</td>
+                        <td>${item.HRA_PSTN_NM}</td>
+                        <td>${item.BR_NM}</td>
+                        <td>${item.EMPNO}</td>
+                    </tr>
+        	    `;
+                
+        		$("#emp_list").append(html);
+            });
+        }
+        
+        function checkExist(empno){
+            let ret = false;
+            $(".approval-list").each(function(index, item){
+        		if(item.dataset.id === empno){
+        		    ret = true;
+        		    return;
+        		} 
+        	});
+        	
+        	return ret ? true : false;
+        }
+    </script>
+</div>
+</body>
+</html>

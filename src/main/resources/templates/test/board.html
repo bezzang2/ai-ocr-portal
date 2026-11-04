@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+    xmlns:th="http://www.thymeleaf.org"
+    xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{common/layouts/defaultLayout}"
+    layout:fragment="Content"
+>
+<head>
+	<title>테스트 페이지 </title>
+
+	<!-- inline CSS 영역-->
+	<style th:inline="css" type="text/css">
+	
+	</style>
+
+	<!-- inline JS 영역-->
+	<script th:inline="javascript" type="text/javascript">
+	    var items = [[${list}]];
+		$(document).ready(() => {
+			
+		});
+		
+		function detail(seq){
+			clearModal();
+			
+		    let data = null;
+		    for(item of items){
+		        if(item.seq == seq){
+		            data = item;
+		            break;
+		        }
+		    }
+            $("#modal-subject").val(data.subject);
+            $("#modal-detail").val(data.detail);
+		    
+		    $(".modal").modal("show");
+            console.log(data);
+		}
+		
+		function clearModal(){
+		    $("#modal-subject").empty();
+		    $("#modal-detail").empty();
+		}
+	</script>
+</head>
+
+<main class="content">
+    <div class="layout-list">
+        <h1 class="type-title-18m">게시판 샘플</h1>
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col" style="width:50px; text-align:center;">번호</th>
+                    <th scope="col" style="text-align:center;">제목</th>
+                    <th scope="col" style="width:150px; text-align:center;">작성자</th>
+                    <th scope="col" style="width:200px; text-align:center;">등록일</th>
+                    <th scope="col" style="width:50px; text-align:center;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="item: ${list}">
+                    <td class="text-center" th:text="${item.num}"></td>
+                    <td><a href="#" th:onclick="detail([[${item.seq}]])" th:text="${item.subject}"></a></td>
+                    <td class="text-center" th:text="${item.writer}"></td>
+                    <td class="text-center" th:text="${#dates.format(item.regDt, 'yyyy-MM-dd HH:mm:ss')}"></td>
+                    <td class="text-center" th:text="${#lists.size(item.attaches)}"></td>
+                </tr>
+            </tbody>
+        </table>
+        <article class="my-3">
+            <div class="d-flex container justify-content-center">
+               <div class="m-0 border-0">
+                   <ul class="pagination">
+                       <li class="page-item" th:if="${page.hasFirstPageNav}">
+                           <a class="page-link" th:href="@{/test/board(curPage=0)}" th:text="'<<'"></a>
+                       </li>
+                       <li class="page-item">
+                           <a class="page-link" th:href="@{/test/board(curPage=1)}" th:text="'<'"></a>
+                       </li>
+
+                       <li class="page-item" th:each="item: ${#numbers.sequence(page.firstPageNo, page.lastPageNo)}">
+                           <a class="page-link" th:href="@{/test/board(curPage=${item})}" th:text="${item}"></a>
+                       </li>
+                   </ul>
+               </div>
+            </div>
+        </article>
+    </div>
+</main>
+</html>

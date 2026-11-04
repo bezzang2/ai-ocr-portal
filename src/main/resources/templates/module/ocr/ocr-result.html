@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>판독결과 검토 상세 | AI OCR 서류판독시스템</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+  <link rel="stylesheet" th:href="@{/css/pages/ocr-result.css}">
+  <link rel="stylesheet" th:href="@{/css/pages/result-workspace.css}">
+  <link rel="stylesheet" th:href="@{/css/pages/ocr-portal-classic.css}">
+  <link rel="stylesheet" th:href="@{/css/pages/ocr-review-classic.css}">
+  <link rel="stylesheet" th:href="@{/css/pages/review-transactions.css}">
+</head>
+
+<div class="app-shell ocr-portal" data-navigation-context="server" th:attr="data-navigation-current=${menuId}"
+     th:classappend="${embedded} ? 'is-embedded'">
+  <th:block th:unless="${embedded}">
+    <aside th:replace="~{common/fragments/lnb :: LnbFragment}"></aside>
+  </th:block>
+  <div class="app-container">
+    <th:block th:unless="${embedded}">
+      <header th:replace="~{common/fragments/header :: HeaderFragment}"></header>
+    </th:block>
+
+    <main class="content ocr-review">
+
+      <h1 class="review-sr-only">판독결과 검토 상세</h1>
+
+      <!-- 요약 조회가 실패해도 실제 서식목록의 판독작업 정보를 사용한다.
+           BPR_SCAN은 여러 판독작업을 반환할 수 있어 작업별 요약과 담당자를 각각 유지한다. -->
+      <section class="review-detail-summary" aria-label="판독작업 요약"
+               th:each="wkGroup, wkStat : ${wkGroupList}"
+               th:with="tx=${reviewTransaction != null and reviewTransaction.transId == wkGroup.transId ? reviewTransaction : null},
+                        verified=${tx != null ? tx.verifiedCount : #lists.size(wkGroup.lefrmList.?[review != null and review.verified])},
+                        forms=${tx != null ? tx.formCount : #lists.size(wkGroup.lefrmList)},
+                        status=${tx != null ? tx.reviewStatus : (wkGroup.transFailed or (#lists.isEmpty(wkGroup.lefrmList) and !#lists.isEmpty(wkGroup.failedLefrmList)) ? 'FAILED' : (wkGroup.pending ? 'PROCESSING' : (#lists.isEmpty(wkGroup.lefrmList) ? 'NO_RESULT' : (verified == #lists.size(wkGroup.lefrmList) ? 'VERIFIED' : (#strings.isEmpty(wkGroup.transAsgnUserId) ? 'UNASSIGNED' : 'IN_REVIEW')))))}">
+        <div class="review-detail-summary__fields">
+          <div class="review-detail-summary__field">
+            <span class="review-detail-summary__label">판독작업</span>
+            <strong class="review-detail-summary__value review-detail-summary__id" th:text="${wkGroup.transId ?: '-'}" th:title="${wkGroup.transId}">판독작업 ID</strong>
+          </div>
+          <div class="review-detail-summary__field">
+            <span class="review-detail-summary__label">업무명</span>
+            <strong class="review-detail-summary__value" th:text="${tx != null ? (tx.wkNm ?: tx.wkId) : (wkGroup.wkNm ?: wkGroup.wkId)}" th:title="${wkGroup.wkNm ?: wkGroup.wkId}">업무명</strong>
+          </div>
+          <div class="review-detail-summary__field">
+            <span class="review-detail-summary__label">스캔일시</span>
+            <span class="review-detail-summary__value" th:text="${tx != null ? (tx.scanDtLabel ?: '-') : (wkGroup.scanDtLabel ?: '-')}">-</span>
+          </div>
+          <div class="review-detail-summary__field" data-review-trans
+               th:attr="data-trans-id=${wkGroup.transId},
+                        data-assign-url=@{/module/ocr/result/wk/{wk}/trans/{t}/assignee(wk=${wkGroup.wkId},t=${wkGroup.transId})},
+                        data-trans-asgn-user-id=${wkGroup.transAsgnUserId}, data-trans-asgn-user-nm=${wkGroup.transAsgnUserNm}">
+            <span class="review-detail-summary__label">담당자</span>
+            <strong class="review-detail-summary__value" data-review-trans-name
+                    th:text="${wkGroup.transAsgnUserNm ?: wkGroup.transAsgnUserId ?: '미지정'}">미지정</strong>
+            <button type="button" class="review-button review-button--small" data-review-trans-assign hidden>지정</button>
+          </div>
+          <div class="review-detail-summary__field">
+            <span class="review-detail-summary__label">진행</span>
+            <strong class="review-detail-summary__value" data-review-progress th:data-form-count="${forms}" th:data-verified-count="${verified}" th:text="${verified + ' / ' + forms + ' 검증완료'}">0 / 0 검증완료</strong>
+            <span class="review-status" data-review-status th:attr="data-status=${status}"
+                  th:text="${status == 'FAILED' ? '실패' : (status == 'PROCESSING' ? '판독중' : (status == 'NO_RESULT' ? '결과없음' : (status == 'VERIFIED' ? '검증완료' : (status == 'UNASSIGNED' ? '미지정' : '검토중'))))}">미지정</span>
+          </div>
+          <!-- 판정 결과와 관계없이 같은 작업의 전체 서식간 검증 결과를 연다. -->
+          <div class="review-detail-summary__field" th:if="${!#strings.isEmpty(wkGroup.transId)}">
+            <a class="review-button" data-cross-result-link
+               th:href="@{/module/ocr/crossVerify/{id}(id=${wkGroup.transId})}">서식간 검증 결과</a>
+            <span data-cross-summary th:data-trans-id="${wkGroup.transId}"
+                  th:hidden="${tx == null or tx.mismatchCount + tx.unverifiableCount == 0}">
+              <span class="review-count--warning" data-cross-mismatch th:text="${'불일치 ' + (tx != null ? tx.mismatchCount : 0)}">불일치 0</span> ·
+              <span data-cross-unverifiable th:text="${'검증불가 ' + (tx != null ? tx.unverifiableCount : 0)}">검증불가 0</span>
+            </span>
+          </div>
+        </div>
+        <th:block th:if="${wkStat.first}">
+        <!-- 결과 유무와 관계없이 같은 작업 이동 버튼과 목록 조회 조건을 사용한다. -->
+        <nav class="review-detail-summary__actions" aria-label="판독작업 이동" th:fragment="transactionNavigation">
+          <a class="review-button" th:if="${prevTransaction != null}"
+             th:href="@{/module/ocr/result(wkId=${prevTransaction.wkId},transId=${prevTransaction.transId},menuId=${menuId},list=${listQuery})}">‹ 이전 작업</a>
+          <button type="button" class="review-button" th:if="${prevTransaction == null}" disabled>‹ 이전 작업</button>
+          <a class="review-button" th:if="${nextTransaction != null}"
+             th:href="@{/module/ocr/result(wkId=${nextTransaction.wkId},transId=${nextTransaction.transId},menuId=${menuId},list=${listQuery})}">다음 작업 ›</a>
+          <button type="button" class="review-button" th:if="${nextTransaction == null}" disabled>다음 작업 ›</button>
+          <!-- listQuery는 서버가 허용한 조회조건을 이미 인코딩했다. 다시 인코딩하지 않는다. -->
+          <a class="review-button" th:href="@{/module/ocr/result(menuId=${menuId})} + (${#strings.isEmpty(listQuery)} ? '' : '&amp;' + ${listQuery})">목록</a>
+        </nav>
+        </th:block>
+      </section>
+      <section class="review-detail-summary" aria-label="판독작업 조회 상태" th:if="${#lists.isEmpty(wkGroupList)}">
+        <span th:text="${loadError ?: '조회된 판독작업이 없습니다.'}" role="status">조회된 판독작업이 없습니다.</span>
+        <nav th:replace="~{:: transactionNavigation}"></nav>
+      </section>
+
+      <!-- 로그인 사용자와 담당자 지정 권한(관리자·팀장). 권한은 서버가 다시 확인한다(js/result-review.js). -->
+      <div class="split-view__body split-view__body--boxed" data-result-workspace
+           th:attr="data-reviewer-id=${reviewer?.userId}, data-reviewer-nm=${reviewer?.userNm},
+                    data-can-assign=${reviewer != null and reviewer.canAssign},
+                    data-staff-search-url=@{/api/v1/common/emp-list}">
+
+          <!-- 서식목록+뷰어 묶음 -->
+          <div class="result-media" data-workspace-media>
+
+          <!-- 선택한 판독작업의 서식을 평평하게 나열한다. 선택 시 실제 뷰어와 확인 항목을 함께 바꾼다. -->
+          <nav class="file-list" id="result-file-list" data-workspace-rail aria-label="서식목록"
+             th:attr="data-scrn-no=${scrnNo}">
+            <div class="file-list__header"><span>서식목록</span> <span class="ocr-review__file-count" data-result-file-count>0</span>
+              <button type="button" class="btn-neutral" data-workspace-toggle="rail" aria-label="서식목록 접기" title="서식목록 접기 ([)" aria-controls="result-file-list" aria-expanded="true">‹</button>
+            </div>
+            <button type="button" class="btn-neutral file-list__rail-tab" data-workspace-rail-tab aria-label="서식목록 펼치기" aria-controls="result-file-list" aria-expanded="false">서식목록 ›</button>
+            <div class="file-list__items">
+              <!-- 내부 wrapper는 문서 역할·검증 API의 업무/판독작업 식별자로만 쓴다. -->
+              <div class="result-file-group" th:each="wkGroup, wkStat : ${wkGroupList}" th:data-wk-id="${wkGroup.wkId}"
+                   th:data-trans-id="${wkGroup.transId}" >
+                <!-- 결과를 아직 받지 못한 판독작업(폴링 제한 초과·검토 대기): 상태와 "결과 다시 가져오기"를 표시한다. -->
+                <div class="result-file-group__pending"
+                     th:if="${wkGroup.pending}">
+                  <span class="result-file-group__pending-status"
+                        th:text="${wkGroup.rsltCd == 'awaiting_hitl'} ? '검토 대기' : (${wkGroup.rsltCd == 'timeout'} ? '결과 대기' : '처리 중')">결과 대기</span>
+                  <button type="button" class="btn-neutral result-file-group__refresh" data-result-refresh title="판독 결과 다시 가져오기"
+                          th:attr="data-refresh-url=@{/module/ocr/result/trans/{id}/refresh(id=${wkGroup.transId})}">다시 가져오기</button>
+                </div>
+                <!-- 판독작업 전체가 실패·취소됨. 연결된 서식은 목록에 실패 상태로 표시한다. -->
+                <div class="result-file-group__pending result-file-group__pending--failed" th:if="${wkGroup.transFailed}">
+                  <span class="result-file-group__pending-status"
+                        th:text="${wkGroup.rsltCd == 'canceled'} ? '판독 취소' : '판독 실패'">판독 실패</span>
+                </div>
+                <div class="result-file-group__body">
+                  <th:block th:each="lefrm : ${wkGroup.lefrmList}">
+                    <button th:replace="~{this :: resultFile(${wkGroup}, ${lefrm}, false)}"></button>
+                  </th:block>
+
+                  <!-- 문서가 없는 서식도 같은 깊이에 두고 상태를 글자로 표시한다. -->
+                  <div class="result-file-group__empty" data-result-row th:each="lefrm : ${wkGroup.emptyLefrmList}"
+                       th:title="${lefrm.lefrmNm} + ' - 판독 결과 없음'">
+                    <span class="result-file-group__dot" aria-hidden="true"></span>
+                    <span class="result-file-group__file-name" th:text="${lefrm.lefrmNm}">서식명</span>
+                    <span class="result-file-group__state">결과없음</span>
+                  </div>
+                  <th:block th:each="lefrm : ${wkGroup.failedLefrmList}">
+                    <th:block th:if="${lefrm.lefrmId != null and lefrm.docId != null}">
+                      <button th:replace="~{this :: resultFile(${wkGroup}, ${lefrm}, true)}"></button>
+                    </th:block>
+                    <div class="result-file-group__empty result-file-group__empty--failed" data-result-row th:unless="${lefrm.lefrmId != null and lefrm.docId != null}">
+                      <span class="result-file-group__dot" aria-hidden="true"></span>
+                      <span class="result-file-group__file-name" th:text="${lefrm.lefrmNm ?: '미분류 문서'}">미분류 문서</span>
+                      <span class="result-file-group__state" th:text="${lefrm.docStatCd == 'canceled' ? '취소' : '실패'}">실패</span>
+                    </div>
+                  </th:block>
+                </div>
+              </div>
+
+              <div class="result-file-group" th:if="${#lists.isEmpty(wkGroupList)}">
+                <div class="result-file-group__title">
+                  <span class="result-file-group__title-name" th:text="${loadError ?: '조회된 서식이 없습니다'}">조회된 서식이 없습니다</span>
+                </div>
+              </div>
+            </div>
+            <!-- 선택할 수 있는 서식 1건(결과·실패 묶음 공용). 실패 문서는 data-result-failed 로 검증완료를 막는다. -->
+            <th:block th:remove="all">
+              <button type="button" class="result-file-group__file" data-result-row th:fragment="resultFile(wkGroup, lefrm, failed)"
+                      th:data-lefrm-id="${lefrm.lefrmId}"
+                      th:data-result-failed="${failed} ? 'true' : null"
+                      th:data-trans-id="${lefrm.transId}"
+                      th:data-doc-id="${lefrm.docId}"
+                      th:data-doc-total="${lefrm.docTotal}"
+                      th:data-doc-role="${lefrm.docRole}"
+                      th:data-doc-role-src="${lefrm.docRoleSrc}"
+                      th:data-file="${lefrm.orgFileNm != null ? lefrm.orgFileNm + '.' + lefrm.fileExt : lefrm.lefrmNm}"
+                      th:title="${lefrm.orgFileNm != null ? lefrm.orgFileNm + '.' + lefrm.fileExt : lefrm.lefrmNm}"
+                      th:data-is-pdf="${lefrm.fileExt != null and #strings.equalsIgnoreCase(lefrm.fileExt, 'pdf')}"
+                      th:data-trans-asgn-user-id="${lefrm.review?.transAsgnUserId}"
+                      th:data-trans-asgn-user-nm="${lefrm.review?.transAsgnUserNm}"
+                      th:data-verified="${lefrm.review != null and lefrm.review.verified} ? 'true' : null"
+                      th:data-vrfy-user-id="${lefrm.review?.vrfyUserId}"
+                      th:data-vrfy-user-nm="${lefrm.review?.vrfyUserNm}"
+                      th:data-vrfy-dt="${lefrm.review?.vrfyDt}"
+                      th:data-save-user-nm="${lefrm.review?.saveUserNm}"
+                      th:data-save-dt="${lefrm.review?.saveDt}"
+                      th:attr="data-image-src=@{'/module/ocr/result/lefrm/' + ${wkGroup.wkId} + '/' + ${lefrm.lefrmId} + '/view'} + '?transId=' + ${#uris.escapeQueryParam(wkGroup.transId)} + (${lefrm.docTotal > 1} ? '&docId=' + ${#uris.escapeQueryParam(lefrm.docId)} : '')">
+                <span class="result-file-group__file-inner">
+                  <span class="result-file-group__dot"></span>
+                  <!-- ocuoc_lefrm_m.lefrm_nm -->
+                  <span class="result-file-group__file-name" th:text="${lefrm.lefrmNm}">사업자등록증</span>
+                  <span class="result-file-group__doc-seq" th:unless="${lefrm.docLabel.isEmpty()}" th:text="${lefrm.docLabel}">(2/2)</span>
+                  <span class="result-file-group__role" data-doc-role-badge th:text="${lefrm.docRole}" th:hidden="${lefrm.docRole == null}"></span>
+                  <!-- 서식에는 검증완료 여부만 표시한다. 담당자는 상단 요약에서 한 번 표시한다. -->
+                  <span class="result-file-group__review" data-review-badge th:unless="${failed}"></span>
+                  <span class="result-file-group__state result-file-group__state--failed" th:if="${failed}" th:text="${lefrm.docStatCd == 'canceled' ? '취소' : '실패'}">실패</span>
+                </span>
+              </button>
+            </th:block>
+          </nav>
+          <div class="ocr-review__splitter" data-workspace-resize="rail" role="separator" aria-label="서식목록 너비 조절" aria-orientation="vertical" tabindex="0"></div>
+
+          <!-- 판독 이미지와 업로드 원본은 좌표 공간이 다르므로 구분해 표시한다. -->
+          <section class="doc-viewer doc-viewer--document" data-document-viewer data-viewer-initial-fit="page" aria-label="서식 파일 뷰어" aria-busy="false">
+            <div class="doc-viewer__toolbar" role="group" aria-label="이미지 보기 방식">
+              <span class="ocr-review__viewer-title">문서 미리보기</span>
+              <button type="button" class="btn-neutral" data-viewer-action="processed" aria-pressed="true">판독 이미지</button>
+              <button type="button" class="btn-neutral" data-viewer-action="original" aria-pressed="false" disabled>원본 보기</button>
+            </div>
+            <div class="doc-viewer__focusbar" role="group" aria-label="항목 탐색 시 문서 보기 방식">
+              <span>항목 탐색</span>
+              <button type="button" class="btn-neutral" data-viewer-action="focus-locate" aria-pressed="true" title="배율을 유지하고, 영역이 화면 밖일 때만 이동합니다">위치만 표시</button>
+              <button type="button" class="btn-neutral" data-viewer-action="focus-zoom" aria-pressed="false" title="선택한 인식 영역을 확대합니다. 선택 해제 시 이전 보기로 돌아갑니다">자동 확대</button>
+              <button type="button" class="btn-neutral" data-viewer-action="clear-focus" title="강조 해제 및 이전 보기 복원 (Esc)">강조 해제</button>
+            </div>
+            <div class="doc-viewer__surface">
+            <div class="doc-viewer__viewport" data-viewer-viewport tabindex="0" role="region" aria-label="문서 영역. 드래그로 이동, 휠로 확대 축소">
+              <div class="doc-viewer__space" data-viewer-space>
+                <div class="doc-viewer__stage" data-viewer-stage hidden>
+                  <img data-viewer-image alt="선택한 서식 페이지" draggable="false" hidden>
+                  <canvas data-viewer-canvas aria-label="업로드 원본 페이지" role="img" hidden></canvas>
+                  <svg data-viewer-overlay aria-label="선택 항목의 인식 영역" role="img" preserveAspectRatio="none"></svg>
+                </div>
+              </div>
+            </div>
+              <div class="doc-viewer__minimap" data-viewer-minimap hidden tabindex="0" role="region" aria-label="문서 위치 지도. 클릭, 드래그 또는 방향키로 이동. Home으로 전체 보기" title="클릭하거나 드래그해서 이동">
+                <canvas data-viewer-minimap-image aria-hidden="true"></canvas>
+                <svg data-viewer-minimap-overlay aria-hidden="true" preserveAspectRatio="none">
+                  <g data-viewer-minimap-boxes></g>
+                  <rect data-viewer-minimap-window></rect>
+                </svg>
+              </div>
+            </div>
+            <div class="doc-viewer__status" data-viewer-status role="status">서식을 선택해 주세요.</div>
+            <div class="doc-viewer__controls">
+              <div class="doc-viewer__control-group" role="group" aria-label="확대 축소">
+                <button type="button" class="btn-neutral" data-viewer-action="out" aria-label="축소">−</button>
+                <output data-viewer-zoom aria-label="확대율">100%</output>
+                <button type="button" class="btn-neutral" data-viewer-action="in" aria-label="확대">＋</button>
+                <button type="button" class="btn-neutral" data-viewer-action="width">너비 맞춤</button>
+                <button type="button" class="btn-neutral" data-viewer-action="fit">전체 보기</button>
+                <button type="button" class="btn-neutral" data-viewer-action="reset">100%</button>
+              </div>
+              <div class="doc-viewer__control-group" role="group" aria-label="문서 회전">
+                <button type="button" class="btn-neutral" data-viewer-action="rotate-left" aria-label="왼쪽으로 90도 회전" title="왼쪽으로 90도 회전">↶</button>
+                <output data-viewer-rotation aria-label="회전 각도">0°</output>
+                <button type="button" class="btn-neutral" data-viewer-action="rotate-right" aria-label="오른쪽으로 90도 회전" title="오른쪽으로 90도 회전">↷</button>
+              </div>
+              <div class="doc-viewer__control-group" role="group" aria-label="페이지 이동">
+                <button type="button" class="btn-neutral" data-viewer-action="previous" aria-label="이전 페이지">‹</button>
+                <input type="number" min="1" step="1" data-viewer-page aria-label="현재 페이지" disabled>
+                <span data-viewer-pages>/ 0</span>
+                <button type="button" class="btn-neutral" data-viewer-action="next" aria-label="다음 페이지">›</button>
+              </div>
+            </div>
+            <p class="doc-viewer__note" data-viewer-note role="status"></p>
+          </section>
+
+          </div>
+          <!-- .result-media 끝 -->
+
+          <!-- 인식 정보 / 확인 정보 패널 묶음 — get_design_context(843:4111) 실측. 각 패널의
+               확대 버튼을 누르면 그 패널이 옆 패널 자리까지 넓어지고(버튼은 축소로 바뀐다),
+               다시 누르면 원래 크기로 돌아간다(js/result-panel-expand.js). -->
+          <div class="ocr-review__splitter" data-workspace-resize="panels" role="separator" aria-label="문서와 정보 영역 너비 조절" aria-orientation="vertical" tabindex="0"></div>
+          <button type="button" class="btn-neutral result-panels-tab" data-workspace-panels-tab aria-label="정보 패널 펼치기" aria-controls="result-information-panels" aria-expanded="false">‹ 정보</button>
+          <div class="result-panels" id="result-information-panels" data-workspace-panels data-panel-expand>
+          <div class="ocr-review__comparison-heading"><h2><button type="button" class="ocr-review__comparison-help" data-comparison-help aria-controls="comparison-guidance" aria-describedby="comparison-guidance" aria-expanded="false">인식 항목 확인 <svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="8" cy="8" r="6"/><path d="M8 7v4M8 4.7v.6"/></svg></button></h2><span id="comparison-guidance" class="gnb__review-tooltip" role="tooltip" hidden>원본과 인식값을 대조하고, 확인값을 직접 수정하세요.</span>
+          <!-- 문서 역할(js/result-doc-role.js). 서식에 고를 역할이 있거나 문서에 역할이 있으면 보인다. -->
+          <div class="result-doc-role" data-result-role hidden>
+            <label for="result-doc-role-select">문서 역할</label>
+            <select class="input" id="result-doc-role-select" data-result-role-select></select>
+            <button type="button" class="btn-neutral" data-result-role-save>저장</button>
+            <span class="result-doc-role__note" data-result-role-note role="status"></span>
+          </div></div>
+
+          <!-- 인식 정보는 읽기 전용으로 표시한다. 인식률은 PM 요구에 따라 표시하지 않는다. -->
+          <div class="ocr-review__comparison-scroll">
+          <div class="result-panel result-panel--recognized">
+          <button type="button" class="btn-neutral result-panel__restore-tab" data-panel-restore-btn aria-label="인식 정보 펼치기" aria-controls="result-recognized-body" aria-expanded="false">인식 정보 ›</button>
+          <div class="result-panel__body" id="result-recognized-body">
+            <div class="result-panel__section">
+              <div class="section-title section-title--row">
+                <span>항목 · 인식값</span>
+                <div class="section-title__btn-group">
+                  <button type="button" class="btn-neutral" data-panel-collapse-btn aria-label="인식 정보 접기" aria-controls="result-recognized-body" aria-expanded="true">접기</button>
+                  <button type="button" class="btn-neutral" data-panel-expand-btn aria-label="인식 정보 패널 확대 또는 축소">
+                  <img th:src="@{/images/icons/result/ic-16-maximize.svg}" alt="" data-panel-expand-icon>
+                  <span data-panel-expand-label>확대</span>
+                </button>
+                </div>
+              </div>
+              <!-- 서식목록 첫 번째 항목(초기 is-active) 및 이후 클릭 항목에 대해
+                   result-file-list.js 가 /ocr/result/lefrm/{lefrmId}/recog-fields
+                   응답(OcrFldVO 목록, tb_ocrdf_l 기준)으로 이 안을 그린다. grpId 유무와
+                   무관하게 모든 필드를 "발급일자"처럼 개별 .result-field(라벨+입력창
+                   한 줄)로 세로 나열한다-->
+              <div class="result-panel__group" data-result-field-group></div>
+            </div>
+            <!--표 목록-->
+            <div data-result-table-group></div>
+          </div>
+          </div>
+
+          <!-- 확인 정보 — get_design_context(604:4151, 843:4111) 실측. 인식률 배지 없이 흰 배경
+               .input(readonly 없는 기본 상태)만 쓴다. 검증완료 태그는 이제 페이지 헤더의
+               검증완료 버튼으로 대체돼 삭제됐다. -->
+          <div class="result-panel result-panel--confirm">
+          <button type="button" class="btn-neutral result-panel__restore-tab" data-panel-restore-btn aria-label="확인 정보 펼치기" aria-controls="result-confirm-body" aria-expanded="false">확인 정보 ›</button>
+          <div class="result-panel__body" id="result-confirm-body">
+            <div class="result-panel__section">
+              <div class="section-title section-title--row">
+                <span>확인값</span>
+                <div class="section-title__btn-group">
+                  <button type="button" class="btn-neutral" data-panel-collapse-btn aria-label="확인 정보 접기" aria-controls="result-confirm-body" aria-expanded="true">접기</button>
+                  <button type="button" class="btn-neutral" data-panel-expand-btn aria-label="확인 정보 패널 확대 또는 축소">
+                  <img th:src="@{/images/icons/result/ic-16-maximize.svg}" alt="" data-panel-expand-icon>
+                  <span data-panel-expand-label>확대</span>
+                </button>
+                </div>
+              </div>
+              <!-- "인식 정보"와 같은 /ocr/result/lefrm/{lefrmId}/recog-fields 응답을 재사용해
+                   result-file-list.js 가 이 안을 그린다. grpId 있는 필드만, .result-field 안에
+                   <select>(현재 값 1개를 옵션으로 넣은 셀렉트박스)로, 없는 필드는 수정 가능한
+                   <input>(readonly 없음)으로 표시한다("그룹코드 경우만 셀렉트박스로 표현")
+              -->
+              <div class="result-panel__group" data-result-confirm-group></div>
+            </div>
+            <!--표 목록-->
+            <div data-result-confirm-table-group></div>
+          </div>
+          </div>
+
+          </div>
+          </div>
+          <!-- .result-panels 끝 -->
+
+        </div>
+
+      <footer class="ocr-review__footer" aria-label="선택 파일 정보와 검토 작업">
+        <div class="ocr-review__context">
+          <div class="ocr-review__document">
+            <span class="ocr-review__document-icon" aria-hidden="true">문서</span>
+            <div class="ocr-review__document-name">
+              <span class="ocr-review__context-label">선택한 파일</span>
+              <strong data-result-selected-file>서식을 선택해 주세요</strong>
+            </div>
+          </div>
+          <div class="ocr-review__context-actions">
+            <p class="ocr-review__summary" data-result-review-summary role="status" aria-live="polite">서식을 선택해 주세요.</p>
+            <div class="ocr-review__change-nav" role="group" aria-label="수정 항목 이동">
+              <span>수정 항목</span>
+              <button type="button" class="btn-neutral" data-result-change-action="previous" aria-label="이전 수정 항목" title="이전 수정 항목 (Shift+M)" aria-keyshortcuts="Shift+M" disabled>‹</button>
+              <output data-result-change-position aria-live="polite">0 / 0</output>
+              <button type="button" class="btn-neutral" data-result-change-action="next" aria-label="다음 수정 항목" title="다음 수정 항목 (M)" aria-keyshortcuts="M" disabled>›</button>
+            </div>
+            <button type="button" class="btn-neutral" data-workspace-toggle="panels" aria-controls="result-information-panels" aria-expanded="true" title="정보 패널 접기 또는 펼치기 (])"><span data-workspace-toggle-label>정보 접기</span></button>
+          </div>
+        </div>
+        <div class="ocr-review__footer-actions">
+          <button type="button" class="btn-neutral" data-result-reset>수정 초기화</button>
+          <button type="button" class="btn-neutral" data-raw-json-open th:if="${rawResultEnabled}" disabled>원본 JSON</button>
+          <button type="button" class="btn-neutral" data-result-save disabled>임시저장</button>
+          <button type="button" class="btn-neutral" data-verify-cancel-btn hidden>검증완료 취소</button>
+          <button type="button" class="btn btn-primary" data-verify-btn>이 서식 검증완료 ✓</button>
+        </div>
+      </footer>
+    </main>
+
+  </div>
+</div>
+
+<div id="verifyResultModal" class="modal-overlay" hidden>
+    <div class="modal modal--w600">
+        <div class="modal__header">
+            <span class="modal__title">검증완료 - 확인 정보</span>
+            <button type="button" class="modal__close" aria-label="닫기" data-modal-close>
+                <svg th:width="10" height="50" viewBox="0 0 10 50" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"></svg>
+            </button>
+        </div>
+        <div class="modal__body">
+            <textarea class="modal__textarea" style="flex: none;height: 1800px;max-height: 70vh;font-family: monospace;white-space: pre" readonly data-verify-result-textarea></textarea>
+        </div>
+        <div class="modal__footer">
+            <div class="modal__footer-actions">
+                <button type="button" class="btn-neutral" data-modal-close>닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 판독 원본 JSON: 선택한 서식의 판독작업을 엔진에서 다시 조회해 그대로 보여준다(js/result-raw-json.js). -->
+<div id="raw-json-modal" class="modal-overlay raw-json" hidden th:if="${rawResultEnabled}">
+  <div class="modal raw-json__modal" role="dialog" aria-modal="true" aria-labelledby="raw-json-title">
+    <div class="modal__header">
+      <span class="modal__title" id="raw-json-title">판독 원본 JSON</span>
+      <button type="button" class="modal__close" aria-label="닫기" data-modal-close>✕</button>
+    </div>
+    <div class="modal__body">
+      <dl class="raw-json__meta">
+        <dt>판독작업 ID</dt><dd><code data-raw-json-field="transaction_id">-</code></dd>
+        <dt>엔진 실행 상태</dt><dd><code data-raw-json-field="status">-</code></dd>
+        <dt>문서 ID</dt><dd><code data-raw-json-field="document_id">-</code></dd>
+        <dt>조회 시각</dt><dd><code data-raw-json-field="fetched_at">-</code></dd>
+      </dl>
+      <div class="raw-json__bar">
+        <div class="raw-json__tabs" role="tablist" aria-label="보기 범위">
+          <button type="button" role="tab" aria-selected="true" data-raw-json-scope="document">선택 문서</button>
+          <button type="button" role="tab" aria-selected="false" data-raw-json-scope="all">전체 응답 <span data-raw-json-count></span></button>
+        </div>
+        <span class="raw-json__spacer"></span>
+        <button type="button" class="btn-neutral" data-raw-json-copy>복사</button>
+        <button type="button" class="btn-neutral" data-raw-json-download>.json 다운로드</button>
+      </div>
+      <pre class="raw-json__code" tabindex="0" data-raw-json-code></pre>
+    </div>
+    <div class="modal__footer">
+      <div class="modal__footer-actions">
+        <button type="button" class="btn-neutral" data-modal-close>닫기</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- 판독작업 담당자 지정(관리자·팀장). 트리거 옆에 띄운다(js/result-review.js). -->
+<div class="review-assign" data-review-assign role="dialog" aria-labelledby="review-assign-title" hidden>
+  <div class="review-assign__header">
+    <strong id="review-assign-title" data-review-assign-title>판독작업 담당자 지정</strong>
+    <button type="button" class="review-assign__close" data-review-assign-close aria-label="닫기">✕</button>
+  </div>
+  <p class="review-assign__current" data-review-assign-current></p>
+  <div class="review-assign__actions">
+    <button type="button" class="btn-neutral" data-review-assign-self>내가 맡기</button>
+    <button type="button" class="btn-neutral" data-review-assign-clear>지정 해제</button>
+  </div>
+  <div data-review-assign-picker></div>
+</div>
+
+  <!-- 알림·확인 모달(검증완료·결과 다시 가져오기 안내). modal.js 가 연다. -->
+  <div th:replace="~{common/commonModals :: commonModals}"></div>
+  <script th:src="@{/js/doc-viewer.js}"></script>
+  <script th:src="@{/js/staff-picker.js}"></script>
+  <script th:src="@{/js/result-review.js}"></script>
+  <script th:src="@{/js/result-file-list.js}"></script>
+  <script th:src="@{/js/result-doc-role.js}"></script>
+  <script th:src="@{/js/result-refresh.js}"></script>
+  <script th:src="@{/js/result-raw-json.js}" th:if="${rawResultEnabled}"></script>
+  <script th:src="@{/js/doc-viewer-zoom.js}"></script>
+  <script th:src="@{/js/result-panel-expand.js}"></script>
+  <script th:src="@{/js/result-workspace.js}"></script>
+  <script th:src="@{/js/modal.js}"></script>
+  <script th:src="@{/js/ocr-review-classic.js}"></script>
+
+</body>
+</html>

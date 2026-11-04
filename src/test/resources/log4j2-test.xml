@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 테스트는 프로파일별 운영 파일 경로를 사용하지 않고 표준출력에만 기록한다. -->
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss} %-5p [%c{1}] %m%n%throwable"/>
+        </Console>
+    </Appenders>
+    <Loggers>
+        <Root level="INFO"><AppenderRef ref="Console"/></Root>
+    </Loggers>
+</Configuration>

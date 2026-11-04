@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.agilesoda.module.apply.mapper.AgentApiMapper">
+
+    <insert id="upsertOcrWfM" parameterType="com.agilesoda.module.apply.vo.OcrWfMVO">
+		/* 엔진에서 조회한 워크플로우 목록 호출 - upsertOcrWfM */
+		MERGE  INTO ocuoc_ocrwf_m tgt
+		USING (
+		    SELECT
+				#{wkId} 			AS WK_ID,
+				#{wkNm} 			AS WK_NM,
+				#{wkDesc} 			AS WK_DESC,
+				#{docTypNm} 		AS DOC_TYP_NM,
+				#{wkStatCd} 		AS WK_STAT_CD,
+				#{activeReleaseId} 	AS ACTIVE_RELEASE_ID,
+				TO_TIMESTAMP(#{activatedAt}, 'YYYY-MM-DD HH24:MI:SS') AS ACTIVATED_AT,
+				SYSTIMESTAMP 		AS SYNC_DT,
+				#{rgsrId} 			AS RGSR_ID,
+				SYSTIMESTAMP 		AS REG_DT
+		     FROM dual
+		) src
+		<!-- PK 는 WK_ID 하나다. 엔진의 doc_type 은 null 이거나 바뀔 수 있어 매칭 조건에 넣지 않는다. -->
+		ON (tgt.WK_ID = src.WK_ID)
+		WHEN MATCHED THEN
+		    UPDATE SET
+				tgt.WK_NM 				= src.WK_NM,
+				tgt.DOC_TYP_NM 			= src.DOC_TYP_NM,
+				tgt.WK_DESC           	= src.WK_DESC,
+				tgt.WK_STAT_CD 		  	= src.WK_STAT_CD,
+				tgt.ACTIVE_RELEASE_ID 	= src.ACTIVE_RELEASE_ID,
+				tgt.ACTIVATED_AT 		= src.ACTIVATED_AT,
+				tgt.SYNC_DT 			= src.SYNC_DT,
+				tgt.EDTR_ID 			= src.RGSR_ID,
+				tgt.CHNG_DT 			= src.REG_DT
+		WHEN NOT MATCHED THEN
+			INSERT (
+				WK_ID, WK_NM, WK_DESC, DOC_TYP_NM, WK_STAT_CD,
+				ACTIVE_RELEASE_ID, ACTIVATED_AT, SYNC_DT, RGSR_ID, REG_DT
+			) VALUES (
+				src.WK_ID, src.WK_NM, src.WK_DESC, src.DOC_TYP_NM, src.WK_STAT_CD,
+				src.ACTIVE_RELEASE_ID, src.ACTIVATED_AT, src.SYNC_DT, src.RGSR_ID, src.REG_DT
+			)
+    </insert>
+
+    <!-- 동기화의 연결 계산 입력. 맞는 서식이 여럿이면 앞선 서식(LEFRM_ID 가 가장 작은 서식)을 쓴다 -->
+    <select id="selectFormsForLink" resultType="com.agilesoda.module.apply.vo.LefrmMatchVO">
+		/* 연결 계산용 서식 전체 - selectFormsForLink */
+		SELECT
+			F.LEFRM_ID  AS lefrmId,
+			F.DOC_ID	AS docId
+		FROM
+		    ocuoc_lefrm_m F
+	   ORDER BY F.LEFRM_ID
+    </select>
+
+    <select id="selectAllOcrWll" resultType="com.agilesoda.module.apply.vo.OcrWllVO">
+		/* 현재 업무-서식 연결 전체 - selectAllOcrWll */
+		SELECT
+			WL.WK_ID    AS wkId,
+			WL.LEFRM_ID AS lefrmId
+		FROM
+		    ocuoc_ocrwl_l WL
+    </select>
+
+    <select id="selectStoredClasses" resultType="com.agilesoda.module.apply.vo.OcrWcVO">
+		/* 저장된 분류 클래스 사본과 그때의 릴리스 - selectStoredClasses */
+		SELECT
+			WC.WK_ID             AS wkId,
+			W.ACTIVE_RELEASE_ID  AS activeReleaseId,
+			WC.CLASS_NM          AS className,
+			WC.DOC_TYP_CD        AS docTypeCode
+		FROM
+		    ocuoc_ocrwc_l WC
+		JOIN ocuoc_ocrwf_m W
+		  ON W.WK_ID = WC.WK_ID
+	   ORDER BY WC.WK_ID, WC.CLASS_SEQ
+    </select>
+
+	<delete id="deleteOcrWllByWkId">
+		/* 워크플로우의 서식 매핑 전체 삭제(동기화 시 다시 만든다) - deleteOcrWllByWkId */
+		DELETE FROM ocuoc_ocrwl_l WHERE WK_ID = #{wkId}
+	</delete>
+
+	<insert id="insertOcrWll" parameterType="com.agilesoda.module.apply.vo.OcrWllVO">
+		/* 매칭된 워크플로우-서식 매핑 등록 - insertOcrWll */
+		MERGE INTO ocuoc_ocrwl_l tgt
+		USING (
+		    SELECT
+				#{wkId}    AS WK_ID,
+				#{lefrmId} AS LEFRM_ID,
+				#{rgsrId}  AS RGSR_ID,
+				SYSTIMESTAMP AS REG_DT
+		      FROM dual
+			) src
+		    ON (
+		        tgt.WK_ID = src.WK_ID
+		        AND tgt.LEFRM_ID = src.LEFRM_ID
+				)
+		WHEN NOT MATCHED THEN
+			INSERT (
+				WK_ID, LEFRM_ID, RGSR_ID, REG_DT
+			) VALUES (
+				src.WK_ID, src.LEFRM_ID, src.RGSR_ID, src.REG_DT
+			)
+	</insert>
+
+	<delete id="deleteOcrWcByWkId">
+		/* 업무 분류 클래스 전체 삭제(동기화 시 다시 만든다) - deleteOcrWcByWkId */
+		DELETE FROM ocuoc_ocrwc_l WHERE WK_ID = #{wkId}
+	</delete>
+
+	<insert id="insertOcrWc">
+		/* 업무 분류 클래스 등록 - insertOcrWc */
+		INSERT INTO ocuoc_ocrwc_l (WK_ID, CLASS_SEQ, CLASS_NM, DOC_TYP_CD, SYNC_DT)
+		VALUES (#{wkId}, #{classSeq}, #{className}, #{docTypeCode,jdbcType=VARCHAR}, SYSTIMESTAMP)
+	</insert>
+</mapper>

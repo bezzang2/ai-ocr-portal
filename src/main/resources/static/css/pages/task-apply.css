@@ -1,0 +1,284 @@
+/* ---- OCR 업무신청 화면 전용 — get_design_context(493:12245, 493:12281) 실측.
+   상단 검색영역/본문 틀은 patterns/split-view.css의 .split-view/.split-view__search/.split-view__body를
+   그대로 재사용한다(패딩·보더·radius가 모두 동일 — 추출화면과 같은 "검색+분할뷰" 패턴).
+   결과 패널 섹션 골격(제목+액션+콘텐츠)은 patterns/task-section.css의 .task-section을 쓴다
+   (menu-management.html도 동일 패턴을 재사용 — 2026-08-18 patterns/로 분리).
+
+   2026-09-02 추가: 서식목록 위에 "서식명/업무명" 토글이 생겼다(get_design_context(851:4626,
+   853:5137) 실측) — 서식명을 고르면 기존 서식목록 그대로, 업무명을 고르면 헤더/검색플레이스홀더가
+   "업무목록"으로 바뀌고 목록 항목도 업무명+건수로 바뀐다. 토글 자체는 search.html의
+   .toggle-group과 같은 상호작용(버튼 클릭 → 같은 부모 밑 [data-toggle-panel] 형제를
+   보이기/숨기기)이라 js/toggle-group.js를 그대로 재사용하지만, 시각 스타일(테두리 없음/활성
+   시 Neutral·500 채움)이 .toggle-group(Primary 채움+테두리)과 달라 이 화면 전용
+   .task-list__toggle*로 새로 정의했다. 업무명 목록의 각 항목 텍스트는 클릭하면 그 업무에 속한
+   서식 목록 모달이 뜬다(get_design_context(853:5676) 실측, js/modal.js 재사용). ---- */
+
+/* ---- 좌측 서식목록 패널 — .file-list와 같은 레시피(흰 배경/오른쪽 보더)이지만 폭이 300px로 달라
+   별도 클래스로 뒀다. ---- */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  width: 300px;
+  flex-shrink: 0;
+  background: var(--surface-white);
+  border-right: 1px solid var(--border-neutral-subtle);
+}
+/* ---- 서식명/업무명 토글 — get_design_context(851:4680) 실측. .toggle-group과 달리 테두리가
+   없고 활성 버튼이 Primary가 아니라 Neutral/500로 채워진다 — 같은 "버튼 두 개로 아래 패널을
+   바꾼다" 상호작용이라 js/toggle-group.js([data-toggle-group]/[data-toggle]/[data-toggle-panel])는
+   그대로 쓰고 시각 스타일만 새로 정의했다. ---- */
+.task-list__toggle { display: flex; height: 30px; flex-shrink: 0; border-bottom: 1px solid var(--border-neutral-subtle); }
+.task-list__toggle-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  color: var(--text-neutral-tertiary);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+.task-list__toggle-btn.is-active { background: var(--surface-neutral-default); color: var(--text-inverse); }
+/* 토글 패널(서식목록/업무목록) — .task-list__header(고정)+.task-list__body(flex:1, 내부 스크롤)를
+   감싸서 .task-list의 남은 세로 공간을 그대로 물려받는다(패널로 한 번 더 감싸지 않으면
+   header/body가 .task-list의 직계 flex 자식이 아니게 돼 레이아웃이 깨진다). */
+.task-list__panel { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+/* author 스타일(위 display:flex)이 브라우저 기본 [hidden]{display:none}보다 우선순위가 높아
+   hidden 속성만으로는 안 숨겨진다 — js/toggle-group.js·js/result-lightbox.js에서 이미 겪은
+   것과 같은 문제라 같은 방식(더 구체적인 선택자로 [hidden]을 되살림)으로 고쳤다. */
+.task-list__panel[hidden] { display: none; }
+.task-list__header {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-neutral-subtle);
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-secondary);
+}
+.task-list__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: var(--gap-md); /* 8px */
+  padding: 8px;
+  overflow-y: auto;
+}
+.task-list__items { display: flex; flex-direction: column; gap: 4px; }
+.task-list__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 4px;
+}
+/* get_design_context(851:4710, 853:5218) 실측 — 서식명/업무명 리스트 각각 항목 하나씩
+   hover 상태(Surface/Primary-Faint)로 예시가 표시돼 있었다. */
+.task-list__item:hover { background: var(--surface-primary-faint); }
+.task-list__item-name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-secondary);
+  letter-spacing: -0.0442px;
+}
+/* 업무명 목록 항목 텍스트 — get_design_context(853:5200) 실측. .task-list__item-name(폰트/색)은
+   그대로 재사용하고, <button>이라 생기는 기본 스타일(테두리/배경/패딩/정렬)만 이 클래스로
+   지운다 — font/color/letter-spacing을 inherit로 다시 쓰면 같은 요소에 같이 붙은
+   .task-list__item-name의 font-size·font-weight까지 shorthand로 덮어써 버려서(둘 다 클래스
+   선택자라 우선순위가 같고, 이 규칙이 뒤에 있어 이겨버렸다) 서식명 목록과 글자 크기가
+   달라지는 버그가 있었다 — 그래서 레이아웃/커서만 건드리고 폰트 관련 속성은 아예 손대지
+   않는다. 클릭하면 그 업무의 서식 목록 모달이 뜬다. */
+.task-list__item-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+/* hover 시 semibold로 굵어져 "선택 가능한 텍스트"임을 알려준다(2026-09-02 사용자 요청) —
+   .task-list__item:hover의 행 전체 배경 하이라이트와는 별개로, 이 텍스트 자체가 클릭
+   가능하다는 걸 보여주는 용도. */
+.task-list__item-text:hover { font-weight: var(--font-weight-semibold); }
+/* "추가됨" — 이미 목록에 반영된 서식(비활성 표시, 클릭 불가) */
+.task-list__item-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 60px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface-neutral-faint);
+  color: var(--text-disabled);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-medium);
+}
+/* "추가" — 아직 안 담긴 서식을 담는 액션 버튼 */
+.task-list__item-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 60px;
+  height: 24px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-primary-default);
+  border-radius: var(--radius-sm);
+  background: var(--surface-white);
+  color: var(--text-primary-default);
+  font-size: var(--font-size-12);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+.task-list__item-add:hover { border-color: var(--border-primary-medium); color: var(--text-primary-medium); } /* .btn-outline-primary와 동일한 hover 규칙(0813 변경사항) */
+.task-list__item-add svg { flex-shrink: 0; }
+
+/* ---- 우측 결과 패널 ---- */
+.task-result {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-white);
+}
+.task-result__body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+  overflow: auto;
+}
+
+/* ---- 적용 서식 Chip — get_design_context(493:13167 하위 Chip 인스턴스) 재실측으로 크기/간격 교체 ---- */
+.chip-row { display: flex; flex-wrap: wrap; gap: 12px; width: 100%; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px; /* 체크박스-텍스트, 텍스트-삭제 간 간격 모두 4px로 실측 */
+  height: 32px; /* 기존 24px에서 교체 */
+  padding: 0 12px 0 16px; /* 좌16 / 우12 — 체크박스(16px)가 왼쪽에서 16px, 삭제버튼(14px) 뒤로 12px 여백 */
+  border-radius: var(--size-radius-round);
+  background: var(--surface-neutral-faint);
+  color: var(--text-neutral-tertiary);
+  font-size: var(--font-size-14); /* 기존 12px(font-size/sm) 오적용 수정 — get_design_context(585:3004) 재실측 */
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0476px; /* 실측값, Label-14M 라이브러리 -0.34px와 다름 */
+}
+/* 체크 여부는 실제 .checkbox__input(checkbox--lg, 16px — 색/체크마크는 checkbox.css가 처리)로 판단한다 —
+   :has()로 칩 전체(배경/텍스트)를 체크 상태에 실시간으로 맞춘다. 정적 modifier 클래스가 아니라
+   실제 체크박스를 클릭해 토글할 수 있어야 하기 때문. */
+.chip:has(.checkbox__input:checked) { background: var(--surface-primary-faint); color: var(--text-primary-default); }
+.chip .checkbox { flex-shrink: 0; }
+.chip__label { padding: 0 6px; } /* 텍스트 프레임 자체의 좌우 내부 여백 6px씩 — 위 .chip의 gap(4px)과는 별개 */
+/* 삭제 버튼 — get_design_context(585:2999, 585:3004) 재실측. 윤곽선 아이콘이 아니라 꽉 찬 원형
+   배경(체크 시 Blue/600, 미체크 시 Neutral/500) 안에 흰색 X — 칩 색과 무관하게 항상 흰 아이콘 */
+.chip__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--size-radius-round);
+  background: var(--surface-neutral-default);
+  padding: 0;
+  cursor: pointer;
+}
+.chip:has(.checkbox__input:checked) .chip__delete { background: var(--surface-primary-default); }
+.chip__delete svg { width: 5.5px; height: 5.5px; }
+
+/* ---- Rule 상세 — 규칙명/비교유형 입력 줄은 .sub__search-area + .split-view__search-item 재사용,
+   아래 카드 그리드만 이 화면 전용으로 새로 정의한다. ---- */
+.rule-field-box {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md); /* 8px */
+  padding: 12px;
+  background: var(--surface-neutral-faint);
+  border-radius: 8px;
+  width: 100%;
+}
+.rule-field-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--gap-md); /* 8px */
+  width: 100%;
+}
+.rule-field-card {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md); /* 8px */
+  padding: 12px 16px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: 8px;
+}
+.rule-field-card--active { border-color: var(--border-primary-default); } /* get_design_context(522:16459) 실측 — 서식간 규칙 등록 모달의 "Input 항목"(직접 지정한 커스텀 필드) 카드 강조 */
+.rule-field-card__info { display: flex; align-items: center; gap: var(--gap-md); flex: 1; min-width: 0; } /* 8px */
+.rule-field-card__label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-tertiary);
+  letter-spacing: -0.0442px;
+}
+
+/* ---- 기안 작성내용 ---- */
+.task-memo {
+  display: block;
+  width: 100%;
+  min-height: 80px;
+  max-height: 144px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: var(--radius-control);
+  background: var(--surface-white);
+  color: var(--text-neutral-default);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  letter-spacing: -0.0442px;
+  line-height: 1.4;
+  resize: none;
+  overflow-y: auto;
+}
+.task-memo:focus { border-color: var(--border-primary-default); outline: none; } /* reset.css의 전역 :focus-visible 아웃라인 대신 .input과 동일하게 테두리 색만 바뀌게 함 */
+
+/* ---- 업무내 서식 목록 모달(.modal--sm) 전용 — get_design_context(853:5676) 실측. 모달
+   뼈대(.modal/.modal__header/.modal__close/.modal__body/.modal__footer)는 기존 컴포넌트
+   그대로, 안쪽 업무명 요약 박스/서식 불릿 목록만 이 화면 전용으로 새로 정의한다. ---- */
+.task-modal-summary {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-xl); /* 16px */
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surface-neutral-faint);
+  border-radius: 8px;
+}
+.task-modal-summary__label { font-size: var(--font-size-13); font-weight: var(--font-weight-medium); color: var(--text-neutral-tertiary); }
+.task-modal-summary__value { font-size: var(--font-size-13); font-weight: var(--font-weight-medium); color: var(--text-neutral-secondary); }
+.task-modal-list { display: flex; flex-direction: column; gap: var(--gap-lg); width: 100%; padding: 0 16px; } /* 12px */
+.task-modal-list__item { display: flex; align-items: center; gap: var(--gap-md); width: 100%; } /* 8px */
+.task-modal-list__dot { width: 4px; height: 4px; flex-shrink: 0; border-radius: var(--size-radius-round); background: var(--icon-neutral-subtle); }
+.task-modal-list__name {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-tertiary);
+  letter-spacing: -0.0442px;
+}

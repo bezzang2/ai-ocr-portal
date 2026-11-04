@@ -1,0 +1,27 @@
+/* 단말 mock 화면(templates/module/devicemock/device-mock.html) 전용. LNB 없이 단독으로 뜬다. */
+/* base.css 가 html·body 를 overflow:hidden 으로 고정하므로(앱 셸용) 이 화면은 body 가 스크롤한다. */
+.device-mock { overflow-y: auto; background: var(--surface-neutral-faint); color: var(--text-neutral-default); }
+.device-mock__main { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
+.device-mock__header h1 { font-size: 20px; font-weight: 700; }
+.device-mock__header p { margin-top: 4px; color: var(--text-neutral-tertiary); font-size: 13px; }
+.device-mock__card { margin-top: 16px; padding: 16px 20px; background: var(--surface-white);
+  border: 1px solid var(--border-neutral-subtle); border-radius: 8px; }
+.device-mock__card h2 { display: flex; align-items: center; gap: 8px; margin: 16px 0 8px; font-size: 14px; font-weight: 700; }
+.device-mock__card h2:first-child { margin-top: 0; }
+.device-mock__card h2 .btn-neutral { margin-left: auto; }
+.device-mock__muted { color: var(--text-neutral-tertiary); font-size: 12px; font-weight: 400; }
+.device-mock__workflows { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 4px 12px; font-size: 13px; }
+.device-mock__workflows label { display: flex; gap: 6px; align-items: center; }
+.device-mock__files { margin-top: 6px; font-size: 12px; color: var(--text-neutral-secondary); }
+.device-mock__grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 12px; }
+.device-mock__grid label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--text-neutral-secondary); }
+.device-mock__actions { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+.device-mock__status { font-size: 13px; }
+.device-mock__status--error { color: var(--status-error-default); }
+.device-mock__result { margin-top: 12px; font-size: 13px; }
+.device-mock__result a { color: var(--text-primary-default); }
+.device-mock pre { margin-top: 6px; padding: 8px; max-height: 240px; overflow: auto; background: var(--surface-neutral-faint);
+  border-radius: 4px; font-size: 12px; white-space: pre-wrap; word-break: break-all; }
+.device-mock__inbox-item { padding: 8px 0; border-top: 1px solid var(--border-neutral-subtle); font-size: 13px; }
+.device-mock__inbox-item:first-child { border-top: 0; }
+@media (max-width: 720px) { .device-mock__grid { grid-template-columns: 1fr; } }

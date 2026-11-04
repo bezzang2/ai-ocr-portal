@@ -1,0 +1,118 @@
+/* ---- 통합검색 > 고객 통합검색 화면 전용 — get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl,
+   nodeId 537:17903) 실측. 검색영역 뼈대는 patterns/search-area.css의 .search-area/.search-area__row/
+   .search-area__item/.search-area__actions, 결과 영역 제목+본문 스택은 patterns/list-section.css의
+   .list-section, 표/탭/페이지네이션/상태뱃지는 각각 components/table.css·tabs.css·pagination.css를
+   그대로 재사용한다. OCR서식조회·감사로그와 동일 구조로 맞춘다(2026-08-26 재정리): .page-header는
+   .content 바로 아래 독립된 형제 요소로 두고(이전엔 .list-section 안에 잘못 중첩돼 있었다),
+   그 아래 .search-area/.customer-summary/.tab-panel을 감싸는 하나의 평평한 layout.css의
+   .layout-list(24px gap)를 쓴다 — "제목+표+툴바" 묶음이 아니라 단순 세로 스택이라
+   .list-section이 아니다(중첩된 .layout-list 두 겹으로 감싸던 것도 정리했다). .list-section은
+   본래 용도대로 .tab-panel 안, 표+.list-footer 묶음(이 화면은 제목 없이)에만 쓴다 —
+   .content > .page-header + .layout-list(.search-area + .customer-summary +
+   .tab-panel(.tabs + .list-section(table + .list-footer))). 이 화면에서만 쓰는 조회구분 토글
+   버튼과 고객 요약 박스만 새로 정의한다. ---- */
+
+/* ---- 조회구분/기간선택 토글 버튼(Select Button) — get_design_context(547:18581, 557:19316) 실측.
+   두 버튼이 -1px씩 겹쳐 테두리가 이중으로 안 보이게 하는 구성은 기존 pagination 등과 달리
+   이 화면에서 처음 나온 패턴이라 새로 정의했다. ---- */
+.toggle-group { display: inline-flex; align-items: center; }
+.toggle-group__btn {
+  height: var(--control-height-md);
+  padding: 0 var(--gap-lg); /* 12px */
+  margin-right: -1px;
+  border: 1px solid var(--border-primary-default);
+  background: var(--surface-white);
+  color: var(--text-primary-default);
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-none);
+  white-space: nowrap;
+}
+.toggle-group__btn:first-child { border-radius: var(--radius-control) 0 0 var(--radius-control); }
+.toggle-group__btn:last-child { margin-right: 0; border-radius: 0 var(--radius-control) var(--radius-control) 0; }
+/* 폭 변형 — get_design_context(547:18581 조회구분 128px, 557:19316 기간선택 70px) 실측.
+   버튼 자체가 아니라 그룹에 다는 이유는 두 버튼이 항상 같은 폭 쌍으로 실측됐기 때문. */
+.toggle-group--w128 .toggle-group__btn { width: 128px; text-align: center; }
+.toggle-group--w70 .toggle-group__btn { width: 70px; text-align: center; }
+.toggle-group__btn.is-active {
+  position: relative;
+  z-index: 1;
+  background: var(--surface-primary-default);
+  border-color: var(--surface-primary-default);
+  color: var(--text-inverse);
+}
+
+/* ---- 기간선택 항목 안, 라디오 5개 + 기간 직접입력(date~date+새로고침/조회)을 한 줄로 묶는 행 —
+   get_design_context(674:2537) 실측 gap-12(다른 곳의 .search-area__combo 6px와 다른 값이라 별도 지정). ---- */
+.search-period-row { display: flex; align-items: center; gap: var(--gap-lg); }
+
+/* ---- 조회구분="실명번호(개인/기업)" 선택 시 필드 2개(실명번호 구분/주민등록번호)를 묶는 행 —
+   get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 574:2031, "Item Group" 674:2704) 실측 gap-12. ---- */
+.search-toggle-fields { display: flex; align-items: center; gap: var(--gap-lg); }
+
+/* ---- 고객 요약 박스 — get_design_context(559:19399) 실측. 흰 배경 없이 테두리만(투명 배경) +
+   패딩 24px 4면 동일, 좌측 정보 묶음과 우측 AI-OCR 처리이력 카운트가 양끝 정렬된다. ---- */
+.customer-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 24px;
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: 8px;
+}
+.customer-summary__group { display: flex; align-items: center; gap: 36px; }
+.customer-summary__name {
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0544px;
+  line-height: 1;
+  color: var(--text-neutral-default);
+}
+.customer-summary__field { display: flex; align-items: center; gap: var(--gap-lg); } /* 12px */
+.customer-summary__field-label { display: flex; align-items: center; gap: var(--gap-md); } /* 8px */
+.customer-summary__dot { width: 4px; height: 4px; border-radius: var(--size-radius-round); background: var(--icon-neutral-subtle); flex-shrink: 0; } /* Neutral/300 #9a9fa8 실측 */
+.customer-summary__field-label-text {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0442px;
+  line-height: 1;
+  color: var(--text-neutral-tertiary);
+  white-space: nowrap;
+}
+.customer-summary__field-value {
+  font-size: var(--font-size-13);
+  letter-spacing: -0.0442px;
+  line-height: 1;
+  color: var(--text-neutral-default);
+  white-space: nowrap;
+}
+.customer-summary__history { display: flex; align-items: center; gap: var(--gap-lg); } /* 12px */
+.customer-summary__history-label {
+  font-size: var(--font-size-16);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0544px;
+  line-height: 1;
+  color: var(--text-neutral-secondary);
+  white-space: nowrap;
+}
+.customer-summary__history-count {
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.0612px;
+  line-height: 1;
+  color: var(--text-primary-default);
+}
+
+/* ---- 결과 표 칼럼폭 — 관리자>코드관리 표(code-management.html)와 같은 방식으로
+   table-layout:fixed + <colgroup> %폭을 쓴다(화면 폭이 줄어들면 표 전체가 %로 같이 줄어들도록).
+   %는 get_design_context(537:17984) 실측 px폭(No 80/채널구분 80/단위시스템 120/업무화면 160/
+   전문코드 120/점번호 160/성명 160/처리일시 200/진행상태 100)에 서식명만 실측값이 없어(원래
+   flex-1) 다른 "이름" 칼럼들과 비슷한 240px을 임의로 얹은 합계 1420px 기준 — colgroup은
+   search.html 쪽에 있다. 진행상태는 100px 기준 폭(get_design_context 실측)이라 안의
+   .status-pill(128px 고정)이 살짝 넘칠 수 있는데, 표준 컴포넌트를 그대로 재사용하는 쪽을
+   우선했다(2026-08-24, --stretch 모디파이어로 pill 자체를 줄였다가 앱 전체 pill 크기와
+   달라지는 문제가 있어 되돌렸다). 서식명 칼럼의 좌측 정렬은 관리자>감사로그/신청관리>
+   OCR서식조회처럼 표를 CSS 클래스로 스코프하지 않고 해당 td에 인라인 style="text-align:left"를
+   직접 준다(2026-08-25, .search-table 삭제 — 여러 화면의 표 스코프 방식을 이 방식으로
+   통일했다). ---- */

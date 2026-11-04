@@ -1,0 +1,31 @@
+/* 관리자 > 메뉴관리 — get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 604:5165) 실측.
+   좌측 메뉴 트리 + 우측 상세정보/버튼정의 2단 구성. 재사용 가능한 것은 그대로 가져다 쓴다:
+   2단 레이아웃 틀(검색바 없이 단독으로 쓰이는 상자) → patterns/split-view.css의
+   .split-view__body.split-view__body--boxed — 역할권한 상세 모달도 동일 상자를 쓰는
+   공용 패턴이라 화면 전용 CSS로 두지 않았다(2026-08-18 .menu-mgmt에서 이름 흡수).
+   메뉴 트리(.menu-tree*) → components/menu-tree.css — 권한관리 화면·모달에서도 재사용되는
+   위젯이라 화면 전용 CSS로 두지 않았다(2026-08-18 컴포넌트로 분리).
+   섹션 헤더(제목+추가/삭제/등록) → patterns/task-section.css의 .task-section
+   상세정보 폼(구 .menu-detail-form) → patterns/search-area.css의 .search-area--detail —
+   권한관리 부서정보에서도 재사용되는 패턴이라 2026-08-18 search-area 모디파이어로 흡수했다.
+   버튼/입력 기본 스타일 → components/button.css, input.css
+   표(기본형 + 편집 가능한 인풋형 행 .is-editing) → components/table.css — 화면 전용이 아니라
+   테이블 컴포넌트의 한 상태라 이 화면 CSS로 들이지 않았다.
+   이 파일은 이 화면에서만 쓰는 우측 결과 패널 뼈대만 담당한다. */
+
+/* ---- 우측 상세/버튼정의 ---- */
+.menu-result {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+.menu-result__body {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+  overflow: auto;
+} /* 역할권한 상세 모달은 이 값 대신 인라인으로 var(--gap-lg)(12px)를 준다 — 페이지(메뉴관리)는 24px 유지 */

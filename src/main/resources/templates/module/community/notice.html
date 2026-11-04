@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+<meta charset="UTF-8">
+<title>공지사항 | AI OCR 서류판독시스템</title>
+<link rel="stylesheet" th:href="@{/css/main.css}">
+
+  <!-- inline JS 영역-->
+  <script th:inline="javascript" type="text/javascript">
+    var item = [[${buttonList}]];
+    console.log(item);
+    let currentPage = 1; // 현제 페이지
+    let pageSize = 15; // 한 페이지 건수
+    let pageBlockSize = 5; // 페이지 번호 5개씩
+    let totalPageCount = 0;
+    let prevNoticeSearchKey = null;
+    document.addEventListener('DOMContentLoaded',function (){
+
+      // 메뉴 오픈시 lnb쪽 메뉴 활성화 부분
+      const params = new URLSearchParams(location.search);
+      const menuId = params.get("menuId");
+
+      if(menuId) {
+        openLnb(menuId);
+        //selectMenu(menuId);
+      }
+      // 날짜 초기 세팅
+      setToday();
+
+      // 화면 처음열렸을 때 조회
+      searchNotice();
+
+      // 처음
+      document.getElementById("pageFirst").addEventListener("click", function(){
+        movePage(1);
+      });
+
+      // 이전
+      document.getElementById("pagePrev").addEventListener("click", function(){
+        if(currentPage > 1){
+          movePage(currentPage - 1);
+        }
+      });
+
+      // 다음
+      document.getElementById("pageNext").addEventListener("click", function(){
+        movePage(currentPage + 1);
+      });
+
+      // 끝
+      document.getElementById("pageLast").addEventListener("click", function(){
+        movePage(totalPageCount);
+      });
+
+      document.getElementById("pageSize").addEventListener("change", function(){
+        pageSize = Number(this.value);
+        currentPage = 1;
+        searchNotice();
+      });
+
+
+      /**********************************************************************
+       *  화면내 모든 버튼 클릭 이벤트
+       ***********************************************************************/
+      document.addEventListener("click",function (e) {
+        const btn = e.target.closest("[data-action-cd]");
+
+        if(!btn){ return;}
+
+        const actionCd = btn.dataset.actionCd;
+        const areaCd = btn.dataset.areaCd;
+        //console.log("actionCd===>>>",actionCd)
+        //console.log("areaCd===>>>",areaCd)
+        if(areaCd === "HEADER"){
+          switch (actionCd){
+            case "SAVE":
+              saveNotice();
+              break;
+            case "DELETE":
+              deleteNotice();
+              break;
+          }
+        }else if(areaCd === "SEARCH"){
+          switch (actionCd) {
+            case "SEARCH":
+              searchNotice();
+              break;
+          }
+        }
+      })
+
+      /*******************************************************
+       *  조회 조건 엔터키 이벤트
+       * *******************************************************/
+      document.addEventListener("keydown",function (e) {
+        if(e.key !== "Enter"){ return;}
+        if(e.target.id === "noticeTtl" || e.target.id === "startDate" || e.target.id === "endDate"){
+          e.preventDefault();
+          searchNotice();
+        }
+      })
+
+    });
+
+    /**********************************************************************
+     *  등록 화면 오픈 함수
+     ***********************************************************************/
+    function saveNotice() {
+
+      //현제 url의 menuId 가져오기
+      const params = new URLSearchParams(window.location.search);
+      const menuId = params.get("menuId");
+      let url = contextPath+"module/community/noticeRegister?mode=insert";
+      if(menuId){
+        url += "&menuId="+encodeURIComponent(menuId);
+      }
+      location.href = url;
+
+    }
+
+    /**********************************************************************
+     *  날짜 기본세팅
+     ***********************************************************************/
+    function setToday(){
+      console.log("날짜 초기값 세팅 : ");
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth()+1).padStart(2,"0");
+      const dd = String(today.getDate()).padStart(2,"0");
+      const todayStr = `${yyyy}-${mm}-${dd}`;
+
+      document.getElementById("startDate").value = todayStr;
+      document.getElementById("endDate").value = todayStr;
+    }
+
+
+    /**********************************************************************
+     *  조회 함수
+     ***********************************************************************/
+    function searchNotice(){
+      //console.log("공지사항 조회 시작 : ");
+
+      const noticeTtl = document.getElementById('noticeTtl')?.value || '';
+      const startDate = document.getElementById('startDate')?.value || '';
+      const endDate = document.getElementById('endDate')?.value || '';
+      const currentSearchKey = `${noticeTtl}|${startDate}|${endDate}`;
+      if(prevNoticeSearchKey !== null && prevNoticeSearchKey !== currentSearchKey){
+        currentPage = 1;
+      }
+      prevNoticeSearchKey = currentSearchKey;
+
+      const param = {
+        noticeTtl: document.getElementById("noticeTtl").value,
+          startDate: document.getElementById("startDate").value,
+          endDate: document.getElementById("endDate").value,
+          noticeTypeCd: "NOTICE",
+          page: currentPage,
+          pageSize: pageSize
+      };
+      console.log("공지사항 조회 값 : ",param);
+      fetch(contextPath+"module/community/selectNotice", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify(param)
+          })
+          .then(response => {
+            if (!response.ok) {
+              throw new Error("조회 오류");
+            }
+            return response.json();
+          })
+          .then(data => {
+            //console.log("공지사항 조회 결과 : ",data.list);
+
+            drawNoticeList(data.list);
+
+            drawPagination(
+                    data.page,
+                    data.totalPage,
+                    data.totalCount,
+                    data.pageSize
+              );
+          })
+          .catch(error => {
+            console.error(error);
+          })
+    };
+
+
+    /**********************************************************************
+     *  조회 후 데이터 매핑 함수
+     ***********************************************************************/
+    function drawNoticeList(list){
+      const tBody = document.getElementById("noticeList");
+      let html = "";
+      if(!list || list.length === 0){
+        html = '<tr><td colspan="6" style="text-align: center;">조회된 데이터가 없습니다.</td></tr>';
+        tBody.innerHTML = html;
+        return;
+      }
+      list.forEach((item) => {
+        html += `<tr data-href="notice-detail.html">
+                 <!-- 체크 박스-->
+                 <td>
+                 <label class="checkbox">
+                   <input type="checkbox" class="checkbox__input" value="${item.noticeSeqno ?? ''}" data-type-cd="${item.noticeTypeCd ?? ''}">
+                   <span class="checkbox__box">
+                   </span>
+                 </lebel>
+                 </td>
+                 <!-- 중요 -->
+                 <td>${item.noticeSeqno ?? ''}</td>
+                 <!-- 제목 -->
+                 <td style="text-align:left">
+                   <span class="notice-table-title" data-notice-id="${item.noticeSeqno ?? ''}" data-type-cd="${item.noticeTypeCd ?? ''}">
+                   ${item.noticeTtl ?? ''}
+                   </span>
+                 </td>
+                 <!--작성자 -->
+                 <td>${item.lastChngEmpno ?? ''}</td>
+                 <!--조회수 -->
+                 <td>${item.viewCnt ?? 0}</td>
+                 <!--날짜 -->
+                 <td>${item.stdd ?? ''}</td>
+                 </tr>
+        `;
+      })
+      tBody.innerHTML = html;
+
+      setTitleDblclickEvent();
+    };
+
+    /**********************************************************************
+     *  상세화면 연결 함수
+     ***********************************************************************/
+    function setTitleDblclickEvent() {
+      const titles = document.querySelectorAll(".notice-table-title");
+      //console.log("찾은 제목 수 : "+titles);
+      titles.forEach(function (title){
+        title.addEventListener("dblclick",function (){
+          //console.log("더블 클릭 이벤트 시작 : ");
+          const noticeSeqno = this.dataset.noticeId;
+          const noticeTypeCd = this.dataset.typeCd;
+          //console.log("찾은 제목 수 : "+noticeId);
+          if(!noticeSeqno){
+            console.log("noticeId 없음 : "+noticeSeqno);
+            return;
+          }
+          openNoticeDeteil(noticeSeqno,noticeTypeCd);
+        });
+      });
+    }
+
+    /**********************************************************************
+     *  상세화면 오픈 함수
+     ***********************************************************************/
+    function openNoticeDeteil(noticeSeqno,noticeTypeCd) {
+      //현제 url의 menuId 가져오기
+      const params = new URLSearchParams(window.location.search);
+      const menuId = params.get("menuId");
+      location.href = contextPath+"module/community/noticeDetail?mode=update&menuId="+encodeURIComponent(menuId)+"&noticeSeqno="+encodeURIComponent(noticeSeqno)+"&noticeTypeCd="+encodeURIComponent(noticeTypeCd);
+
+
+    }
+
+    /**********************************************************************
+     *  세로고침 버튼 이벤트
+     ***********************************************************************/
+    function searchRefresh(){
+      document.getElementById("noticeTtl").value = "";
+      document.getElementById("startDate").value = "";
+      document.getElementById("endDate").value = "";
+      // 초기 정보로 다시 조회
+      searchNotice();
+    }
+
+    function drawPagination(page,
+            totalPage,
+            totalCount,
+            serverPageSize) {
+      currentPage = Number(page);
+      pageSize = Number(serverPageSize);
+      totalPageCount = Number(totalPage);
+      // 전체 건수 표시
+      document.getElementById("totalCount").textContent = totalCount;
+      // 조회결과가 없는 경우
+      if(totalCount === 0){
+        document.getElementById("pageRange").textContent = "0-0";
+        document.getElementById("pageNumbers").innerHTML = "";
+        return;
+      }
+      // 시작번호
+      const startNo = (currentPage - 1) * pageSize + 1;
+      // 종료번호
+      const endNo = Math.min(currentPage * pageSize,totalCount);
+      document.getElementById("pageRange").textContent = `${startNo}-${endNo}`;
+
+      // 현재 페이지 블록
+      const blockNo = Math.floor((currentPage - 1)/pageBlockSize);
+      const startPage = blockNo * pageBlockSize + 1;
+      const endPage = Math.min(startPage + pageBlockSize - 1, totalPage);
+
+      let pageHtml = "";
+      for(let i = startPage; i<=endPage; i++){
+        pageHtml += `<button type="button" class="pagination__item ${i === currentPage ? 'is-current':''}" onclick="movePage(${i})">${i}</button>`;
+      }
+      document.getElementById("pageNumbers").innerHTML = pageHtml;
+      // 처음, 이전
+      document.getElementById("pageFirst").disabled = currentPage <= 1;
+      document.getElementById("pagePrev").disabled = currentPage <= 1;
+      // 다음, 끝
+      document.getElementById("pageNext").disabled = currentPage >= totalPage;
+      document.getElementById("pageLast").disabled = currentPage >= totalPage;
+
+    }
+
+    function movePage(page) {
+      if(page < 1){
+        return;
+      }
+      if(page > totalPageCount){
+        return;
+      }
+      currentPage = page;
+      searchNotice();
+    }
+
+    function deleteNotice() {
+      // 체크된 것만 가져오기
+      const checkedList = document.querySelectorAll(".checkbox__input:checked");
+      if(checkedList.length === 0){
+        openInformationModal("삭제할 항목을 선택해주세요.");
+        return;
+      }
+      // noticeSeqno 배열 만들기
+      const seqList = Array.from(checkedList).map(item => ({
+        noticeSeqno : Number(item.value),
+        noticeTypeCd :item.dataset.typeCd
+      }));
+
+      openConfirmModal("선택항목 삭제 하시겠습니까?",function (){
+        fetch(contextPath+"module/community/deleteNotice", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(seqList)
+        })
+              .then(response => {
+                if(!response.ok){
+                  openErrorModal("삭제 처리 중 오류가 발행했습니다.");
+                  return;
+                }
+                return response.json();
+              })
+              .then(data => {
+                if(data.result > 0){
+                  openSuccessModal("삭제 되었습니다.");
+                  if(currentPage > 1 && checkedList.length >= document.querySelectorAll(".checkbox__input").length){
+                    currentPage--;
+                  }
+                  // 현재 페이지 다시 조회
+                  searchNotice();
+                }else{
+                  openErrorModal("삭제된 데이터가 없습니다.");
+                  return;
+                }
+              })
+              .catch(error => {
+                console.error(error);
+                openErrorModal("삭제 중 오류가 발행했습니다.");
+                return;
+              });
+      });
+    }
+
+  </script>
+</head>
+<body>
+
+  <!-- include: common/lnb.html (실제 운영 시 JSP include로 대체, 내용은 common/lnb.html과 동일) -->
+
+
+
+
+
+    <main class="content">
+
+      <div class="page-header">
+        <h1 class="page-header__title">공지사항</h1>
+      </div>
+
+      <div class="layout-list">
+
+        <!-- 검색영역 — get_design_context(617:11738) 실측(검색어/기간) -->
+        <form class="search-area">
+          <div class="search-area__row">
+            <div class="search-area__item">
+              <span class="search-area__label">검색어</span>
+              <input class="input" type="text" style="width:600px" placeholder="제목" id="noticeTtl">
+            </div>
+            <div class="search-area__item">
+              <span class="search-area__label">기간</span>
+              <div class="search-area__combo">
+                <input class="input input--w120" type="date" id="startDate">
+                <span class="search-area__tilde">~</span>
+                <input class="input input--w120" type="date" id="endDate">
+              </div>
+            </div>
+          </div>
+          <div class="search-area__actions">
+            <button type="button" class="btn-icon" id="btnRefresh" onclick="searchRefresh()">
+              <img th:src="@{/images/icons/buttons/ic-16-refresh.svg}" alt="새로고침">
+            </button>
+            <button th:each="btn : ${session.buttonList}"
+                    th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'SEARCH'}"
+                    type="button"
+                    class="btn-outline-primary"
+                    style="width:80px"
+                    th:id="${btn.btnCd}"
+                    data-audit="Y"
+                    th:data-area-cd="${btn.areaCd}"
+                    th:data-menu-id="${btn.menuId}"
+                    th:data-btn-cd="${btn.btnCd}"
+                    th:data-action-cd="${btn.actionCd}"
+                    th:data-action-nm="${btn.btnNm}">
+              <span class="btn-icon-slot"><svg width="11.5" height="11.5" viewBox="0 0 11.5 11.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M10.75 10.75L8.33333 8.33333M9.63889 5.19444C9.63889 7.64904 7.64904 9.63889 5.19444 9.63889C2.73985 9.63889 0.75 7.64904 0.75 5.19444C0.75 2.73985 2.73985 0.75 5.19444 0.75C7.64904 0.75 9.63889 2.73985 9.63889 5.19444Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              <span th:text="${btn.btnNm}"></span>
+            </button>
+          </div>
+        </form>
+
+        <!-- 조회결과 목록 — get_design_context(617:11339, 617:11343) 실측 -->
+        <div class="list-section">
+        <div class="list-section__header">
+          <h2 class="list-section__title">조회결과 목록</h2>
+          <div class="notice-actions">
+            <button th:each="btn : ${session.buttonList}"
+                    th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'HEADER'}"
+                    type="button"
+                    class="btn-neutral"
+                    style="width:80px"
+                    th:id="${btn.btnCd}"
+                    data-audit="Y"
+                    th:data-area-cd="${btn.areaCd}"
+                    th:data-menu-id="${btn.menuId}"
+                    th:data-btn-cd="${btn.btnCd}"
+                    th:data-action-cd="${btn.actionCd}"
+                    th:data-action-nm="${btn.btnNm}">
+              <img th:src="@{${btn.iocnUrl}}" alt="">
+              <span th:text="${btn.btnNm}"></span>
+            </button>
+          </div>
+        </div>
+
+        <table class="table" style="table-layout:fixed; width:100%" data-col-select-all data-row-link>
+          <colgroup>
+            <col style="width:4.08%">  <!-- 체크박스 -->
+            <col style="width:8.16%">  <!-- No -->
+            <col style="width:30.61%"> <!-- 제목 -->
+            <col style="width:20.41%"> <!-- 작성자 -->
+            <col style="width:16.33%"> <!-- 조회수 -->
+            <col style="width:20.41%"> <!-- 신청일자 -->
+          </colgroup>
+          <thead>
+            <tr>
+              <th>
+                <label class="checkbox">
+                  <input type="checkbox" class="checkbox__input">
+                  <span class="checkbox__box">
+                    <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.83263 3.64645C10.0558 3.84171 10.0558 4.15829 9.83263 4.35355L5.2612 8.35355C5.03805 8.54882 4.67624 8.54882 4.45308 8.35355L2.16737 6.35355C1.94421 6.15829 1.94421 5.84171 2.16737 5.64645C2.39052 5.45118 2.75233 5.45118 2.97549 5.64645L4.85714 7.29289L9.02451 3.64645C9.24767 3.45118 9.60948 3.45118 9.83263 3.64645Z" fill="currentColor"/></svg>
+                  </span>
+                </label>
+              </th>
+              <th>No</th>
+              <th>제목</th>
+              <th>작성자</th>
+              <th>조회수</th>
+              <th>
+                <span class="table-sort-th">
+                  작성일자
+                  <button type="button" class="table-sort-btn" data-sort-toggle aria-label="내림차순 — 클릭 시 오름차순으로 정렬">
+                    <img th:src="@{/images/icons/table/ic-16-arrow-narrow-down.svg}" alt="">
+                  </button>
+                </span>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="noticeList"></tbody>
+        </table>
+
+        <div class="list-footer">
+          <span class="list-footer__count">조회 결과 : <strong id="pageRange">0-0</strong>/<span id="totalCount"></span></span>
+          <nav class="pagination">
+            <button type="button" class="pagination__item" aria-label="처음" id="pageFirst"><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8.75 7.41667L5.41667 4.08333L8.75 0.75M4.08333 7.41667L0.75 4.08333L4.08333 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button type="button" class="pagination__item" aria-label="이전" id="pagePrev"><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M4.75 8.75L0.75 4.75L4.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <span id="pageNumbers"></span>
+            <button type="button" class="pagination__item" aria-label="다음" id="pageNext"><svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 8.75L4.75 4.75L0.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <button type="button" class="pagination__item" aria-label="끝" id="pageLast"><svg width="9.5" height="8.16667" viewBox="0 0 9.5 8.16667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M0.75 7.41667L4.08333 4.08333L0.75 0.75M5.41667 7.41667L8.75 4.08333L5.41667 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </nav>
+          <select class="input input--w140 list-footer__page-size" id="pageSize">
+            <option value="15">15개씩 보기</option>
+            <option value="30">30개씩 보기</option>
+            <option value="50">50개씩 보기</option>
+          </select>
+        </div>
+        </div>
+
+      </div>
+
+    </main>
+
+<div th:replace="~{common/commonModals :: commonModals}"></div>
+<script th:src="@{/js/modal.js}"></script>
+<script th:src="@{/js/lnb.js}"></script>
+<script th:src="@{/js/table-col-select-all.js}"></script>
+<script th:src="@{/js/table-row-link.js}"></script>
+<script th:src="@{/js/table-sort-toggle.js}"></script>
+<script th:src="@{/js/common.js}"></script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+{
+  "mappingVersion": "0.3",
+  "screenNo": "VMM072000SC00",
+  "workflowId": "01a156d5-ce8b-74e5-92d4-dd28d3819eb0",
+  "docTypeCodes": [
+    "KJB_50621004"
+  ],
+  "fieldMappings": [
+    {
+      "ocrKey": "연간소득",
+      "label": "연간소득금액",
+      "controlType": "select",
+      "required": true,
+      "transform": "valueMap",
+      "targetLength": 2,
+      "defaultValue": "",
+      "confidenceThreshold": 0.7,
+      "items": [
+        {
+          "label": "6백만원 이하",
+          "code": "01"
+        },
+        {
+          "label": "6백만원 초과 ~5천만원 이하",
+          "code": "02"
+        },
+        {
+          "label": "5천만원 초과 ~1억원 이하",
+          "code": "03"
+        },
+        {
+          "label": "1억원 초과",
+          "code": "04"
+        }
+      ],
+      "valueMap": {
+        "3천만원 이상 ~ 5천만원 미만": "02"
+      },
+      "controlName": "edx_CARD_ANIN_SECD",
+      "companionScreenIds": [
+        "opn_CARD_ANIN_SECD"
+      ]
+    },
+    {
+      "ocrKey": "신용점수",
+      "label": "신용점수",
+      "controlType": "select",
+      "required": true,
+      "transform": "valueMap",
+      "targetLength": 2,
+      "defaultValue": "02",
+      "confidenceThreshold": 0.7,
+      "items": [
+        {
+          "label": "600점 이하",
+          "code": "01"
+        },
+        {
+          "label": "600점 초과",
+          "code": "02"
+        }
+      ],
+      "valueMap": {
+        "잘 모름(은행을 통한 점수 조회 동의)": "02"
+      },
+      "controlName": "edx_CARD_CRED_SCR_SECD",
+      "companionScreenIds": [
+        "opn_CARD_CRED_SCR_SECD"
+      ]
+    },
+    {
+      "ocrKey": "수령방법",
+      "label": "계약서 수령방법",
+      "controlType": "select",
+      "required": true,
+      "transform": "valueMap",
+      "targetLength": 2,
+      "defaultValue": "",
+      "confidenceThreshold": 0.7,
+      "items": [
+        {
+          "label": "현장수령",
+          "code": "01"
+        },
+        {
+          "label": "문자(SMS)",
+          "code": "04"
+        },
+        {
+          "label": "E-MAIL",
+          "code": "03"
+        }
+      ],
+      "valueMap": {
+        "SMS": "04"
+      },
+      "controlName": "edx_CNSH_ACCP_MTCD",
+      "companionScreenIds": [
+        "opn_CNSH_ACCP_MTCD_1",
+        "opn_CNSH_ACCP_MTCD_2"
+      ]
+    },
+    {
+      "ocrKey": "신청일",
+      "label": "신청일",
+      "controlType": "text",
+      "required": true,
+      "transform": "dateTo8",
+      "targetLength": 8,
+      "defaultValue": "",
+      "confidenceThreshold": 0.7,
+      "items": [],
+      "controlName": "edx_REG_DT"
+    },
+    {
+      "ocrKey": "결제일",
+      "label": "결제일",
+      "controlType": "combo",
+      "required": false,
+      "transform": "codeOnly",
+      "targetLength": 2,
+      "defaultValue": "",
+      "confidenceThreshold": 0.7,
+      "items": [
+        {
+          "label": "01",
+          "code": "01"
+        },
+        {
+          "label": "03",
+          "code": "03"
+        },
+        {
+          "label": "05",
+          "code": "05"
+        },
+        {
+          "label": "06",
+          "code": "06"
+        },
+        {
+          "label": "10",
+          "code": "10"
+        },
+        {
+          "label": "12",
+          "code": "12"
+        },
+        {
+          "label": "15",
+          "code": "15"
+        },
+        {
+          "label": "17",
+          "code": "17"
+        },
+        {
+          "label": "20",
+          "code": "20"
+        },
+        {
+          "label": "23",
+          "code": "23"
+        }
+      ],
+      "valueMap": {},
+      "controlName": "edx_SETL_DD",
+      "companionScreenIds": [
+        "cbx_SETL_DD_I",
+        "cbx_SETL_DD_B"
+      ]
+    },
+    {
+      "ocrKey": "서명여부",
+      "label": "서명 여부",
+      "controlType": "checkbox",
+      "required": false,
+      "transform": "boolToY",
+      "targetLength": 1,
+      "defaultValue": "N",
+      "confidenceThreshold": 0.7,
+      "items": [
+        {
+          "label": "서명 완료",
+          "code": "Y"
+        }
+      ],
+      "valueMap": {},
+      "controlName": ""
+    }
+  ]
+}

@@ -1,0 +1,242 @@
+/* ---- 통합검색 > 서식간 검증 결과 화면 전용 (2026-10-26 시안, Figma 실측 전).
+   목록 화면은 고객 통합검색과 같은 .layout-list > .search-area + .list-section을 그대로 쓰고,
+   상세 화면만 아래 레이아웃을 새로 둔다: 상단 요약 바 + [좌측 Rule 목록 | 우측 비교표 + 서식 뷰어 2개].
+   본문 박스는 patterns/split-view.css의 .split-view__body--boxed, 뷰어는 patterns/doc-viewer.css의
+   .doc-viewer(+js/doc-viewer-zoom.js), 판정 배지는 components/table.css의 .status-pill을 재사용한다. ---- */
+
+/* 판정 배지 — 불일치는 기존 error-fill, 검증불가는 기존 neutral-fill을 쓰고 일치만 테두리형 success */
+.cfv-result-count { display: inline-flex; gap: 4px; font-variant-numeric: tabular-nums; }
+.cfv-result-count__ng { color: var(--status-error-default); font-weight: var(--font-weight-semibold); }
+
+/* ---- 상단 요약 바 ---- */
+.cfv-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 32px;
+  padding: 16px 20px;
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: 8px;
+  background: var(--surface-white);
+}
+.cfv-summary__field { display: flex; align-items: center; gap: 8px; font-size: var(--font-size-13); }
+.cfv-summary__label { color: var(--text-neutral-tertiary); }
+.cfv-summary__value { color: var(--text-neutral-default); font-weight: var(--font-weight-semibold); }
+.cfv-summary__stats { display: flex; gap: 6px; margin-left: auto; }
+.cfv-stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: var(--font-weight-semibold);
+}
+.cfv-stat--ok { background: var(--status-success-surface); color: var(--status-success-default); }
+.cfv-stat--ng { background: var(--status-error-surface); color: var(--status-error-default); }
+.cfv-stat--na { background: var(--surface-neutral-faint); color: var(--text-neutral-secondary); }
+
+/* ---- 본문: 좌측 Rule 목록 + 우측 상세 ---- */
+.cfv-body { display: flex; min-height: 0; flex: 1; }
+.cfv-rules {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 280px;
+  flex-shrink: 0;
+  padding: 16px;
+  border-right: 1px solid var(--border-neutral-subtle);
+  background: var(--surface-white);
+  overflow: auto;
+}
+.cfv-rule {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--border-neutral-subtle);
+  border-left-width: 4px;
+  border-radius: 6px;
+  background: var(--surface-white);
+  text-align: left;
+  cursor: pointer;
+}
+.cfv-rule[data-result="ok"] { border-left-color: var(--status-success-default); }
+.cfv-rule[data-result="ng"] { border-left-color: var(--status-error-default); }
+.cfv-rule[data-result="na"] { border-left-color: var(--border-neutral-default); }
+.cfv-rule.is-active { border-color: var(--border-primary-default); background: var(--surface-primary-faint); }
+.cfv-rule.is-active[data-result="ok"] { border-left-color: var(--status-success-default); }
+.cfv-rule.is-active[data-result="ng"] { border-left-color: var(--status-error-default); }
+.cfv-rule.is-active[data-result="na"] { border-left-color: var(--border-neutral-default); }
+.cfv-rule__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cfv-rule__name { font-size: var(--font-size-13); font-weight: var(--font-weight-semibold); color: var(--text-neutral-default); }
+.cfv-rule__forms { font-size: 12px; color: var(--text-neutral-tertiary); }
+.cfv-rule__type { font-size: 11px; color: var(--text-neutral-secondary); }
+.cfv-rule .status-pill { flex-shrink: 0; width: 64px; }
+
+.cfv-detail { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.cfv-compare { padding: 16px; background: var(--surface-white); border-bottom: 1px solid var(--border-neutral-subtle); }
+.cfv-compare__table td.is-mismatch { color: var(--status-error-default); font-weight: var(--font-weight-semibold); background: var(--status-error-surface); }
+.cfv-compare__reason { margin-top: 8px; font-size: 12px; color: var(--text-neutral-secondary); }
+
+.cfv-viewers { display: flex; flex: 1; min-height: 420px; }
+.cfv-viewer { display: flex; flex-direction: column; flex: 1; min-width: 0; border-right: 1px solid var(--border-neutral-subtle); }
+.cfv-viewer:last-child { border-right: none; }
+.cfv-viewer__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: var(--surface-white);
+  border-bottom: 1px solid var(--border-neutral-subtle);
+  font-size: var(--font-size-13);
+  color: var(--text-neutral-secondary);
+}
+.cfv-viewer__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  background: var(--text-neutral-default);
+  color: var(--surface-white);
+  font-size: 11px;
+  font-weight: var(--font-weight-semibold);
+}
+.cfv-viewer__name { color: var(--text-neutral-default); font-weight: var(--font-weight-semibold); }
+.cfv-viewer .doc-viewer { flex: 1; min-height: 0; border-right: none; }
+
+/* ---- 판독값 바로 수정 — 비교표의 값 칸을 .input으로 두고, 고친 값은 원판독값을 아래에 남긴다 ---- */
+.cfv-compare .section-title__btn-group .btn { width: auto; padding: 0 12px; }
+.cfv-compare__table td.cfv-edit { padding: 6px 8px; vertical-align: middle; }
+.cfv-edit .input { width: 100%; text-align: center; }
+.cfv-edit.is-mismatch .input { border-color: var(--status-error-default); color: var(--status-error-default); background: var(--status-error-surface); font-weight: var(--font-weight-semibold); }
+.cfv-edit.is-edited .input { border-color: var(--status-warning-default); }
+.cfv-edit__orig { display: block; margin-top: 4px; font-size: 11px; color: var(--status-warning-default); }
+.cfv-edit__orig:empty { display: none; }
+.cfv-dirty { font-size: 12px; color: var(--status-warning-default); font-weight: var(--font-weight-semibold); }
+.cfv-compare__hint { margin-top: 4px; font-size: 11px; color: var(--text-neutral-tertiary); }
+.cfv-rule__edited { margin-left: 4px; font-size: 11px; color: var(--status-warning-default); }
+
+/* ---- 뷰어 하이라이트 — 이미지와 박스를 한 래퍼(.cfv-page)에 넣어 확대/축소(js/doc-viewer-zoom.js가
+   data-zoom-target에 scale을 건다) 때 함께 커지게 한다. 박스 좌표는 이미지 대비 % ---- */
+.cfv-page { position: relative; height: 100%; transform-origin: center center; transition: transform 0.15s ease; }
+.cfv-page__image { display: block; height: 100%; width: auto; border-radius: 4px; }
+.cfv-box {
+  position: absolute;
+  border: 2px solid var(--status-success-default);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--status-success-default) 14%, transparent);
+  pointer-events: none;
+  transition: box-shadow 0.15s ease;
+}
+.cfv-box[data-result="ng"] { border-color: var(--status-error-default); background: color-mix(in srgb, var(--status-error-default) 16%, transparent); }
+.cfv-box[data-result="na"] { border-style: dashed; border-color: var(--text-neutral-secondary); background: color-mix(in srgb, var(--text-neutral-secondary) 10%, transparent); }
+.cfv-box.is-focused { box-shadow: 0 0 0 4px color-mix(in srgb, var(--border-primary-default) 45%, transparent); }
+.cfv-box__label {
+  position: absolute;
+  left: -2px;
+  bottom: 100%;
+  margin-bottom: 2px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: inherit;
+  font-size: 10px;
+  white-space: nowrap;
+  color: var(--surface-white);
+}
+.cfv-box .cfv-box__label { background: var(--status-success-default); }
+.cfv-box[data-result="ng"] .cfv-box__label { background: var(--status-error-default); }
+.cfv-box[data-result="na"] .cfv-box__label { background: var(--text-neutral-secondary); }
+
+/* 간결한 상세 시안: 항목 선택 → 문서별 판독값 → 원본 대조 */
+.cfv-clean .cfv-summary { padding: 12px 16px; gap: 8px 24px; border-radius: 6px; }
+.cfv-clean .cfv-summary__stats { gap: 14px; }
+.cfv-clean .cfv-stat { padding: 0; background: transparent; height: 24px; }
+.cfv-clean .cfv-rules { width: 232px; padding: 16px 12px; gap: 4px; }
+.cfv-clean .cfv-rules > .section-title { padding: 0 8px 12px; font-size: 13px; }
+.cfv-total { margin-left: 6px; color: var(--text-neutral-tertiary); font-weight: 400; }
+.cfv-clean .cfv-rule { border: 1px solid transparent; padding: 14px 10px; gap: 8px; border-radius: 4px; }
+.cfv-clean .cfv-rule.is-active { border-color: var(--border-primary-default); background: var(--surface-primary-faint); }
+.cfv-clean .cfv-rule__name { font-size: 13px; font-weight: 500; }
+.cfv-clean .cfv-rule__forms { font-size: 11px; line-height: 1.5; }
+.cfv-clean .cfv-rule .status-pill { width: auto; min-width: 40px; padding: 0 5px; font-size: 11px; }
+.cfv-clean .cfv-rule .status-pill--error-fill { background: var(--status-error-surface); color: var(--status-error-default); }
+.cfv-clean .cfv-rule .status-pill--success { border-color: transparent; background: transparent; }
+.cfv-clean .cfv-compare { padding: 18px 20px 14px; }
+.cfv-heading, .cfv-heading__title, .cfv-heading__actions { display: flex; align-items: center; gap: 10px; }
+.cfv-heading { justify-content: space-between; flex-wrap: wrap; }
+.cfv-heading h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--text-neutral-default); }
+.cfv-heading__actions .btn { width: auto; padding: 0 12px; }
+.cfv-clean .cfv-compare__reason { margin: 8px 0 0; line-height: 1.5; }
+.cfv-clean .cfv-viewers { min-height: 0; }
+.cfv-clean .cfv-viewer__label { padding: 16px 20px 6px; border: 0; gap: 8px; }
+.cfv-clean .cfv-viewer__name { font-size: 13px; font-weight: 500; }
+.cfv-clean .cfv-viewer__badge { background: var(--surface-neutral-faint); color: var(--text-neutral-secondary); width: 22px; height: 22px; }
+.cfv-field { background: var(--surface-white); padding: 6px 20px 18px; }
+.cfv-field label { display: block; margin-bottom: 6px; font-size: 12px; color: var(--text-neutral-secondary); }
+.cfv-field .input { height: 38px; text-align: left; padding: 0 10px; font-size: 14px; font-variant-numeric: tabular-nums; }
+.cfv-field .is-mismatch .input { background: var(--surface-white); border-color: var(--border-neutral-default); color: var(--text-neutral-default); font-weight: 500; }
+.cfv-clean .cfv-box { background: transparent; }
+.cfv-clean .cfv-page { height: auto; max-width: 100%; max-height: 100%; aspect-ratio: 773 / 1100; }
+.cfv-clean .cfv-page__image { height: 100%; width: 100%; object-fit: contain; }
+.cfv-clean .doc-viewer__body { padding: 30px 8px 8px; }
+.cfv-clean .doc-viewer__zoom { top: 10px; left: 12px; }
+.cfv-clean :focus-visible { outline: 2px solid var(--border-primary-default); outline-offset: 2px; }
+@media (max-width: 1300px) {
+ .cfv-clean .cfv-rules { width: 210px; }
+ .cfv-clean .cfv-summary { gap: 6px 16px; }
+ .cfv-clean .cfv-summary__field { font-size: 12px; }
+ .cfv-clean .cfv-summary__stats { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .cfv-clean .cfv-page, .cfv-clean .cfv-box { transition: none; } }
+.cfv-clean .cfv-page { height: 100%; max-width: 100%; aspect-ratio: auto; }
+.cfv-clean .cfv-page__image { height: 100%; width: auto; max-width: 100%; object-fit: contain; }
+.cfv-heading__title .status-pill { width: auto; min-width: 48px; padding: 0 10px; }
+
+/* ---- 실제 화면(templates/module/ocr/cross-verify*.html). 시안 클래스를 그대로 쓰고 아래만 더한다 ---- */
+.cfv-message { margin: 0 0 12px; padding: 10px 14px; border-radius: 6px; background: var(--status-error-surface); color: var(--status-error-default); font-size: 13px; }
+.cfv-list-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 8px; }
+.cfv-list-bar .btn-neutral { margin-left: auto; }
+.cfv-list-note { margin: 0; font-size: 12px; color: var(--text-neutral-secondary); }
+.cfv-empty { padding: 40px 0; color: var(--text-neutral-tertiary); }
+.cfv-list__trans { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cfv-stale { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 4px; background: var(--status-warning-surface, #fff4e0); color: var(--status-warning-default); font-size: 11px; font-weight: var(--font-weight-semibold); white-space: nowrap; }
+.cfv-stale[hidden] { display: none; }
+.cfv-rule .cfv-stale { align-self: flex-start; margin-left: 0; }
+.cfv-list .status-pill { width: auto; min-width: 56px; padding: 0 10px; }
+.cfv-page-header { display: flex; align-items: center; justify-content: space-between; }
+.cfv-summary__actions { display: flex; gap: 8px; }
+.cfv-summary__actions .btn { width: auto; padding: 0 14px; }
+.cfv-live .cfv-summary { margin-bottom: 12px; }
+.cfv-live .cfv-stat b { font-weight: inherit; }
+.cfv-rule-list { display: flex; flex-direction: column; gap: 4px; }
+.cfv-base { padding: 1px 6px; border-radius: 4px; background: var(--surface-primary-faint); color: var(--text-primary-medium, var(--border-primary-default)); font-size: 11px; }
+/* 항목 수만큼 칸을 만들고 3칸을 넘으면 가로로 스크롤한다 */
+.cfv-live .cfv-viewers { display: grid; grid-auto-flow: column; grid-auto-columns: max(240px, calc(100% / var(--cfv-columns, 2))); overflow-x: auto; }
+.cfv-live .cfv-viewers.is-peek { grid-auto-columns: max(240px, calc((100% - 56px) / 3)); }
+.cfv-live .cfv-viewers.has-more { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 56px), transparent); }
+.cfv-live .cfv-viewer { min-height: 560px; }
+.cfv-live .cfv-edit { display: flex; gap: 6px; }
+.cfv-live .cfv-edit .input { flex: 1; min-width: 0; }
+.cfv-live .cfv-edit .btn-neutral { flex-shrink: 0; min-height: 38px; padding: 0 12px; }
+.cfv-live .cfv-edit.is-mismatch .input { border-color: var(--status-error-default); color: var(--status-error-default); font-weight: var(--font-weight-semibold); }
+.cfv-live .cfv-edit.is-edited .input { border-color: var(--status-warning-default); }
+.cfv-live .cfv-doc[hidden] { display: none; }
+.cfv-live .cfv-doc { display: flex; flex-direction: column; flex: 1; min-height: 0; padding: 0; gap: 0; }
+.cfv-live .cfv-doc .doc-viewer__toolbar { padding: 6px 12px; gap: 6px; }
+.cfv-live .cfv-doc .doc-viewer__surface { display: flex; flex: 1; min-height: 320px; position: relative; overflow: hidden; }
+/* 확대해도 카드 높이가 늘지 않게 한다. 늘면 같은 줄의 다른 뷰어까지 다시 맞춰져 함께 확대·축소된다 */
+.cfv-live .cfv-doc .doc-viewer__viewport { position: absolute; inset: 0 12px; min-height: 0; overscroll-behavior: auto; background: var(--surface-neutral-faint); }
+.cfv-live .cfv-doc .doc-viewer__controls { padding: 8px 12px; }
+.cfv-live .cfv-doc .doc-viewer__note { min-height: 0; padding: 0 12px 8px; }
+.cfv-viewer__empty { margin: 0 20px 20px; padding: 24px; border: 1px dashed var(--border-neutral-subtle); border-radius: 6px; color: var(--text-neutral-tertiary); font-size: 13px; text-align: center; }
+.cfv-live .cfv-viewer__empty:not([hidden]) { display: flex; flex: 1; align-items: center; justify-content: center; min-height: 320px; margin-top: 12px; }
+
+/* 결과 건수 칸: 누르면 그 결과만 보인다 */
+button.cfv-stat { border: 0; border-bottom: 2px solid transparent; font: inherit; cursor: pointer; }
+.cfv-clean button.cfv-stat.is-active { border-bottom-color: currentColor; font-weight: 600; }
+.cfv-compare__summary { margin-top: 4px; font-size: 13px; color: var(--text-neutral-default); }

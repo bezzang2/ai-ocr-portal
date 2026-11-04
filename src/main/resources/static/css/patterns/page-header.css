@@ -1,0 +1,15 @@
+/* 페이지 헤더(제목 + 액션 버튼) — 목록/등록 등 여러 화면이 그대로 조합해 쓰는 패턴.
+   출처: get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 232:783) 실측 —
+   원래 components/nav-search.css에 있던 것을 분리했다(2026-08-18). */
+
+.page-header { display: flex; align-items: center; justify-content: space-between; height: 30px; }
+.page-header__title {
+  font-size: var(--font-size-18);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0612px; /* 실측값, type-title-18m 기본값(-0.34px)과 다름 */
+  line-height: 1;
+  color: var(--text-neutral-default);
+}
+.page-header__title-link { color: inherit; text-decoration: none; cursor: pointer; }
+.page-header__title-link:hover { text-decoration: underline; }
+.page-header__actions { display: flex; align-items: center; gap: var(--gap-sm); } /* 컴포넌트-컴포넌트 간격 표준(6px) — Figma 이 인스턴스의 리터럴 4px 대신 통일 규칙 적용 */

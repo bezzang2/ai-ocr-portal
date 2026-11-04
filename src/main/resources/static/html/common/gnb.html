@@ -1,0 +1,23 @@
+<!-- GNB include 조각. breadcrumb는 화면마다 달라지므로 JSP 변환 시 파라미터로 치환.
+     get_design_context(232:784) 실측 반영 — 마지막 breadcrumb 항목만 진한 색(현재 화면),
+     구분자는 텍스트(›) 대신 실제 아이콘(images/icons/gnb/ic-16-breadcrumb-arrow.svg).
+     알림 아이콘의 .gnb__notif-badge는 "읽지 않은 알림 있음" 상태 — 알림이 없는 화면은
+     .gnb__notif에 is-read 클래스를 추가해 뱃지를 숨긴다. -->
+<header class="gnb">
+  <nav class="breadcrumb">
+    <span class="breadcrumb__item">신청관리</span>
+    <img class="breadcrumb__arrow" src="../../images/icons/gnb/ic-16-breadcrumb-arrow.svg" alt="">
+    <span class="breadcrumb__item breadcrumb__item--current">OCR서식조회</span>
+  </nav>
+  <div class="gnb__user">
+    <div class="gnb__user-name-group">
+      <img class="gnb__user-icon" src="../../images/icons/gnb/ic-16-user.svg" alt="">
+      <span class="gnb__user-name">홍길동 대리(1234567)</span>
+      <span class="gnb__user-dept">프로세스 혁신부</span>
+    </div>
+    <div class="gnb__notif">
+      <img class="gnb__notif-icon" src="../../images/icons/gnb/ic-16-notification.svg" alt="알림">
+      <span class="gnb__notif-badge" aria-hidden="true"></span>
+    </div>
+  </div>
+</header>

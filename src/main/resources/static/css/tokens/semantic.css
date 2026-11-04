@@ -1,0 +1,79 @@
+/* ==========================================================================
+   SEMANTIC TOKENS — Layer 2
+   출처: 동일 Figma Color 프레임(481:5704)의 Alias 변수 전수 실측(재조회로 확인)
+   규칙: 이 레이어는 Primitive(Layer 1)만 참조한다. 새 이름을 추가할 때도
+         "역할-강도" 패턴(예: text-neutral-default)을 유지한다.
+   ========================================================================== */
+
+:root {
+  /* ---- Text ---- */
+  --text-neutral-default: var(--color-neutral-900); /* #0a0b0e */
+  --text-neutral-secondary: var(--color-neutral-700); /* #32363e */
+  --text-neutral-tertiary: var(--color-neutral-500); /* #636873 */
+  --text-neutral-quaternary: var(--color-neutral-300); /* #9a9fa8 */
+  --text-primary-strong: var(--color-blue-900); /* #00286c */
+  --text-primary-default: var(--color-blue-600); /* #0565ef */
+  --text-primary-medium: var(--color-blue-700); /* #034fc4 — get_design_context(561:1801) 실측, 0813 버튼 변경사항으로 추가 */
+  --text-disabled: var(--color-neutral-200); /* #b8bbc2 — get_design_context(561:1801) 실측, 0813 변경사항으로 Neutral/300 → 200 */
+  --text-inverse: var(--color-white);
+
+  /* ---- Border / Divider ---- */
+  --border-neutral-default: var(--color-neutral-200); /* #b8bbc2 */
+  --border-neutral-subtle: var(--color-neutral-100); /* #d6d9dd */
+  --border-primary-default: var(--color-blue-500); /* #227cfb */
+  --border-primary-medium: var(--color-blue-600); /* #0565ef — get_design_context(561:1801) 실측, 0813 버튼 변경사항으로 추가 */
+  --border-primary-subtle: var(--color-blue-300); /* #71acfe */
+  --divider-neutral-strong: var(--color-neutral-400); /* #7d838f */
+  --divider-neutral-default: var(--color-neutral-200); /* #b8bbc2 */
+  --divider-neutral-subtle: var(--color-neutral-100); /* #d6d9dd */
+
+  /* ---- Surface / Background ----
+     Figma에 별도 Background 네임스페이스 없음 — Surface/*가 배경 역할을 겸한다(원본 그대로). */
+  --surface-primary-strong: var(--color-blue-900); /* #00286c */
+  --surface-primary-default: var(--color-blue-600); /* #0565ef */
+  --surface-primary-medium: var(--color-blue-700); /* #034fc4 — get_design_context(561:1801) 실측, 0813 버튼 변경사항으로 추가 */
+  --surface-primary-subtle: var(--color-blue-100); /* #c2dcff */
+  --surface-primary-faint: var(--color-blue-50); /* #e5f1ff */
+  --surface-neutral-strong: var(--color-neutral-700); /* #32363e */
+  --surface-neutral-default: var(--color-neutral-500); /* #636873 */
+  --surface-neutral-medium: var(--color-neutral-600); /* #4a4e58 — get_design_context(561:1801) 실측, 0813 버튼 변경사항으로 추가 */
+  --surface-neutral-subtle: var(--color-neutral-100); /* #d6d9dd */
+  --surface-neutral-faint: var(--color-neutral-50); /* #f1f1f4 */
+  --surface-white: var(--color-white);
+
+  /* ---- Icon ---- */
+  --icon-neutral-default: var(--color-neutral-500); /* #636873 */
+  --icon-neutral-subtle: var(--color-neutral-300); /* #9a9fa8 */
+  --icon-disabled: var(--color-neutral-200); /* #b8bbc2 — get_design_context(561:1801) 실측, 0813 변경사항으로 Neutral/300 → 200(text-disabled와 함께 변경) */
+  --icon-inverse: var(--color-white);
+  --icon-primary-strong: var(--color-blue-900); /* #00286c */
+  --icon-primary-default: var(--color-blue-600); /* #0565ef */
+  --icon-primary-medium: var(--color-blue-700); /* #034fc4 — get_design_context(561:1801) 실측, 0813 버튼 변경사항으로 추가 */
+
+  /* ---- Status ----
+     Figma에는 Error/Warning/Success/Info 4종만 정의돼 있다. Neutral 상태는 Figma에
+     없어 Neutral 팔레트로 임시 매핑했다 — 실제 사용 전 디자이너 확인 필요(추측치 표시). */
+  --status-error-default: var(--color-red-500); /* #e5384f */
+  --status-error-border: var(--color-red-200); /* #f6bbc3 */
+  --status-error-surface: var(--color-red-50); /* #fce8eb */
+  --status-warning-default: var(--color-orange-600); /* #e2701a */
+  --status-warning-border: var(--color-orange-200); /* #fbc787 */
+  --status-warning-surface: var(--color-orange-50); /* #fef1e1 */
+  --status-success-default: var(--color-green-600); /* #279153 */
+  --status-success-border: var(--color-green-200); /* #9ee5bc */
+  --status-success-surface: var(--color-green-50); /* #dbf5e6 */
+  --status-info-default: var(--color-blue-600); /* #0565ef */
+  --status-info-border: var(--color-blue-200); /* #99c4ff */
+  --status-info-surface: var(--color-blue-50); /* #e5f1ff */
+  --status-neutral-default: var(--color-neutral-500);
+  --status-neutral-border: var(--color-neutral-200);
+  --status-neutral-surface: var(--color-neutral-50);
+
+  /* ---- Chart(감사로그 KPI/통계 위젯 전용) — primitive.css의 별도 "Chart(Light)" 팔레트를 그대로 별칭화 */
+  --text-chart-label: var(--color-chart-gray-400); /* #7e869b */
+  --text-chart-muted: var(--color-chart-gray-300); /* #9ea5b6 */
+  --text-chart-blue: var(--color-chart-blue-500); /* #227cfb */
+  --text-chart-red: var(--color-chart-red-500); /* #cf5254 */
+  --text-chart-green: var(--color-chart-green-600); /* #6fa824 */
+  --border-chart-card: var(--color-chart-gray-100); /* #dfe2e9 */
+}

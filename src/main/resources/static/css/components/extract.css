@@ -1,0 +1,409 @@
+/* ---- OCR 서식신청 > 추출설명 화면 전용 — get_design_context(481:7577) 실측.
+   이 화면에서만 쓰는 레이아웃(파일목록/뷰어/추출결과 패널)이라 공용 컴포넌트 파일과 분리했다. ---- */
+
+.extract-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* .content의 남은 세로공간을 채워야 아래 .extract-body가 뷰포트 기준으로 유동적일 수 있다 */
+} /* .content의 gap(12px)이 검색영역-본문 사이에 끼지 않도록 한 컨테이너로 묶음 */
+
+.extract-search {
+  display: flex;
+  flex-wrap: wrap; /* 검색조건(.search-area__row)과 동일하게 해상도 줄면 자연스럽게 다음 줄로 */
+  align-items: center;
+  gap: var(--gap-md) var(--gap-2xl); /* 세로갭 8px, 가로갭 36px */
+  padding: 12px 16px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: 8px 8px 0 0;
+}
+.extract-search__item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.extract-search__item--tight {
+  gap: 12px;
+}
+.extract-search__label {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-tertiary);
+  letter-spacing: -0.0442px;
+  white-space: nowrap;
+}
+.extract-search__combo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.extract-body {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0; /* 고정 752px(Figma 프레임 실측치) 대신 남은 뷰포트 공간을 채운다 — 해상도가
+    줄어들면 이 영역 자체가 작아지고, 그 안의 .extract-result__body가 내부 스크롤을 맡는다 */
+  border: 1px solid var(--border-neutral-subtle);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+.extract-body__main {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+} /* 리스트(200px 고정) 뺀 나머지 폭 — 뷰어/결과 비율 계산 기준 */
+
+/* ---- 파일목록(좌측 사이드바) ---- */
+.file-list {
+  display: flex;
+  flex-direction: column;
+  width: 200px;
+  flex-shrink: 0;
+  background: var(--surface-white);
+  border-right: 1px solid var(--border-neutral-subtle);
+}
+.file-list__header {
+  display: flex;
+  align-items: center;
+  height: 38px; /* 옆 추출결과 패널의 탭 행(38px)과 하단 구분선이 나란히 맞도록 통일 */
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border-neutral-subtle);
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-secondary);
+}
+.file-list__items {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0; /* .extract-body가 고정폭이 아니라 유동 높이가 된 뒤에도 리스트 자체가 내부에서 스크롤되도록 */
+  gap: 4px;
+  padding: 8px;
+  overflow-y: auto;
+}
+.file-list__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  border: none;
+  background: none;
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  line-height: 1.4;
+  letter-spacing: -0.0408px;
+  color: var(--text-neutral-secondary);
+  cursor: pointer;
+  text-align: left;
+}
+.file-list__item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.file-list__item svg {
+  flex-shrink: 0;
+  color: var(--icon-neutral-subtle);
+}
+.file-list__item:hover:not(.is-active) {
+  background: var(--surface-neutral-faint);
+}
+.file-list__item.is-active {
+  background: var(--surface-neutral-default);
+  color: var(--text-inverse);
+}
+.file-list__item.is-active svg {
+  color: var(--icon-inverse);
+}
+
+/* ---- 문서 뷰어(가운데) ---- */
+.doc-viewer {
+  display: flex;
+  width: 37.5%; /* get_design_context(492:9602) 실측 538:900 ≈ 3:5 — 리스트 제외 나머지 폭 기준 % */
+  flex-shrink: 0;
+  background: var(--surface-white);
+  border-right: 1px solid var(--border-neutral-subtle);
+}
+.doc-viewer__body {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+  background: var(--surface-neutral-faint);
+}
+.doc-viewer__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.doc-viewer__zoom {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--size-radius-round);
+  background: var(--color-alpha-black-60);
+  color: var(--icon-inverse);
+  cursor: pointer;
+}
+
+/* ---- 추출결과(우측) ---- */
+.extract-result {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-white);
+}
+
+/* AI 제안 버튼은 .tabs의 자식으로 넣는다(HTML) — 탭 행 전체가 하나의 border-bottom을
+   공유해야 밑줄이 버튼 앞에서 끊기지 않는다. */
+.extract-result__ai-btn {
+  display: inline-flex;
+  align-items: center;
+  align-self: center; /* .tabs의 align-items:flex-start보다 낮은 높이(24px)라 세로 중앙 정렬 필요 */
+  gap: var(--gap-xs, 4px);
+  height: 24px;
+  padding: 0 var(--gap-md);
+  margin-left: auto; /* 탭 행 안에서 오른쪽 끝으로 붙임 */
+  border: none;
+  border-radius: var(--size-radius-s);
+  background: var(--surface-primary-default);
+  color: var(--text-inverse);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+.extract-result__ai-btn:hover { background: var(--surface-primary-medium); } /* .btn-primary(Fill)와 동일한 hover 톤 — 0813 변경사항(Strong→Medium) 함께 반영 */
+.extract-result__ai-btn svg {
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+}
+
+/* ---- AI제안 삭제 — 라인(아웃라인) 타입, AI 제안 옆에 붙는다 ---- */
+.extract-result__ai-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  gap: var(--gap-xs, 4px);
+  height: 24px;
+  padding: 0 var(--gap-md);
+  margin-left: var(--gap-sm);
+  margin-right: 16px;
+  border: 1px solid var(--border-primary-default);
+  border-radius: var(--size-radius-s);
+  background: var(--surface-white);
+  color: var(--text-primary-default);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+}
+.extract-result__ai-delete-btn:hover { background: var(--surface-primary-faint); border-color: var(--border-primary-medium); color: var(--text-primary-medium); } /* .btn-outline-primary(Line)와 동일한 hover 톤 — 0813 변경사항(테두리/텍스트 Medium) 반영 */
+.extract-result__ai-delete-btn svg { flex-shrink: 0; }
+
+.extract-result__body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto; /* 세로만이 아니라 가로도 — 안쪽 테이블(min-width:868px)이 좁아진 영역보다 넓어지면 이 안에서만 스크롤 */
+  padding: 16px 0 0 16px; /* 오른쪽/아래는 아래로 옮김 — 주석 참고 */
+}
+/* overflow:auto 컨테이너 자체에 준 padding-right/bottom(끝쪽 padding)은 콘텐츠가 넘쳐 스크롤이
+   생기면 스크롤 끝까지 가도 반영되지 않는다(스크롤 가능 영역 계산에 끝쪽 padding이 빠지는 브라우저
+   공통 동작) — 그래서 테이블이 넘칠 때 오른쪽 여백이 사라져 보였다. 오른쪽/아래 여백은 스크롤
+   컨테이너가 아니라 실제 스크롤되는 콘텐츠(.extract-result__body의 자식) 쪽에 줘야 스크롤 끝까지
+   가도 유지된다.
+   :not([hidden])로 한정한 이유는 별개 — 그냥 [data-tab-panel]{display:flex}만 쓰면 author CSS가
+   브라우저 기본 [hidden]{display:none}(user-agent 스타일)을 항상 이겨버려서 hidden이 걸려도 계속
+   보였다(탭 전환이 실제로는 아무 효과가 없던 원인). */
+[data-tab-panel]:not([hidden]) { display: flex; flex-direction: column; gap: 16px; padding: 0 16px 16px 0; }
+
+/* ---- 추출항목 탭 — get_design_context(493:11329) 실측(기본 필드 + 본인정보 테이블 2개) ---- */
+.extract-basic {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.extract-basic__title {
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-secondary);
+  height: 30px;
+  display: flex;
+  align-items: center;
+}
+.extract-basic__row { display: flex; align-items: center; gap: 24px; }
+.extract-basic__item { display: flex; align-items: center; gap: var(--gap-xl); flex: 1; } /* 16px — row 폭을 항목 수만큼 균등하게 꽉 채움. min-width는 지정하지 않아 라벨+인풋의 최소폭(자동 계산)이 바닥이 된다 */
+.extract-basic__item .extract-card__input { flex: 1; min-width: 300px; } /* 여유 있으면 채우고, 300px 밑으로는 테이블(min-width:868px)과 동일한 방식으로 줄지 않는다 — 넘치는 만큼은 .extract-result__body가 스크롤 */
+.extract-basic__label {
+  flex-shrink: 0;
+  width: 56px;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-tertiary);
+  letter-spacing: -0.0442px;
+}
+/* 테이블은 1920 등 넓은 화면에서 컨테이너 폭만큼 꽉 채우되(width:100%), 자연폭(868px) 아래로는
+   더 줄어들지 않는다(min-width). 화면이 좁아져 넘치는 만큼은 래퍼가 아니라 상위
+   .extract-result__body가 좌우/상하 스크롤을 함께 담당한다 — 스크롤 영역을 이중으로 만들지 않기
+   위해 .extract-basic__table-wrap 자체엔 overflow를 걸지 않는다. */
+.extract-basic__table { width: 100%; min-width: 868px; }
+
+.extract-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(
+    --gap-md
+  ); /* 8px — get_design_context(492:9602) 실측(카드 사이 간격) */
+  padding: 12px;
+  background: var(--surface-neutral-faint);
+  border-radius: 8px;
+}
+
+/* ---- 카드형 필드(문서종류/등록기준지/발급일자/발급기관) — get_design_context(493:9915 등) 실측.
+   체크박스가 라벨 행 안에 들어오고 규칙/메타/삭제가 세그먼트 버튼으로 합쳐진 최신 패턴.
+   그룹 2(본인정보 등)의 구형 패턴(.extract-field*)과 공존한다 — Figma 원본이 그렇게 돼 있다. ---- */
+.extract-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-md);
+  padding: 12px 16px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: 8px;
+}
+.extract-card__top {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-md);
+}
+.extract-card__label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-tertiary);
+  letter-spacing: -0.0442px;
+}
+.extract-card__seg {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+.extract-card__seg-btn {
+  height: 24px;
+  padding: 0 var(--gap-md);
+  margin-right: -1px;
+  border: 1px solid var(--border-neutral-subtle);
+  background: var(--surface-white);
+  color: var(--text-neutral-tertiary);
+  font-size: 12px;
+  font-weight: var(--font-weight-medium);
+  line-height: var(--line-height-none);
+  cursor: pointer;
+}
+.extract-card__seg-btn:first-child {
+  border-radius: var(--size-radius-s) 0 0 var(--size-radius-s);
+}
+.extract-card__seg-btn:last-child {
+  margin-right: 0;
+  border-radius: 0 var(--size-radius-s) var(--size-radius-s) 0;
+}
+.extract-card__seg-btn:only-child { border-radius: var(--size-radius-s); } /* 본인정보처럼 삭제 버튼 하나뿐일 때 — first/last-child 규칙이 서로 덮어써서 한쪽 모서리가 각져 보이는 것 방지 */
+.extract-card__seg-btn:hover {
+  background: var(--surface-neutral-faint);
+  position: relative;
+  z-index: 1;
+}
+.extract-card__seg-btn--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  padding: 0;
+  color: var(--icon-neutral-subtle);
+}
+.extract-card__input {
+  min-height: 30px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: var(--radius-control);
+  background: var(--surface-white);
+  color: var(--text-neutral-default);
+  font-size: var(--font-size-13);
+  letter-spacing: -0.0442px;
+  line-height: 1.4;
+}
+
+.extract-card__desc {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-regular);
+  color: var(--text-neutral-default);
+  letter-spacing: -0.0442px;
+  line-height: 1.4;
+} /* 본인정보처럼 규칙/메타가 없는 설명형 필드 — 인풋 박스 없이 텍스트만 */
+
+/* .extract-field__delete만 첨부파일 테이블의 소형 아이콘 버튼으로 계속 쓰인다 — 아이콘 영역은
+   버튼 아이콘 표준(16, .btn-icon-slot)과 맞춘다. */
+.extract-field__delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--icon-neutral-subtle);
+  cursor: pointer;
+}
+
+.extract-add {
+  align-self: center;
+}
+
+/* ---- 하단 고정 영역(요청내용/첨부파일) ---- */
+.extract-result__footer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 16px 16px;
+  background: var(--surface-white);
+  border-top: 1px solid var(--border-neutral-subtle);
+  box-shadow: 0 -2px 3px rgba(177, 177, 177, 0.2);
+}
+.extract-result__footer-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.extract-result__footer-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-secondary);
+}
+.extract-result__request {
+  height: 60px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: var(--radius-control);
+  font-family: inherit;
+  font-size: var(--font-size-13);
+  color: var(--text-neutral-default);
+  letter-spacing: -0.0442px;
+  resize: none;
+}
+.extract-result__request:focus { border-color: var(--border-primary-default); outline: none; } /* reset.css의 전역 :focus-visible 아웃라인 대신 .input과 동일하게 테두리 색만 바뀌게 함 */

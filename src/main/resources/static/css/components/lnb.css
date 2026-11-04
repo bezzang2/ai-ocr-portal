@@ -1,0 +1,195 @@
+/* ==========================================================================
+   LNB — 좌측 내비게이션
+   출처: get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 481:6740) 실측 코드.
+   AgileSoDA 관례/추정치를 배제하고 이 컴포넌트에 실제로 적용된 값만 옮겼다.
+   확정 근거가 없는 값(24px 좌우 패딩 등)은 리터럴로 남기고 주석으로 표시했다.
+   ========================================================================== */
+
+.lnb {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  background: var(
+    --surface-primary-faint
+  ); /* Blue/50 #e5f1ff — 실측. 이전 버전은 white로 잘못 넣었던 부분 */
+}
+
+/* ---- Logo ---- */
+.lnb__logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px; /* 리터럴(px-[4px]) — 정의된 Figma Variable 없음 */
+  width: 200px;
+  padding: 20px 24px; /* py-20 px-24, 리터럴 — 정의된 Figma Variable 없음 */
+  background: var(--surface-primary-strong); /* Blue/900 #00286c */
+  color: var(--text-inverse);
+  white-space: nowrap;
+}
+.lnb__logo-img {
+  width: 93px; /* 원본 SVG 실치수 — "AI OCR" 워드마크 + "서류판독시스템" 서브타이틀 합성본 */
+  height: 45px;
+}
+
+/* ---- Menu wrapper ---- */
+.lnb__menu {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+/* ---- 1depth 메뉴 항목 — 전 메뉴가 아코디언 그룹(.nav-group)의 헤더다. 하위메뉴가
+   1개뿐인 대시보드/통합검색도 구조 일관성을 위해 동일 패턴(nav-group > nav-item +
+   nav-submenu)을 쓴다. 펼침/접힘은 js/lnb.js가 .nav-group에 is-open 클래스를 토글해
+   제어한다 ---- */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--size-space-s); /* 8px — confirmed Figma Variable */
+  height: var(--nav-item-1depth-height); /* 38px */
+  width: 100%;
+  padding: 0 var(--pad-x-control); /*
+  color: var(
+    --text-primary-strong
+  ); /* Blue/900, semantic: Text/Primary-Strong */
+  cursor: pointer;
+}
+.nav-item__icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--icon-primary-strong); /* Blue/900 — 기본 아이콘 색 */
+}
+.nav-item__label {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.0476px; /* 실측값(이 컴포넌트 기준). Typography 프레임에서 뽑은 Type/LNB-14SB(-0.34px)와 다름 — 두 출처가 어긋나는 걸 확인, 이 컴포넌트는 실제 렌더값을 우선했다 */
+  line-height: 1;
+}
+.nav-item__chevron {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--icon-primary-strong);
+}
+
+/* ---- 1depth 아코디언 그룹 (전 메뉴 공통) ---- */
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  border-bottom: 1px solid var(--surface-white); /* 헤더+서브메뉴 그룹 전체 하단에 1개만 */
+}
+.nav-group > .nav-item {
+  border-bottom: none; /* 그룹 안에서는 개별 border 대신 그룹 border만 사용 */
+}
+.nav-group > .nav-item.is-active {
+  background: var(--surface-primary-default); /* Blue/600 #0565ef */
+  color: var(--text-inverse);
+}
+.nav-group > .nav-item.is-active .nav-item__icon,
+.nav-group > .nav-item.is-active .nav-item__chevron {
+  color: var(--icon-inverse);
+}
+/* 접힘 상태가 기본값 — js/lnb.js가 로드 시 현재 페이지가 속한 그룹에만 is-open을 붙인다 */
+.nav-item__chevron {
+  transition: transform 0.15s ease;
+}
+.nav-group.is-open > .nav-item .nav-item__chevron {
+  transform: rotate(180deg);
+}
+.nav-group > .nav-submenu {
+  display: none;
+}
+.nav-group.is-open > .nav-submenu {
+  display: flex;
+}
+
+/* ---- 2depth 서브메뉴 ---- */
+.nav-submenu {
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  padding: 4px 0; /* py-4, 리터럴 — 정의된 Figma Variable 없음 */
+  background: var(--surface-primary-subtle); /* Blue/100 #c2dcff */
+}
+.nav-subitem {
+  display: flex;
+  align-items: center;
+  gap: var(--size-space-s); /* 8px */
+  width: 100%;
+  height: var(--nav-item-2depth-height); /* 32px */
+  padding: 0 var(--pad-x-control); /* 16px */
+  border-radius: var(--radius-control); /* 4px */
+  color: var(--text-neutral-tertiary); /* Neutral/500 #636873 — 기본(미선택) */
+  text-decoration: none; /* <a> 태그로 화면이동 처리 */
+  cursor: pointer;
+}
+.nav-subitem__dot {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.nav-subitem__dot::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: var(--size-radius-round);
+  background: var(--icon-neutral-default); /* Neutral/500 — 기본 */
+}
+.nav-subitem__label {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.0442px; /* 실측값(이 컴포넌트 기준). Type/Body-13SB(-0.34px)와 다름 — nav-item과 동일한 이유로 실제 렌더값 우선 */
+  line-height: 1;
+  white-space: nowrap;
+}
+.nav-subitem.is-selected {
+  color: var(--text-primary-strong); /* Blue/900 — 현재 페이지 */
+}
+.nav-subitem.is-selected .nav-subitem__dot::before {
+  background: var(--icon-primary-strong); /* Blue/900 */
+}
+
+
+/* 공통 업무 메뉴 접기: 문서 목록과 별개로 앱 전체 탐색 영역을 제어한다. */
+.lnb__logo { position: relative; }
+.lnb__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  top: 8px;
+  right: 6px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-primary-subtle);
+  border-radius: var(--radius-control);
+  color: var(--text-inverse);
+  background: transparent;
+  cursor: pointer;
+  font-size: 20px;
+}
+.lnb__toggle:hover { background: var(--surface-primary-medium); }
+.lnb__toggle:focus-visible { outline: 2px solid var(--border-primary-default); outline-offset: 2px; }
+.lnb__toggle-label { display: none; }
+.app-shell.is-navigation-collapsed > .lnb { flex: 0 0 48px; width: 48px; }
+.app-shell.is-navigation-collapsed > .lnb .lnb__logo { width: 48px; min-height: 48px; padding: 8px; }
+.app-shell.is-navigation-collapsed > .lnb .lnb__logo-img,
+.app-shell.is-navigation-collapsed > .lnb .lnb__menu { display: none; }
+.app-shell.is-navigation-collapsed > .lnb .lnb__toggle { position: static; width: 32px; height: 32px; }
+@media (max-width: 600px) {
+  .ocr-portal.is-navigation-collapsed > .lnb { flex: none; width: 100%; }
+  .ocr-portal.is-navigation-collapsed > .lnb .lnb__logo { width: 100%; align-items: flex-start; padding: 8px 12px; }
+  .ocr-portal.is-navigation-collapsed > .lnb .lnb__toggle { gap: 8px; width: auto; padding: 0 10px; }
+  .ocr-portal.is-navigation-collapsed .lnb__toggle-label { display: inline; font-size: var(--font-size-13); }
+}

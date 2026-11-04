@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="form-field-rule-modal">
+    <!-- 서식 항목 규칙 선택 모달 — get_design_context(522:16898) 실측("신청관리-OCR서식신청- 서식 항목 규칙 팝업"
+         프레임, 실제 표시 타이틀은 "서식 항목 규칙 선택"). OCR서식신청 추출화면 추출항목 카드에서 규칙이 적용된
+         항목을 클릭하면 여는 팝업 — 실제 화면 연결은 개발자가 진행.
+         
+        메인 페이지에 아래의 svg가 선언되어 있어야 함. 
+        <symbol id="svg_checkbox" viewBox="0 0 12 12">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M9.83263 3.64645C10.0558 3.84171 10.0558 4.15829 9.83263 4.35355L5.2612 8.35355C5.03805 8.54882 4.67624 8.54882 4.45308 8.35355L2.16737 6.35355C1.94421 6.15829 1.94421 5.84171 2.16737 5.64645C2.39052 5.45118 2.75233 5.45118 2.97549 5.64645L4.85714 7.29289L9.02451 3.64645C9.24767 3.45118 9.60948 3.45118 9.83263 3.64645Z" fill="currentColor"/>
+        </symbol>
+        <symbol id="svg_modal_close" viewBox="0 0 7.725 7.725">
+            <path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/>
+        </symbol>
+        <symbol id="svg_btn_primary" viewBox="0 0 9.2 6.7">
+            <path d="M8.6 0.6L3.1 6.1L0.6 3.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+        </symbol>
+    -->
+    <div id="form-field-rule-modal" class="modal-overlay" hidden>
+        <div class="modal modal--w640">
+            <div class="modal__header">
+                <span class="modal__title">서식 항목 규칙 선택</span>
+                <button type="button" class="modal__close" aria-label="닫기" data-modal-close>
+                    <svg width="7.725" height="7.725" fill="none" aria-hidden="true">
+                        <use href="#svg_modal_close" />
+                    </svg>
+                </button>
+            </div>
+            <div class="modal__body">
+                <div class="modal__summary">
+                    <span class="search-area__label">서식</span>
+                    <span class="modal__summary-value" id="doc_nm"></span>
+                </div>
+                <table class="table modal__rule-table">
+                    <thead>
+                        <tr>
+                            <th style="width:160px">항목</th>
+                            <th style="width:160px">구분</th>
+                            <th>규칙</th>
+                            <th style="width:78px">적용여부</th>
+                        </tr>
+                    </thead>
+                    <tbody id="workflow_ir">
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal__footer">
+                <div class="modal__footer-actions">
+                    <button type="button" class="btn btn-primary" onclick="fnConfirmFormField();" data-modal-close>
+                        <span class="btn-icon-slot">
+                            <svg width="9.2" height="6.7" fill="none" aria-hidden="true">
+                                <use href="#svg_btn_primary" />
+                            </svg>
+                        </span>
+                        확인
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script th:inline="javascript" type="text/javascript">
+        
+        var ffrmWorkflow = {};
+        
+        /**
+         *  업무신청 화면에서 서식 상세 화면 팝업 호출 시 초기화 메소드
+         *  @param: workflow 상세
+         */
+        function FormFieldRule_initialize(obj){
+        	$("#workflow_ir").empty();
+        	ffrmWorkflow = {};
+        	ffrmWorkflow.id = obj.workflowId;
+        	ffrmWorkflow.name = obj.workflowNm;
+        	ffrmWorkflow.tag = obj.tag;
+            
+            $("#doc_nm").text(obj.name);
+            
+            let fields = [];
+            obj.fields.forEach(function(item, index){
+                fields.push(item);
+            });
+            
+            fields.forEach(function(item, index){
+                let html = `
+                    <tr>
+                        <td>${item.displayLabel}</td>
+                        <td>필수여부</td>
+                        <td>${item.required}</td>
+                        <td>
+                            <label class="checkbox checkbox--lg">
+                                <input type="checkbox" class="checkbox__input field-checked" data-name="${item.displayLabel}" data-type="required" data-value="${item.required}" checked>
+                                <span class="checkbox__box">
+                                    <svg fill="none" aria-hidden="true">
+                                        <use href="#svg_checkbox" />
+                                    </svg>
+                                </span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>데이터유형</td>
+                        <td>${item.dtype}</td>
+                        <td>
+                            <label class="checkbox checkbox--lg">
+                                <input type="checkbox" class="checkbox__input field-checked" data-name="${item.displayLabel}" data-type="dtype" data-value="${item.dtype}" checked>
+                                <span class="checkbox__box">
+                                    <svg fill="none" aria-hidden="true">
+                                        <use href="#svg_checkbox" />
+                                    </svg>
+                                </span>
+                            </label>
+                        </td>
+                    </tr>
+                 `;
+                
+                if(item.length == -1 ){
+                    html += `<tr>
+                        <td></td>
+                        <td>자리수</td>
+                        <td></td>
+                        <td>
+                            <label class="checkbox checkbox--lg">
+                                <input type="checkbox" class="checkbox__input field-checked" data-name="${item.displayLabel}" data-type="length" data-value="-1" disabled>
+                                <span class="checkbox__box">
+                                    <svg fill="none" aria-hidden="true">
+                                        <use href="#svg_checkbox" />
+                                    </svg>
+                                </span>
+                            </label>
+                        </td>
+                    </tr>
+                    `;
+                }
+                else{
+                    html += `<tr>
+                        <td></td>
+                        <td>자리수</td>
+                        <td>${item.length}</td>
+                        <td>
+                            <label class="checkbox checkbox--lg">
+                                <input type="checkbox" class="checkbox__input field-checked" data-name="${item.displayLabel}" data-type="length" data-value="${item.length}" checked>
+                                <span class="checkbox__box">
+                                    <svg fill="none" aria-hidden="true">
+                                        <use href="#svg_checkbox" />
+                                    </svg>
+                                </span>
+                            </label>
+                        </td>
+                    </tr>
+                    `;
+                }
+                
+                if(item.masking == false ){
+                	html += `<tr>
+                        <td></td>
+                        <td>마스킹대상</td>
+                        <td>N</td>
+                        <td>
+                            <label class="checkbox checkbox--lg">
+                                <input type="checkbox" class="checkbox__input field-checked" data-name="${item.displayLabel}" data-type="masking" data-value="N" disabled>
+                                <span class="checkbox__box">
+                                    <svg fill="none" aria-hidden="true">
+                                        <use href="#svg_checkbox" />
+                                    </svg>
+                                </span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>마스킹범위</td>
+                        <td></td>
+                        <td>
+                            <label class="checkbox checkbox--lg">
+                                <input type="checkbox" class="checkbox__input field-checked" data-name="${item.displayLabel}" data-type="maskingPattern" data-value="${item.maskingPattern}" disabled>
+                                <span class="checkbox__box">
+                                    <svg fill="none" aria-hidden="true">
+                                        <use href="#svg_checkbox" />
+                                    </svg>
+                                </span>
+                            </label>
+                        </td>
+                    </tr>
+                    `;
+                }
+                else{
+                    html += `<tr>
+                        <td></td>
+                        <td>마스킹대상</td>
+                        <td>Y</td>
+                        <td>
+                            <label class="checkbox checkbox--lg">
+                                <input type="checkbox" class="checkbox__input field-checked" data-name="${item.displayLabel}" data-type="masking" data-value="Y" checked>
+                                <span class="checkbox__box">
+                                    <svg fill="none" aria-hidden="true">
+                                        <use href="#svg_checkbox" />
+                                    </svg>
+                                </span>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td></td>
+                        <td>마스킹범위</td>
+                        <td>${item.maskingPattern}</td>
+                        <td>
+                            <label class="checkbox checkbox--lg">
+                                <input type="checkbox" class="checkbox__input field-checked" data-name="${item.displayLabel}" data-type="maskingPattern" data-value="" checked>
+                                <span class="checkbox__box">
+                                    <svg fill="none" aria-hidden="true">
+                                        <use href="#svg_checkbox" />
+                                    </svg>
+                                </span>
+                            </label>
+                        </td>
+                    </tr>
+                    `;
+                }
+                
+                $("#workflow_ir").append(html);
+            });
+        }
+        
+        function fnConfirmFormField(){
+            let fields = [];
+        	$("#workflow_ir").children().each(function(index, item){
+        		let td = $(this).children()[3].getElementsByTagName("input")[0];
+        		if(td.checked){
+        		    let isExist = false;
+        		    for(temp of fields){
+        		        if(temp.path == td.dataset.name){
+        		        	temp[td.dataset.type] = td.dataset.value
+        		        	isExist = true;
+        		        }
+        		    }
+        		    
+        		    if(!isExist){
+                        let field = {};
+                        field["path"] = td.dataset.name;
+                        field[td.dataset.type] = td.dataset.value 
+                        fields.push(field);
+        		    }
+                }
+        		else{
+        		    console.log('체크 되지 않음');
+        		}
+            });
+        	
+        	console.log(fields);
+        	ffrmWorkflow.fields = fields;
+            callback_FormFieldRule(ffrmWorkflow);
+        }
+    </script>
+</div>
+</body>
+</html>

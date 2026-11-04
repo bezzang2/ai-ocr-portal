@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.agilesoda.module.batch.mapper.DeptBatchMapper">
+
+	<update id="mergeDept" parameterType="com.agilesoda.module.batch.vo.DeptInqVO">
+		MERGE INTO OCUOC_DPRMI_M T
+		USING (
+		    SELECT #{brCd}   		AS BR_CD
+		         , #{brNm}   		AS BR_NM
+				 , #{posiMobrCd}   	AS POSI_MOBR_CD
+				 , #{sidoDscd}   	AS SIDO_DSCD
+				 , #{telNo}   		AS TEL_NO
+				 , #{faxNo}   		AS FAX_NO
+				 , #{brAd}   		AS BR_AD
+				 , #{brOpenDt}   	AS BR_OPEN_DT
+				 , #{brShutDt}   	AS BR_SHUT_DT
+				 , #{itgbrCd}   	AS ITGBR_CD
+				 , #{fstRegSdH}   	AS FST_REG_SD_H
+				 , #{fstRegPeNo}   	AS FST_REG_PE_NO
+				 , #{lstChgDh}   	AS LST_CHG_DH
+				 , #{lstChgPeNo}    AS LST_CHG_PE_NO
+				 , #{giroCd}   		AS GIRO_CD
+				 , #{delYn}   		AS DEL_YN
+				 , SYSDATE   		AS REG_DT
+				 , SYSDATE  		AS MOD_DT
+		     FROM DUAL
+			)S
+		    ON (
+		        T.BR_CD = S.BR_CD
+				)
+			 WHEN MATCHED THEN
+				UPDATE SET
+					  T.BR_NM			= S.BR_NM
+					, T.POSI_MOBR_CD 	= S.POSI_MOBR_CD
+					, T.SIDO_DSCD 		= S.SIDO_DSCD
+					, T.TEL_NO 			= S.TEL_NO
+					, T.FAX_NO 			= S.FAX_NO
+					, T.BR_AD 			= S.BR_AD
+					, T.BR_OPEN_DT 		= S.BR_OPEN_DT
+					, T.BR_SHUT_DT 		= S.BR_SHUT_DT
+					, T.ITGBR_CD 		= S.ITGBR_CD
+					, T.FST_REG_SD_H 	= S.FST_REG_SD_H
+					, T.FST_REG_PE_NO 	= S.FST_REG_PE_NO
+					, T.LST_CHG_DH 		= S.LST_CHG_DH
+					, T.LST_CHG_PE_NO 	= S.LST_CHG_PE_NO
+					, T.GIRO_CD 		= S.GIRO_CD
+					, T.DEL_YN 			= S.DEL_YN
+					, T.MOD_DT 			= SYSDATE
+		    	WHERE NVL(T.BR_NM,' ') != NVL(S.BR_NM,' ')
+		           OR NVL(T.POSI_MOBR_CD,' ') != NVL(S.POSI_MOBR_CD,' ')
+				   OR NVL(T.SIDO_DSCD,' ') != NVL(S.SIDO_DSCD,' ')
+		           OR NVL(T.TEL_NO,' ') != NVL(S.TEL_NO,' ')
+				   OR NVL(T.FAX_NO,' ') != NVL(S.FAX_NO,' ')
+		           OR NVL(T.BR_AD,' ') != NVL(S.BR_AD,' ')
+				   OR NVL(T.BR_OPEN_DT,' ') != NVL(S.BR_OPEN_DT,' ')
+		           OR NVL(T.BR_SHUT_DT,' ') != NVL(S.BR_SHUT_DT,' ')
+		           OR NVL(T.ITGBR_CD,' ') != NVL(ITGBR_CD,' ')
+		    	   OR NVL(T.FST_REG_SD_H,' ') != NVL(S.FST_REG_SD_H,' ')
+		           OR NVL(T.FST_REG_PE_NO,' ') != NVL(S.FST_REG_PE_NO,' ')
+		           OR NVL(T.LST_CHG_DH,' ') != NVL(LST_CHG_DH,' ')
+		    	   OR NVL(T.LST_CHG_PE_NO,' ') != NVL(S.LST_CHG_PE_NO,' ')
+		           OR NVL(T.GIRO_CD,' ') != NVL(S.GIRO_CD,' ')
+		           OR NVL(T.DEL_YN,' ') != NVL(DEL_YN,' ')
+			WHEN NOT MATCHED THEN
+				INSERT
+				(
+					  BR_CD
+					, BR_NM
+					, POSI_MOBR_CD
+					, SIDO_DSCD
+					, TEL_NO
+					, FAX_NO
+					, BR_AD
+					, BR_OPEN_DT
+					, BR_SHUT_DT
+					, ITGBR_CD
+					, FST_REG_SD_H
+					, FST_REG_PE_NO
+					, LST_CHG_DH
+					, LST_CHG_PE_NO
+					, GIRO_CD
+					, DEL_YN
+					, REG_DT
+				)
+				VALUES
+				(
+					  S.BR_CD
+					, S.BR_NM
+					, S.POSI_MOBR_CD
+					, S.SIDO_DSCD
+					, S.TEL_NO
+					, S.FAX_NO
+					, S.BR_AD
+					, S.BR_OPEN_DT
+					, S.BR_SHUT_DT
+					, S.ITGBR_CD
+					, S.FST_REG_SD_H
+					, S.FST_REG_PE_NO
+					, S.LST_CHG_DH
+					, S.LST_CHG_PE_NO
+					, S.GIRO_CD
+					, S.DEL_YN
+					, SYSDATE
+					)
+
+
+	</update>
+</mapper>

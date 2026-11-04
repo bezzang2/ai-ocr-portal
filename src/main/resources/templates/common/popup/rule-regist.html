@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- 서식간 규칙 등록 모달 — get_design_context(522:16459) 실측("신청관리-OCR서식신청- 추가팝업" 프레임,
+     실제 표시 타이틀은 "서식간 규칙 등록"). OCR업무신청 화면(ocr-task-apply.html)의 "서식간 규칙 목록"
+     섹션 "추가" 버튼에서 여는 팝업 — 실제 화면 연결은 개발자가 진행. -->
+<div th:fragment="rule-regist-popup">
+  <div id="cross-rule-register-modal" class="modal-overlay" hidden>
+    <div class="modal modal--xl">
+      <div class="modal__header">
+        <span class="modal__title">서식간 규칙 등록</span>
+        <button type="button" class="modal__close" aria-label="닫기" data-modal-close>
+          <svg width="7.725" height="7.725" viewBox="0 0 7.725 7.725" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <div class="modal__body">
+  
+        <!-- 규칙명/비교유형 + "Input 항목 추가" — patterns/detail-panel.css(2026-08-20)
+             재실측 반영. 이전엔 .sub__search-area(회색 채움)였는데, get_design_context(522:16459)
+             재확인 결과 흰 배경+Neutral/100 보더 박스라 공용 클래스로 교체했다. -->
+        <div class="detail-panel" style="justify-content:space-between">
+          <div style="display:flex; align-items:center; gap:36px">
+            <div class="split-view__search-item">
+              <span class="split-view__search-label">규칙명</span>
+              <input class="input" style="width:200px" type="text" name="modal_rule_name" id="id_modal_rule_name" value="" placeholder="규칙명을 입력하세요.">
+            </div>
+            <div class="split-view__search-item split-view__search-item--tight">
+              <span class="split-view__search-label">비교유형</span>
+              <select class="input" style="width:160px" id="id_modal_rule_type" name="modal_rule_type">
+                <option value="EQ">일치(EQUALS)</option>
+              </select>
+            </div>
+          </div>
+          <button type="button" class="btn-neutral btn-neutral--fill">
+            <span class="btn-icon-slot"><svg width="10.6667" height="10.6667" viewBox="0 0 10.6667 10.6667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5.33333 0.666667V10M0.666667 5.33333H10" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            Input 항목
+          </button>
+        </div>
+  
+        <!-- 서식별 항목 선택 그리드 -->
+        <div class="rule-field-box">
+          <div class="rule-field-grid modal-rule-grid">
+            <!-- 서식 동적 적용 Area -->
+          </div>
+        </div>
+  
+      </div>
+      <div class="modal__footer">
+        <div class="modal__footer-actions">
+          <button type="button" class="btn-outline-primary" data-modal-close>
+            <span class="btn-icon-slot"><svg width="7.725" height="7.725" viewBox="0 0 7.725 7.725" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            취소
+          </button>
+          <button type="button" class="btn btn-primary" data-modal-close th:onclick="fnAddRuleSet();">
+            <span class="btn-icon-slot"><svg width="9.2" height="6.7" viewBox="0 0 9.2 6.7" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8.6 0.6L3.1 6.1L0.6 3.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            저장
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

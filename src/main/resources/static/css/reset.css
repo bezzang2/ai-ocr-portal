@@ -1,0 +1,91 @@
+/* ==========================================================================
+   RESET.CSS — 업계 표준 모던 CSS 리셋
+   기반: Josh W. Comeau "Modern CSS Reset" + 엔터프라이즈 관리자 화면(폼/테이블 위주)에
+   필요한 규칙 추가. 브랜드/토큰과 무관하게 항상 동일하게 유지하는 파일이다.
+
+   로딩 순서: reset.css → tokens/primitive.css → tokens/semantic.css
+             → tokens/component.css → base.css → layout.css → components/*.css
+   ========================================================================== */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+img, picture, svg, video, canvas {
+  display: block;
+  max-width: 100%;
+}
+
+input, button, textarea, select {
+  font: inherit;
+  color: inherit;
+  background: transparent;
+}
+
+button {
+  border: none;
+  cursor: pointer;
+  text-align: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul, ol {
+  list-style: none;
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  width: 100%;
+}
+
+th {
+  text-align: left;
+  font-weight: inherit;
+}
+
+fieldset {
+  border: none;
+  min-width: 0;
+}
+
+legend {
+  padding: 0;
+}
+
+p, h1, h2, h3, h4, h5, h6 {
+  overflow-wrap: break-word;
+}
+
+#root, #wrap {
+  isolation: isolate;
+}
+
+:focus-visible {
+  outline: 2px solid #227cfb;
+  outline-offset: 2px;
+}

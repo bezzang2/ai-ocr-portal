@@ -1,0 +1,17 @@
+/* 회색 인라인 검색/필터 바 — "레코드 값을 나열해서 보여주는" 패널이 아니라 "조회 조건을
+   입력받는" 용도인 곳에만 쓴다: 결재선 지정 모달의 직원 검색바, 일괄변경 상세 모달의
+   역할 권한 변경 검색바 2곳(2026-08-20 기준 — 원래는 서식간 규칙 등록 모달·역할권한 상세
+   모달·신청관리>OCR업무신청의 Rule 상세도 이 클래스를 썼으나, 셋 다 실제로는 흰 배경+보더인
+   patterns/detail-panel.css 쪽 성격이라는 게 확인돼 그쪽으로 옮겼다).
+   .search-area(patterns/search-area.css)보다 한 단계 작은 인라인 버전이라는 뜻에서
+   sub__search-area로 이름 붙였다 — 패딩(6px 12px)이 .search-area(12px 24px)보다 작고,
+   줄바꿈 없이 한 줄로만 쓰인다.
+   출처: get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 517:15533) 실측. */
+.sub__search-area {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-xl); /* 16px */
+  padding: 6px 12px;
+  background: var(--surface-neutral-faint);
+  border-radius: 8px;
+}

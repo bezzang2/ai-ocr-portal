@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+  <meta charset="UTF-8">
+  <title>서식간 검증 상세 | AI OCR 서류판독시스템</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+    <!-- 통합검색 > 서식간 검증 결과 > 상세. 왼쪽 규칙을 고르면 오른쪽에 규칙이 참조한 서식·항목 수만큼 판독값과 판독 이미지를 놓는다.
+         판정은 Agent 가 저장한 결과이고, 값은 지금 값(확인값 우선)이다. 값 수정은 판독결과 검토의 확인값 저장을 쓰며
+         저장이 끝나면 Agent 가 다시 판정한다(js/cross-verify-detail.js, js/cross-rule-cards.js). -->
+    <main class="content cfv-clean cfv-live" id="cfv-page" data-navigation-context="server" th:attr="data-navigation-current=${menuId},data-trans-id=${transId},data-user-id=${userId}">
+      <div class="page-header cfv-page-header">
+        <h1 class="page-header__title">서식간 검증 결과</h1>
+        <a class="btn-neutral" data-cfv-back th:href="@{/module/ocr/crossVerify(menuId=${menuId})}">목록</a>
+      </div>
+
+      <div class="cfv-summary">
+        <div class="cfv-summary__field"><span class="cfv-summary__label">판독작업</span><span class="cfv-summary__value" th:text="${transId}">판독작업 ID</span></div>
+        <div class="cfv-summary__field"><span class="cfv-summary__label">업무명</span><span class="cfv-summary__value" data-cfv-workflow>-</span></div>
+        <div class="cfv-summary__field"><span class="cfv-summary__label">판정일시</span><span class="cfv-summary__value" data-cfv-evaluated>-</span></div>
+        <div class="cfv-summary__stats" aria-live="polite">
+          <button type="button" class="cfv-stat" data-cfv-filter="ALL">전체 <b data-cfv-count="ALL">0</b></button>
+          <button type="button" class="cfv-stat cfv-stat--ng" data-cfv-filter="MISMATCH">불일치 <b data-cfv-count="MISMATCH">0</b></button>
+          <button type="button" class="cfv-stat cfv-stat--na" data-cfv-filter="UNVERIFIABLE">검증불가 <b data-cfv-count="UNVERIFIABLE">0</b></button>
+          <button type="button" class="cfv-stat cfv-stat--ok" data-cfv-filter="MATCH">일치 <b data-cfv-count="MATCH">0</b></button>
+          <button type="button" class="cfv-stat cfv-stat--na" data-cfv-filter="NOT_APPLICABLE">해당없음 <b data-cfv-count="NOT_APPLICABLE">0</b></button>
+          <button type="button" class="cfv-stat cfv-stat--na" data-cfv-filter="PENDING" data-cfv-pending-stat hidden>미판정 <b data-cfv-count="PENDING">0</b></button>
+        </div>
+        <div class="cfv-summary__actions">
+          <a class="btn-neutral" data-cfv-review-link href="#" hidden>판독결과 검토</a>
+          <button type="button" class="btn btn-primary" data-cfv-evaluate disabled>다시 판정</button>
+        </div>
+      </div>
+
+      <p class="cfv-message" data-cfv-message role="alert" hidden></p>
+
+      <div class="split-view__body split-view__body--boxed cfv-body">
+        <div class="cfv-rules">
+          <div class="section-title">검증 항목 <span class="cfv-total" data-cfv-total>0</span></div>
+          <div class="cfv-rule-list" data-cfv-rule-list role="listbox" aria-label="서식간 검증 규칙"></div>
+        </div>
+
+        <div class="cfv-detail">
+          <div class="cfv-compare">
+            <div class="cfv-heading">
+              <div class="cfv-heading__title"><h2 data-cfv-title>규칙을 불러오는 중입니다.</h2><span data-cfv-result></span><span class="cfv-stale" data-cfv-stale hidden>규칙 변경됨</span></div>
+              <div class="cfv-heading__actions"><button type="button" class="btn-neutral" data-cfv-compare hidden>크게 보기</button></div>
+            </div>
+            <p class="cfv-compare__summary" data-cfv-summary></p>
+            <p class="cfv-compare__reason" data-cfv-reason></p>
+            <p class="cfv-compare__hint">값을 고친 뒤 저장하면 확인값으로 저장되고 다시 판정합니다. 저장은 판독작업 담당자만 할 수 있습니다.</p>
+          </div>
+          <div class="cfv-viewers" data-cfv-viewers></div>
+        </div>
+      </div>
+
+      <template id="crb-card-template" th:fragment="cardTemplate">
+        <section class="cfv-viewer">
+          <div class="cfv-viewer__label">
+            <span class="cfv-viewer__badge" data-card-letter>A</span>
+            <span class="cfv-viewer__name" data-card-form>서식</span>
+          </div>
+          <div class="cfv-field">
+            <label data-card-key>항목</label>
+            <div data-card-values></div>
+          </div>
+          <div class="crb-doc-tabs" data-card-docs role="group" aria-label="같은 서식 문서 이동" hidden>
+            <button type="button" class="btn-neutral" data-doc-prev aria-label="이전 문서">‹</button>
+            <output data-doc-position aria-live="polite">1 / 2건</output>
+            <button type="button" class="btn-neutral" data-doc-next aria-label="다음 문서">›</button>
+          </div>
+          <div class="doc-viewer doc-viewer--document cfv-doc" data-cfv-viewer>
+            <div class="doc-viewer__toolbar" role="group" aria-label="이미지 보기 방식">
+              <button type="button" class="btn-neutral" data-viewer-action="processed" aria-pressed="true">판독 이미지</button>
+              <button type="button" class="btn-neutral" data-viewer-action="original" aria-pressed="false" disabled>원본 보기</button>
+            </div>
+            <div class="doc-viewer__surface">
+              <div class="doc-viewer__viewport" data-viewer-viewport tabindex="0" role="region" aria-label="문서 영역. 드래그로 이동, 휠로 확대 축소">
+                <div class="doc-viewer__space" data-viewer-space>
+                  <div class="doc-viewer__stage" data-viewer-stage hidden>
+                    <img data-viewer-image alt="서식 페이지" draggable="false" hidden>
+                    <canvas data-viewer-canvas aria-label="업로드 원본 페이지" role="img" hidden></canvas>
+                    <svg data-viewer-overlay aria-label="비교 항목의 인식 영역" role="img" preserveAspectRatio="none"></svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="doc-viewer__status" data-viewer-status role="status">판독 이미지를 불러오는 중입니다.</div>
+            <div class="doc-viewer__controls">
+              <div class="doc-viewer__control-group" role="group" aria-label="확대 축소">
+                <button type="button" class="btn-neutral" data-viewer-action="out" aria-label="축소">−</button>
+                <output data-viewer-zoom aria-label="확대율">100%</output>
+                <button type="button" class="btn-neutral" data-viewer-action="in" aria-label="확대">＋</button>
+                <button type="button" class="btn-neutral" data-viewer-action="fit">전체</button>
+              </div>
+              <div class="doc-viewer__control-group" role="group" aria-label="페이지 이동">
+                <button type="button" class="btn-neutral" data-viewer-action="previous" aria-label="이전 페이지">‹</button>
+                <input type="number" min="1" step="1" data-viewer-page aria-label="현재 페이지" disabled>
+                <span data-viewer-pages>/ 0</span>
+                <button type="button" class="btn-neutral" data-viewer-action="next" aria-label="다음 페이지">›</button>
+              </div>
+            </div>
+            <p class="doc-viewer__note" data-viewer-note role="status"></p>
+          </div>
+          <p class="cfv-viewer__empty" data-card-empty hidden></p>
+        </section>
+      </template>
+    </main>
+<link rel="stylesheet" th:href="@{/css/pages/cross-rule-builder.css}">
+<div th:insert="~{common/commonModals :: commonModals}"></div>
+<script th:src="@{/js/modal.js}"></script>
+<script th:src="@{/js/doc-viewer.js}"></script>
+<script th:src="@{/js/cross-rule-cards.js}"></script>
+<script th:src="@{/js/cross-rule-sentence.js}"></script>
+<script th:src="@{/js/cross-verify-detail.js}"></script>
+<script th:src="@{/js/lnb.js}"></script>
+</body>
+</html>

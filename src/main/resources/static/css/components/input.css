@@ -1,0 +1,67 @@
+.input {
+  height: var(--control-height-md);
+  width: 100%;
+  padding: 0 var(--size-space-s); /* 8px — get_design_context(234:1152) 실측, 기존 12px(--gap-lg) 오적용 수정 */
+  border: 1px solid var(--border-neutral-subtle); /* Neutral/100 #d6d9dd — 실측, 기존 --border-neutral-default(#b8bbc2) 오적용 수정 */
+  border-radius: var(--radius-control);
+  background: var(--surface-white);
+  color: var(--text-neutral-default);
+  font-size: var(--font-size-13);
+  letter-spacing: -0.0442px; /* 실측값(이 컴포넌트 기준), 라이브러리 -0.34px와 다름 */
+}
+.input::placeholder {
+  color: var(--text-neutral-quaternary);
+}
+.input:focus {
+  border-color: var(--border-primary-default);
+  outline: none;
+}
+.input:disabled {
+  background: var(--surface-neutral-faint);
+  color: var(--text-disabled);
+}
+.input[readonly] {
+  background: var(--surface-neutral-faint);
+  border-color: var(--border-neutral-subtle);
+} /* get_design_context(537:18402) 실측 — 신청자/담당자 등 읽기전용 필드 */
+
+/* ---- date input 플레이스홀더 톤 — <input type="date">는 placeholder 속성을 지원하지 않아
+   위 .input의 color 고정값이 브라우저 기본 "값 없음" 회색 표시까지 덮어써 버린다.
+   js/date-input.js가 값 유무에 따라 .has-value를 토글해 대신 재현한다. ---- */
+.input[type="date"] {
+  color: var(--text-neutral-quaternary);
+}
+.input[type="date"].has-value {
+  color: var(--text-neutral-default);
+}
+
+/* ---- 너비 modifier — get_design_context(234:1152) 실측 검색조건 입력 폭.
+   화면마다 인라인 width를 반복하지 않도록 공통 클래스로 뺐다. 검색조건 영역이 아닌
+   곳(예: 테이블 컬럼)의 고정폭은 그 컨텍스트에 한정된 값이라 대상이 아니다. ---- */
+.input--w80 {
+  width: 80px;
+}
+.input--w120 {
+  width: 120px;
+} /* 드롭다운(채널구분/단위시스템/검색어 유형), 신청일자 datepicker */
+.input--w160 {
+  width: 160px;
+}
+.input--w140 {
+  width: 140px;
+} /* n개씩 보기 셀렉트(list-footer) */
+.input--w200 {
+  width: 200px;
+} /* 검색어 텍스트필드, 신청부서 */
+.input--w180 {
+  width: 180px;
+} /* 통합검색>고객 통합검색의 은행 고객번호 입력 — get_design_context(674:2529) 실측 */
+
+/* ---- Small 사이즈 — get_design_context(493:12245) 실측(OCR업무신청 Rule 상세 카드 안의 소형 입력).
+   Figma Size/Size-S 전용 토큰 없어 리터럴 유지(Size/Size-M=30px만 기존 토큰화돼 있음). ---- */
+.input--sm {
+  height: 24px;
+  padding: 0 var(--size-space-s);
+  border-radius: var(--size-radius-s);
+  font-size: var(--font-size-12);
+}

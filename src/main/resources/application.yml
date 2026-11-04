@@ -1,32 +1,26 @@
-sever:
-  port: 8080
+server:
+  servlet:
+    session:
+      # URL 재작성(;jsessionid=)을 막는다. 첫 응답에서 @{/}에 세션 ID가 붙으면 사이드바 이동 경로가 깨진다.
+      tracking-modes: cookie
 
 spring:
-  datasource:
-    driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
-    url: jdbc:log4jdbc:mariadb://bz2.myqnapcloud.com:3306/PMS
-    username: bezzang2
-    password: letdown12!@
-  #if use redis
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      password: letdown12!@
+  application:
+    name: ai-ocr-portal
   jpa:
-    show-sql: true
+    show_sql: true
     properties:
       hibernate:
+        show_sql: true
         format_sql: true
-
-#mybatis ??
+    hibernate:
+      naming:
+        physical-straategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        implicit-straategy: org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl
+        
 mybatis:
-  mapper-locations: classpath:sqlmap/mapper/*.xml
+  mapper-locations: classpath:sqlmap/mapper/**/*.xml
   config-location: classpath:sqlmap/config/mybatis-config.xml
-
-# log4j2 설정
-logging:
-  config: classpath:log4j2-spring.xml
 
 springdoc:
   api-docs:
@@ -34,7 +28,7 @@ springdoc:
     groups:
       enabled: true
   swagger-ui:
-    path: /swagger-ui-custom.html
+    path: /swagger-portal.html
     enabled: true
     groups-order: ASC
     tags-sorter: alpha
@@ -43,4 +37,34 @@ springdoc:
     doc-expansion: none
   cache:
     disabled: true
-  model-and-view-allowed: true
+  model-and-view-allowed: false
+  
+aiocr:
+  project-id: 01a08070-a5da-739a-928e-bbea496f7d84
+  agent:
+    apis:
+      wkflow-list: /api/v1/ocr/workflow/list
+      wkflow-dtl: /api/v1/ocr/workflow/%s
+      wkflow-provision: /api/v1/ocr/workflow/provision
+      wkflow-merge: /api/v1/ocr/workflow/merge
+      schema-suggestions: /api/v1/ocr/schema/suggestions
+      schema-suggestion-dtl: /api/v1/ocr/schema/suggestions/%s
+      result-refresh: /api/v1/ocr/result/%s/refresh
+      result-raw: /api/v1/ocr/result/%s/raw
+      extract: /api/v1/ocr/extract
+  raw-result:
+    # 판독결과 화면 "원본 JSON"(엔진 결과 원본, OCR 원문 포함). 끄려면 AIOCR_RAW_RESULT_ENABLED=false
+    enabled: ${AIOCR_RAW_RESULT_ENABLED:true}
+  review:
+    # 판독결과 검증 담당자를 다른 사람에게 지정·해제할 수 있는 사용자. 쉼표로 여러 값을 준다.
+    # 역할(OCUOC_USROL_R.ROLE_ID) 또는 직위 코드(OCUOC_USERI_M.HRA_PSTN_CD, 팀장) 중 하나에 맞으면 된다.
+    # P02 는 개발 기준데이터의 팀장 코드다. 은행 인사 코드로 바꾼다.
+    assigner-roles: ${AIOCR_REVIEW_ASSIGNER_ROLES:ROLE_ADMIN}
+    assigner-position-codes: ${AIOCR_REVIEW_ASSIGNER_POSITION_CODES:P02}
+  terminal:
+    # 검증완료 결과를 받는 단말시스템(C#) API URL. 비우면 전송하지 않는다(경고 로그). 은행 단말 주소로 설정한다.
+    verify-url: ${AIOCR_TERMINAL_VERIFY_URL:}
+  device-mock:
+    # 단말 mock 화면(/device-mock): 이미지 업로드 → 판독요청, 검증완료 결과 수신함. 개발·데모 전용.
+    # 전 환경 기본으로 켠다(2026-11-02 결정). 은행 개발계·운영계도 켜진다. 인증 없이 판독요청을 넣을 수 있으므로 막아야 할 때 false 를 준다.
+    enabled: ${AIOCR_DEVICE_MOCK_ENABLED:true}

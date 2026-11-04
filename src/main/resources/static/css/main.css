@@ -1,0 +1,57 @@
+/* 로컬 미리보기/단일 진입점용 aggregator.
+   ⚠️ 운영 JSP에서는 @import(추가 요청 발생, 캐시 관리 불리) 대신 공통 헤더
+   include(예: common/header.jsp)에 아래 순서 그대로 <link> 태그를 개별 나열하는
+   것을 권장한다. 순서를 바꾸면 레이어 우선순위가 깨진다.
+
+   레이어 구조(2026-08-18 재구조화):
+   tokens      → primitive/semantic/component 디자인 토큰
+   base        → reset + 기본 엘리먼트
+   layout      → 앱 셸 뼈대(app-shell/gnb/content/lnb 배치, breadcrumb·gnb__user 포함)
+   components  → 원자적 재사용 컴포넌트(button/input/table/checkbox... 어느 화면에서나 그대로 재사용)
+   patterns    → 여러 화면이 "조합"해서 쓰는 재사용 블록(page-header/search-area/list-section/task-section)
+   pages       → 단일 화면 전용 레이아웃(extract/task-apply/menu-management — 다른 화면이 재사용하지 않음) */
+
+@import url("./reset.css");
+@import url("./tokens/primitive.css");
+@import url("./tokens/semantic.css");
+@import url("./tokens/component.css");
+@import url("./base.css");
+@import url("./layout.css");
+
+@import url("./components/button.css");
+@import url("./components/checkbox.css");
+@import url("./components/radio.css");
+@import url("./components/input.css");
+@import url("./components/table.css");
+@import url("./components/pagination.css");
+@import url("./components/tabs.css");
+@import url("./components/modal.css");
+@import url("./components/alert.css");
+@import url("./components/lnb.css");
+@import url("./components/menu-tree.css");
+@import url("./components/staff-picker.css");
+
+@import url("./patterns/page-header.css");
+@import url("./patterns/search-area.css");
+@import url("./patterns/list-section.css");
+@import url("./patterns/task-section.css");
+@import url("./patterns/split-view.css");
+@import url("./patterns/sub-search-area.css");
+@import url("./patterns/detail-panel.css");
+@import url("./patterns/card.css");
+@import url("./patterns/section-title.css");
+@import url("./patterns/doc-viewer.css");
+
+@import url("./pages/extract.css");
+@import url("./pages/task-apply.css");
+@import url("./pages/menu-management.css");
+@import url("./pages/audit-log.css");
+@import url("./pages/dashboard.css");
+@import url("./pages/search.css");
+@import url("./pages/search-result.css");
+@import url("./pages/notice.css");
+@import url("./pages/notice-register.css");
+@import url("./pages/notice-detail.css");
+@import url("./pages/faq-register.css");
+
+@import url("pages/cross-form-verify.css");

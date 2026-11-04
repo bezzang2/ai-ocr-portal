@@ -1,0 +1,179 @@
+/* ==========================================================================
+   PRIMITIVE TOKENS — Layer 1
+   출처: Figma "광주은행 AI OCR 서류판독시스템"
+         fileKey BPDT1QEnlvJirJPbFo0qLl / node 481:5704(Color), 481:6522(Typography) 실측
+   규칙: 이 레이어(--color-*, --font-*)는 컴포넌트 CSS에서 직접 쓰지 않는다.
+         반드시 tokens/semantic.css 또는 tokens/component.css를 거쳐서 쓴다.
+   ========================================================================== */
+
+:root {
+  /* ---- Color / Blue (Primary) ---- */
+  --color-blue-50:  #e5f1ff;
+  --color-blue-100: #c2dcff;
+  --color-blue-200: #99c4ff;
+  --color-blue-300: #71acfe;
+  --color-blue-400: #4994fd;
+  --color-blue-500: #227cfb;
+  --color-blue-600: #0565ef;
+  --color-blue-700: #034fc4;
+  --color-blue-800: #013b98;
+  --color-blue-900: #00286c;
+
+  /* ---- Color / Red (Error) ---- */
+  --color-red-50:  #fce8eb;
+  --color-red-100: #fad6db;
+  --color-red-200: #f6bbc3;
+  --color-red-300: #f197a3;
+  --color-red-400: #ec6e7f;
+  --color-red-500: #e5384f;
+  --color-red-600: #d41c34;
+  --color-red-700: #b0172b;
+  --color-red-800: #901323;
+  --color-red-900: #750f1d;
+
+  /* ---- Color / Orange (Warning) ---- */
+  --color-orange-50:  #fef1e1;
+  --color-orange-100: #fde3c3;
+  --color-orange-200: #fbc787;
+  --color-orange-300: #f9ab4b;
+  --color-orange-400: #f79738;
+  --color-orange-500: #f48323;
+  --color-orange-600: #e2701a;
+  --color-orange-700: #c85d11;
+  --color-orange-800: #b44a08;
+  --color-orange-900: #9d3700;
+
+  /* ---- Color / Green (Success) ---- */
+  --color-green-50:  #dbf5e6;
+  --color-green-100: #c3efd5;
+  --color-green-200: #9ee5bc;
+  --color-green-300: #72d99d;
+  --color-green-400: #36c973;
+  --color-green-500: #279153;
+  --color-green-600: #207945;
+  --color-green-700: #1a6137;
+  --color-green-800: #144d2c;
+  --color-green-900: #0f3820;
+
+  /* ---- Color / Neutral (Gray) ---- */
+  --color-neutral-50:  #f1f1f4;
+  --color-neutral-100: #d6d9dd;
+  --color-neutral-200: #b8bbc2;
+  --color-neutral-300: #9a9fa8;
+  --color-neutral-400: #7d838f;
+  --color-neutral-500: #636873;
+  --color-neutral-600: #4a4e58;
+  --color-neutral-700: #32363e;
+  --color-neutral-800: #1d2025;
+  --color-neutral-900: #0a0b0e;
+
+  /* ---- Color / Common ---- */
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-alpha-white-60: #ffffff99;
+  --color-alpha-white-20: #ffffff33;
+  --color-alpha-black-60: #00000099;
+  --color-alpha-black-20: #00000033;
+
+  /* ---- Color / Chart(Light) — get_design_context(617:9069, 관리자>감사로그 KPI 카드) 실측.
+     Figma에 "light/gray/*", "light/blue/500" 등 앱 기본 팔레트(Blue/Red/Green/Neutral)와
+     별도 네임스페이스로 존재한다. blue/500만 우연히 값이 같고(#227cfb) 나머지는 실제로
+     다른 색이라(light/gray/100 #dfe2e9 vs neutral/100 #d6d9dd 등) 임의로 기존 팔레트에
+     매핑하지 않고 실측값 그대로 별도 이름으로 옮겼다 — 차트/통계 위젯 전용 팔레트로 추정. */
+  --color-chart-gray-100: #dfe2e9;
+  --color-chart-gray-300: #9ea5b6;
+  --color-chart-gray-400: #7e869b;
+  --color-chart-blue-500: #227cfb;
+  --color-chart-red-500: #cf5254;
+  --color-chart-green-600: #6fa824;
+
+  /* ---- Font family ----
+     Pretendard 자체 호스팅(아래 @font-face). 은행 인트라넷은 보안정책상 외부 CDN
+     (jsdelivr 등) 접근이 막히는 경우가 많으므로 운영 환경에서는 CDN import 대신
+     반드시 /fonts/Pretendard 로컬 파일을 사용한다. */
+  --font-family-base: "Pretendard", "Noto Sans KR", -apple-system, sans-serif;
+
+  /* ---- Font size — Figma Type/* 실측(12/13/14/16/18/32/36px 만 사용, 임의로 중간값
+     추가하지 말 것) ---- */
+  --font-size-12: 0.75rem;
+  --font-size-13: 0.8125rem;
+  --font-size-14: 0.875rem;
+  --font-size-16: 1rem;
+  --font-size-18: 1.125rem;
+  --font-size-32: 2rem;
+  --font-size-36: 2.25rem;
+
+  /* ---- Font weight (Figma 네이밍 접미사 R/M/SB/B) ---- */
+  --font-weight-regular:  400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* ---- Line height (실측: 대부분 1, Body-12* 계열만 1.4) ---- */
+  --line-height-none: 1;
+  --line-height-relaxed: 1.4;
+
+  /* ---- Letter spacing (실측: 대부분 -0.34px, Body-14M만 0) ---- */
+  --letter-spacing-tight: -0.34px;
+  --letter-spacing-none: 0;
+
+  /* ---- Spacing ----
+     출처: get_variable_defs를 실제 컴포넌트 인스턴스(459:858, 481:6576, 481:7531,
+     232:744)에 호출해 auto-layout padding/gap에 바인딩된 Variable을 그대로 추출.
+     ⚠️ 파일 안에 이름 체계가 다른 두 계열이 동시에 쓰이고 있다(디자이너가 UI 키트
+     컴포넌트를 가져다 쓰면서 자체 spacing/* 체계와 키트 원본 Size/*・sds-* 체계가
+     합쳐진 것으로 추정). 임의로 하나만 남기지 않고 실제 이름 그대로 전부 옮겼다 —
+     정리(단일화)는 디자인팀 결정 사항이라 코드에서 대신 판단하지 않는다. */
+  --spacing-sm:  6px;  /* Figma: spacing/sm */
+  --spacing-lg:  12px; /* Figma: spacing/lg */
+  --spacing-xl:  16px; /* Figma: spacing/xl */
+  --spacing-2xl: 36px; /* 사용자 지정 기준값(Figma Variable 아님) — 레이블+컴포넌트 그룹 간 가로 갭 */
+  --spacing-4xl: 40px; /* Figma: spacing/4xl */
+
+  --size-space-xs: 6px;  /* Figma: Size/Space-XS — spacing/sm과 값 동일(중복) */
+  --size-space-s:  8px;  /* Figma: Size/Space-S */
+  --size-pd-m:     8px;  /* Figma: Size/Pd-M */
+  --size-pd-xl:    16px; /* Figma: Size/Pd-XL — spacing/xl과 값 동일(중복) */
+
+  --sds-size-space-400: 16px; /* Figma: --sds-size-space-400 — spacing/xl・Size/Pd-XL과 값 동일(3중 중복) */
+
+  /* ---- Radius ----
+     출처: 위와 동일한 노드에서 get_variable_defs 실측.
+     ⚠️ 4px 값에 이름이 3개(radius/sm, Size/Radius-M, Corner/Extra-small) 존재 —
+     Spacing과 같은 이유의 중복. 실제 버튼 인스턴스는 Corner/Extra-small로 바인딩돼 있었다. */
+  --radius-sm:  4px;    /* Figma: radius/sm */
+  --radius-2xl: 16px;   /* Figma: radius/2xl */
+  --size-radius-s: 2px; /* Figma: Size/Radius-S */
+  --size-radius-m: 4px; /* Figma: Size/Radius-M — radius/sm과 값 동일(중복) */
+  --corner-extra-small: 4px; /* Figma: Corner/Extra-small — radius/sm・Size/Radius-M과 값 동일(중복), 실제 버튼에 바인딩된 이름 */
+  --size-radius-round: 9999px; /* Figma: Size/Radius-Round */
+
+  /* ---- Size(컨트롤 높이) ----
+     ⚠️ 이 값도 이름 2개(Size/Size-M, component-height/md)가 동일값(30px)으로 중복 정의돼 있다. */
+  --size-size-m: 30px;         /* Figma: Size/Size-M */
+  --component-height-md: 30px; /* Figma: component-height/md — Size/Size-M과 값 동일(중복) */
+
+  /* ---- Shadow/Effect ----
+     이 프로젝트에서 처음 확인된 그림자 값 — get_design_context(617:9070, 관리자>감사로그
+     KPI 카드) 실측. 그 전까지는(232:744 화면, 481:7531 버튼 컴포넌트) Effect Style/
+     box-shadow Variable이 전혀 검출되지 않아 미정의로 비워뒀었다. */
+  --shadow-card: 0px 1px 2px 0px rgba(15, 20, 30, 0.04), 0px 2px 8px 0px rgba(15, 20, 30, 0.05);
+
+  /* ---- Icon size ----
+     미정의: 아이콘 인스턴스(ic/16/*, ic/24/* 등)는 Variable이 아니라 컴포넌트별
+     리터럴 픽셀값(대부분 16px)으로 렌더링된다. 심지어 이름에 "24"가 붙은 아이콘도
+     실제로는 16px로 오버라이드돼 있어 이름과 실치수가 불일치하는 경우가 있었다 —
+     Figma 파일 쪽 데이터 정합성 문제로 보이며, 임의로 스케일을 만들지 않았다.
+     아이콘을 쓸 때마다 해당 인스턴스의 실제 렌더 크기를 개별 확인할 것을 권장한다. */
+}
+
+/* Pretendard 가변 폰트 — /fonts/Pretendard/ 에 아래 파일을 받아 넣을 것
+   (공식 배포: https://github.com/orioncactus/pretendard → dist/web/variable/) */
+@font-face {
+  font-family: "Pretendard";
+  src: url("../../fonts/Pretendard/PretendardVariable.woff2") format("woff2-variations"),
+       url("../../fonts/Pretendard/PretendardVariable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}

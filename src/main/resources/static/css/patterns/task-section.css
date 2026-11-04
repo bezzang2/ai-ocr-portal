@@ -1,0 +1,9 @@
+/* 결과 패널 안 섹션 공통 골격(제목 + 액션버튼 + 콘텐츠) — OCR업무신청/메뉴관리 등
+   "상세 패널" 계열 화면이 공통으로 쓰는 패턴.
+   출처: get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 493:12281) 실측 —
+   원래 components/task-apply.css에 있던 것을 분리했다(2026-08-18). */
+
+.task-section { display: flex; flex-direction: column; gap: var(--gap-sm); width: 100%; } /* 6px */
+.task-section__header { display: flex; align-items: center; justify-content: space-between; height: 30px; }
+.task-section__title { font-size: var(--font-size-14); font-weight: var(--font-weight-medium); color: var(--text-neutral-secondary); }
+.task-section__actions { display: flex; align-items: center; gap: var(--gap-sm); } /* 6px — 추가/삭제 버튼 묶음 */

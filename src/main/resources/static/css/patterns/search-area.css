@@ -1,0 +1,41 @@
+/* 검색조건 영역 — 목록형 화면들이 공통으로 쓰는 회색 박스 필터 패턴.
+   출처: get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 234:1152) 실측 —
+   원래 components/nav-search.css에 있던 것을 분리했다(2026-08-18). */
+
+.search-area {
+  display: flex;
+  align-items: flex-start; /* 필터 줄바꿈 시 새로고침/조회 버튼이 영역 상단에 고정되도록 */
+  gap: var(--gap-sm); /* 필터가 1줄에 다 들어갈 때 재설정/조회 버튼이 바로 옆에 붙도록(2026-08-25) —
+    이전엔 justify-content:space-between으로 항상 박스 오른쪽 끝까지 밀어냈었다. .search-area__row는
+    flex-grow가 없어(기본값 0) 내용만큼만 폭을 차지하므로, 다 들어가면 gap-sm만큼만 띄워 바로 옆에
+    붙고, 안 들어가면 .search-area__actions(flex-shrink:0)는 안 줄고 .search-area__row만 줄어들면서
+    자기 안에서(flex-wrap:wrap) 줄바꿈된다 — 그 결과 버튼은 항상 위쪽 오른쪽에 고정된 채 남는다
+    (OCR서식조회처럼 필터가 여러 줄일 때의 기존 동작 그대로 유지). */
+  background: var(--surface-neutral-faint); /* Neutral/50 #f1f1f4 */
+  border-radius: 8px; /* 실측 8px — 8px 전용 토큰 없어 리터럴 유지 */
+  padding: var(--gap-lg) 24px; /* 상하 12px(confirmed spacing/lg), 좌우 24px는 미확인(리터럴) */
+}
+.search-area__row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--gap-md) var(--gap-2xl); } /* 세로갭 8px, 가로갭 36px */
+.search-area__item { display: flex; align-items: center; gap: var(--gap-xl); }
+.search-area__label {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0442px;
+  color: var(--text-neutral-tertiary);
+  white-space: nowrap;
+}
+.search-area__label--required::after { content: "*"; color: var(--status-error-default); margin-left: 2px; } /* img/서식신청검색조건.png 실측 — 필수 항목 표시 */
+.search-area__combo { display: flex; align-items: center; gap: var(--gap-sm); } /* 검색어/신청일자처럼 입력 2개가 묶인 항목 */
+.search-area__tilde { font-size: var(--font-size-13); font-weight: var(--font-weight-medium); color: var(--text-neutral-tertiary); }
+.search-area__actions { display: flex; align-items: center; gap: var(--gap-sm); flex-shrink: 0; } /* 새로고침+조회 버튼 묶음 */
+
+/* ---- 상세정보 줄/항목 배치 — 관리자>메뉴관리(604:5737), 관리자>권한관리 부서정보(617:7214) 실측.
+   "레코드 상세값을 여러 줄로 나열"하는 용도라 각 줄은 줄바꿈 없이 균등폭 칼럼으로 나누고
+   (--row--detail/--item--equal), 라벨은 여러 줄에 걸쳐 세로로 정렬되도록 폭을 고정한다
+   (--label--fixed). 바깥 박스(흰 배경+보더+세로 스택)는 2026-08-20부터
+   patterns/detail-panel.css의 .detail-panel.detail-panel--column이 맡는다 — 이 세 클래스는
+   그 안의 줄/항목 레이아웃만 담당(과거엔 .search-area--detail이 바깥 박스까지 겸했으나
+   흰 배경+보더로 재실측돼 분리되면서 그 모디파이어는 삭제했다). ---- */
+.search-area__row--detail { flex-wrap: nowrap; gap: 24px; } /* 실측 24px — 기본 검색바(36px)와 다름 */
+.search-area__item--equal { flex: 1; min-width: 0; }
+.search-area__label--fixed { width: 56px; flex-shrink: 0; }

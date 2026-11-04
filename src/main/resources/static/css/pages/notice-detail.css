@@ -1,0 +1,73 @@
+/* ---- 커뮤니티 > 공지사항 상세 화면 전용 — get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl,
+   nodeId 775:3120) 실측. 페이지 헤더는 patterns/page-header.css의 .page-header(목록/삭제/수정
+   버튼 포함), 콘텐츠 좌우 240px 여백은 layout.css의 .content--narrow(공지사항 등록 화면과
+   공유), 기본정보 박스는 patterns/detail-panel.css의 .detail-panel.detail-panel--column, 그
+   안의 줄/항목 배치는 patterns/search-area.css의 .search-area__row--detail·__item, 섹션 제목은
+   patterns/section-title.css의 .section-title, "예약" 상태 배지는 커뮤니티>공지사항 "조회결과
+   목록" 표와 동일한 components/table.css의 .status-pill.status-pill--success-fill(2026-08-26,
+   기존에 별도로 만든 components/tag.css의 .tag.tag--success를 삭제하고 통일했다 — 단, 목록 표의
+   --fill 모디파이어는 <td>의 정해진 칼럼 폭을 꽉 채우는 용도라 폭이 정해지지 않은 이 위치의
+   inline-flex 그룹에서는 쓰지 않는다. 붙이면 채울 기준폭이 없어 거의 0으로 찌그러진다 — 대신
+   html에 style="width:48px" 인라인으로 이 화면 전용 폭을 준다. 컴포넌트 기본값(128px)을
+   전역으로 바꾸면 목록 표의 배지까지 커져버려 이 인스턴스에만 지역적으로 적용했다), 첨부
+   표는 components/table.css의 .table을 그대로
+   재사용한다. 값이 입력폼이 아니라 순수 텍스트인 조회 전용 화면이라 값 텍스트 스타일과 내용
+   박스(고정 높이 360px)만 이 화면 전용으로 새로 정의한다. ---- */
+
+.notice-detail { display: flex; flex-direction: column; gap: 16px; }
+.notice-detail__section { display: flex; flex-direction: column; gap: 6px; } /* 제목-본문 간격 — pages/extract.css의 .extract-basic과 동일 기준(6px) */
+
+/* 라벨 옆 순수 텍스트 값 — get_design_context(775:3120) 실측(제목/작성자/작성 일시,
+   공지 설정의 예약일시). Neutral/700, 13px medium — .search-area__label(Neutral/500)과
+   달리 "값"이라 진하다. */
+.notice-detail__value {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0442px;
+  color: var(--text-neutral-secondary);
+  white-space: nowrap;
+}
+
+/* ---- 내용 — get_design_context(775:3120) 실측. .detail-panel--column과 같은 흰 배경/보더/
+   radius8/패딩(12px 24px)이지만 고정 높이 360px에 안의 줄(라벨+텍스트)이 그 높이를 꽉 채우도록
+   flex:1로 늘어난다는 점이 다른 .detail-panel--column 사용처와 달라 이 화면 전용으로 새로
+   정의했다. ---- */
+.notice-detail__content-box {
+  display: flex;
+  flex-direction: column;
+  height: 360px;
+  padding: var(--gap-lg) 24px; /* 상하 12px, 좌우 24px — .detail-panel과 동일 기준 */
+  background: var(--surface-white);
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: 8px;
+}
+.notice-detail__content-row {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  align-items: flex-start;
+  gap: 24px;
+}
+.notice-detail__content-label {
+  display: flex;
+  align-items: center;
+  height: 30px;
+  width: 80px;
+  flex-shrink: 0;
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0442px;
+  color: var(--text-neutral-tertiary);
+}
+.notice-detail__content-text {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding-top: 6px;
+  overflow-y: auto;
+  font-size: var(--font-size-13);
+  letter-spacing: -0.0442px;
+  line-height: 1.4;
+  color: var(--text-neutral-secondary);
+  white-space: pre-wrap;
+}

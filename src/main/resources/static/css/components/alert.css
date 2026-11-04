@@ -1,0 +1,56 @@
+/* ---- Alert 컴포넌트 — get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 821:3955)
+   실측(Warning/Success/Error/Information 4종 전수 확인). 아직 실사용 화면에 배치되지 않아
+   html/common/modals.html의 다른 모달과 같은 트리거+.modal-overlay 형식으로 등록했다
+   (2026-08-26, .modal 대신 이 .alert를 오버레이 안에 넣는다). 아니오/예 버튼은
+   components/button.css의 .btn-outline-primary/.btn-primary + --sm 모디파이어를 그대로
+   재사용한다. ---- */
+.alert {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap-lg); /* 12px */
+  width: 300px;
+  min-height: 136px;
+  padding: 12px 16px;
+  background: var(--surface-white);
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: 8px;
+  box-shadow: 0 4px 4px rgba(131, 131, 131, 0.25); /* 실측 그림자, 대응 토큰 없음 */
+}
+.alert__header { display: flex; align-items: center; gap: 10px; width: 100%; }
+.alert__icon { width: 24px; height: 24px; flex-shrink: 0; }
+.alert__title {
+  flex: 1;
+  min-width: 0;
+  font-size: 16px;
+  font-weight: var(--font-weight-medium);
+  color: var(--text-neutral-secondary);
+  line-height: 1.4;
+  letter-spacing: -0.4px;
+}
+/* 닫기(x) — 24×24, 테두리/배경 없음. 다운로드한 애셋 자체가 이미 12px 캔버스 안에 여백을
+   포함하고 있어(Figma size-[12px] 그대로) 기존 .btn-icon--sm의 img 규칙(padding 2px 추가)을
+   재사용하면 이중으로 눌려 아이콘이 너무 작아진다 — 그래서 이 컴포넌트 전용으로 새로 정의했다. */
+.alert__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  border-radius: var(--size-radius-s);
+  cursor: pointer;
+}
+.alert__close:hover { background: var(--surface-neutral-faint); }
+.alert__close img { width: 12px; height: 12px; display: block; }
+.alert__message { display: flex; flex-direction: column; gap: var(--gap-lg); min-height: 40px; padding: 0 12px; width: 100%; }
+.alert__message p {
+  margin: 0;
+  font-size: var(--font-size-13);
+  color: var(--text-neutral-default);
+  letter-spacing: -0.0442px;
+  line-height: 1.4;
+}
+.alert__actions { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+.alert__actions img { width: 12px; height: 12px; flex-shrink: 0; } /* 버튼 안 아이콘 — 위 __close와 같은 이유로 기존 --sm 아이콘 규칙(padding 2px) 대신 직접 지정 */

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+<meta charset="UTF-8">
+<title>단말 mock | AI OCR 서류판독시스템</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" th:href="@{/css/main.css}">
+<link rel="stylesheet" th:href="@{/css/pages/device-mock.css}">
+</head>
+<!-- 단말(스캔프로그램) 대신 판독요청을 보내고 검증완료 결과를 받는 개발·데모 화면(DeviceMockController).
+     URL 은 data-* 로 넘기고 동작은 js/device-mock.js 가 맡는다. -->
+<body class="device-mock"
+      th:attr="data-workflows-url=@{/device-mock/workflows}, data-send-url=@{/device-mock/send},
+               data-inbox-url=@{/device-mock/terminal/inbox}, data-result-url=@{/module/ocr/result}">
+<main class="device-mock__main">
+  <header class="device-mock__header">
+    <h1>단말 mock</h1>
+    <p>스캔프로그램 대신 이미지를 올려 판독을 요청하고, 검증완료 결과를 받아 봅니다. 개발·데모 전용입니다.</p>
+  </header>
+
+  <form class="device-mock__card" data-send-form>
+    <h2>① 업무 선택 <button type="button" class="btn-neutral" data-workflow-reload>다시 불러오기</button></h2>
+    <div class="device-mock__workflows" data-workflow-list><span class="device-mock__muted">불러오는 중…</span></div>
+
+    <h2>② 이미지 선택</h2>
+    <input type="file" name="attach_file" class="input" accept="image/*,.tif,.tiff,.pdf" multiple data-file-input>
+    <ul class="device-mock__files" data-file-list></ul>
+
+    <h2>③ 요청 정보 <span class="device-mock__muted">가짜 값만 넣으세요</span></h2>
+    <div class="device-mock__grid">
+      <label>스캔 사번(scnpe_no)<input class="input" name="scnpe_no" value="26W0061" required></label>
+      <label>스캔 부점(scan_br_cd)<input class="input" name="scan_br_cd" value="0001" required></label>
+      <label>고객명(cus_nm)<input class="input" name="cus_nm" value="테스트고객" required></label>
+      <label>고객번호(cus_no)<input class="input" name="cus_no" value=""></label>
+      <label>업무구분(apl_dscd)<input class="input" name="apl_dscd" value=""></label>
+      <label>세부업무구분(sub_apl_dscd)<input class="input" name="sub_apl_dscd" value=""></label>
+      <label>요청시스템(req_sys)<input class="input" name="req_sys" placeholder="비우면 MOCK"></label>
+      <label>요청GUID(req_guid)<input class="input" name="req_guid" placeholder="비우면 자동 생성"></label>
+      <label>스캔일시(scan_dt)<input class="input" name="scan_dt" placeholder="비우면 지금(yyyyMMddHHmmss)"></label>
+    </div>
+
+    <div class="device-mock__actions">
+      <button type="submit" class="btn btn-primary" data-send-button>판독 요청 전송</button>
+      <span class="device-mock__status" role="status" data-send-status></span>
+    </div>
+    <div class="device-mock__result" data-send-result hidden></div>
+  </form>
+
+  <section class="device-mock__card">
+    <h2>④ 검증완료 수신함 <span class="device-mock__muted">포털이 단말로 보낸 결과(최근 20건, 재기동하면 비워짐)</span>
+      <button type="button" class="btn-neutral" data-inbox-reload>새로고침</button></h2>
+    <div data-inbox-list><span class="device-mock__muted">받은 결과가 없습니다.</span></div>
+  </section>
+</main>
+<script th:src="@{/js/device-mock.js}"></script>
+</body>
+</html>

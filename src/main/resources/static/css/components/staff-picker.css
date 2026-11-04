@@ -1,0 +1,11 @@
+/* 직원 검색 선택 입력칸(js/staff-picker.js) */
+.staff-picker { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.staff-picker__input { width: 100%; }
+.staff-picker__list { max-height: 220px; margin: 0; padding: 4px 0; overflow-y: auto; list-style: none; border: 1px solid var(--border-neutral-subtle); border-radius: 6px; background: #fff; }
+.staff-picker__list[hidden] { display: none; }
+.staff-picker__option { display: flex; align-items: baseline; gap: 8px; padding: 7px 10px; cursor: pointer; font-size: 13px; }
+.staff-picker__option[aria-selected="true"], .staff-picker__option:hover { background: var(--surface-primary-faint); }
+.staff-picker__name { flex: none; font-weight: 600; color: var(--text-neutral-secondary); }
+.staff-picker__meta { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--text-neutral-tertiary); }
+.staff-picker__status { margin: 0; font-size: 12px; color: var(--text-neutral-tertiary); }
+.staff-picker__status[hidden] { display: none; }

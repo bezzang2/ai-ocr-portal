@@ -46,14 +46,14 @@ public class BaseResponse {
     }
 
     public static BaseResponseBody getSuccessBody(HttpStatus status, String message, Object data){
-        return BaseResponseBody.builder()
-                .status(status.value())
-                .success(true)
-                .message(message)
-                .errorMessage("")
-                .data(data)
-                .timestamp(DateUtil.getCurrentDateTime("yyyy-MM-dd hh:mm:ss"))
-                .build();
+    	 return BaseResponseBody.builder()
+                 .status(status.value())
+                 .success(true)
+                 .message(message)
+                 .errorMessage("")
+                 .data(data)
+                 .timestamp(DateUtil.getCurrentDateTime("yyyy-MM-dd hh:mm:ss"))
+                 .build();
     }
 
     public static BaseResponseBody getErrorBody(HttpStatus status, String message){
@@ -61,15 +61,14 @@ public class BaseResponse {
     }
 
     public static BaseResponseBody getErrorBody(HttpStatus status, String message, List<ObjectError> errors){
-
-        return BaseResponseBody.builder()
-                .status(status.value())
-                .success(false)
-                .message(message)
-                .errorMessage(convertString(errors))
-                .data(null)
-                .timestamp(DateUtil.getCurrentDateTime("yyyy-MM-dd hh:mm:ss"))
-                .build();
+    	 return BaseResponseBody.builder()
+                 .status(status.value())
+                 .success(false)
+                 .message(message)
+                 .errorMessage(convertString(errors))
+                 .data(null)
+                 .timestamp(DateUtil.getCurrentDateTime("yyyy-MM-dd hh:mm:ss"))
+                 .build();
     }
 
     private static String convertString(List<ObjectError> errors){

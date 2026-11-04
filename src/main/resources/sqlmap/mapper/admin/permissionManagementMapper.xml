@@ -1,0 +1,271 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.agilesoda.module.admin.mapper.PermissionManagementMapper">
+
+	<select id="searchRoleAuth" resultType="com.agilesoda.module.admin.vo.PermissionManagementResVO">
+		/* 관리자 (권한관리) 역할권한 조회 쿼리 (searchRoleAuth)*/
+		select ROLE_ID 		as roleId
+		,ROLE_NM   			as roleNm
+		,USE_YN				as useYn
+		from ocuoc_ROLEM_M
+		where 1=1
+		<if test="roleId != null and roleId != ''">
+			and ROLE_ID like '%'||#{roleId}||'%'
+		</if>
+		<if test="roleNm != null and roleNm != ''">
+			and ROLE_NM like '%'||#{roleNm}||'%'
+		</if>
+	</select>
+
+	<insert id="saveRole">
+		/* 관리자 (권한관리) 역할권한 저장 쿼리 (saveRole)*/
+		MERGE INTO OCUOC_ROLEM_M A
+			USING (
+				SELECT
+					#{roleId} as ROLE_ID
+					 ,#{roleNm} as ROLE_NM
+					 ,#{useYn} as USE_YN
+					 ,#{frstRegEmpno} as FRST_REG_EMPNO
+				FROM DUAL
+			)B
+			ON (A.ROLE_ID = B.ROLE_ID
+				)
+			WHEN MATCHED THEN
+				UPDATE SET
+					A.USE_YN = B.USE_YN
+			WHEN NOT MATCHED THEN
+				INSERT
+					(
+					 ROLE_ID
+						, ROLE_NM
+						, USE_YN
+						, FRST_REG_EMPNO
+						, FRST_REG_DTTM
+						)
+					VALUES
+						(
+							B.ROLE_ID
+						, B.ROLE_NM
+						, B.USE_YN
+						, B.FRST_REG_EMPNO
+						, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+						)
+	</insert>
+
+	<delete id="deleteRole">
+		/* 관리자 (권한관리) 역할권한 삭제 쿼리 (deleteRole)*/
+		DELETE
+		FROM ocuoc_ROLEM_M
+		WHERE ROLE_ID = #{roleId}
+	</delete>
+
+	<delete id="deleteRoleButtion">
+		/* 관리자 (권한관리:전체) 버튼권한 삭제 쿼리 (deleteRoleButtion)*/
+		DELETE
+		FROM ocuoc_USBTN_m
+		WHERE ROLE_ID = #{roleId}
+	</delete>
+
+	<delete id="deleteRoleMenu">
+		/* 관리자 (권한관리:전체) 메뉴권한 삭제 쿼리 (deleteRoleMenu)*/
+		DELETE
+		FROM ocuoc_usmua_r
+		WHERE ROLE_ID = #{roleId}
+	</delete>
+
+	<delete id="deleteRoleUser">
+		/* 관리자 (권한관리:전체) 사용자권한 삭제 쿼리 (deleteRoleUser)*/
+		DELETE
+		FROM ocuoc_USROL_R
+		WHERE ROLE_ID = #{roleId}
+	</delete>
+
+	<select id="getUserMenuList" parameterType="string" resultType="com.agilesoda.module.admin.vo.PermissionUserMenuVO">
+		/* 관리자 (권한관리) 메뉴권한 조회 쿼리 (getUserMenuList)*/
+		select
+			M.MENU_ID  				AS menuId
+			 , M.MENU_NM				AS menuNm
+			 , M.UPRN_MENU_ID			AS uprnMenuId
+			 , M.MENU_LEVEL			AS menuLevel
+			 , M.MENU_SER				AS menuSer
+			 , COALESCE(U.USE_YN,'N') 	AS useYn
+		FROM OCUOC_MENUN_M M
+				 LEFT JOIN OCUOC_USMUA_R U
+						   ON U.MENU_ID = M.MENU_ID
+							   AND U.ROLE_ID = #{roleId}
+		WHERE 1=1
+		  AND M.USE_YN = 'Y'
+		ORDER BY M.MENU_LEVEL, M.MENU_SER, M.MENU_ID
+
+	</select>
+
+	<delete id="deleteMenuParmission">
+		/* 관리자 (권한관리:단일) 메뉴권한 삭제 쿼리 (deleteMenuParmission)*/
+		DELETE
+		FROM ocuoc_usmua_r
+		WHERE ROLE_ID = #{roleId}
+	</delete>
+
+	<insert id="insertMenuParmission">
+		/* 관리자 (권한관리) 메뉴권한 저장 쿼리 (insertMenuParmission)*/
+		INSERT INTO ocuoc_usmua_r
+		(
+			ROLE_ID
+		, MENU_ID
+		, USE_YN
+		, FRST_REG_EMPNO
+		, FRST_REG_DTTM
+		)
+		VALUES
+			(
+				#{roleId}
+			, #{menuId}
+			, 'Y'
+			, #{frstRegEmpno}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			)
+	</insert>
+
+	<select id="selectUserAuth" resultType="com.agilesoda.module.admin.vo.PermissionManagementUserResVO">
+		/* 관리자 (권한관리) 사용자권한 조회 쿼리 (selectUserAuth)*/
+		select R.ROLE_ID 		as roleId
+		,R.USER_ID   			as userId
+		,M.EMP_KOR_FLNM		    AS empKorFlnm
+		,M.HRA_PSTN_NM			AS hraPstnNm
+		,B.BR_NM				AS brNm
+		,R.USE_YN				as useYn
+		,R.FRST_REG_EMPNO 		as frstRegEmpno
+		from ocuoc_USROL_R R
+		join OCUOC_USERI_M M on R.USER_ID = M.EMPNO
+		JOIN OCUOC_DPRMI_M B ON M.BLNG_BRCD = B.BR_CD
+		where 1=1
+		<if test="roleId != null and roleId != ''">
+			and ROLE_ID = #{roleId}
+		</if>
+	</select>
+
+	<insert id="saveUser">
+		/* 관리자 (권한관리) 사용자권한 저장 쿼리 (saveUser)*/
+		MERGE INTO OCUOC_USROL_R A
+		    USING (
+		        	SELECT
+		        	     #{roleId} as ROLE_ID
+		        	    ,#{userId} as USER_ID
+						,#{useYn} as USE_YN
+		        	    ,#{frstRegEmpno} as FRST_REG_EMPNO
+		        	FROM DUAL
+				)B
+		    ON (    A.ROLE_ID = B.ROLE_ID
+		        AND A.USER_ID = B.USER_ID
+		        )
+		WHEN MATCHED THEN
+		    UPDATE SET
+		        A.USE_YN = B.USE_YN
+		WHEN NOT MATCHED THEN
+			INSERT
+			(
+				ROLE_ID
+			, USER_ID
+			, USE_YN
+			, FRST_REG_EMPNO
+			, FRST_REG_DTTM
+			)
+			VALUES
+				(
+					B.ROLE_ID
+				, B.USER_ID
+				, B.USE_YN
+				, B.FRST_REG_EMPNO
+				, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+				)
+	</insert>
+
+	<delete id="deleteUser">
+		/* 관리자 (권한관리:단일) 사용자권한 삭제 쿼리 (deleteUser)*/
+		DELETE
+		FROM ocuoc_USROL_R
+		WHERE ROLE_ID = #{roleId}
+		  and USER_ID = #{userId}
+	</delete>
+
+	<select id="selectUserBtnLsit" parameterType="string"
+			resultType="com.agilesoda.module.admin.vo.PermissionUserBtnResVO">
+		/* 관리자 (권한관리) 버튼권한 조회 쿼리 (selectUserBtnLsit)*/
+		SELECT
+			B.BTN_CD 		AS btnCd
+			 , B.BTN_NM 		AS btnNm
+			 , CASE WHEN U.BTN_CD IS NOT NULL
+						THEN 'Y' ELSE 'N'
+			END AS useYn
+			 , B.AREA_CD 	AS areaCd
+			 , B.ACTION_CD 	AS actionCd
+			 , B.IOCN_URL 	AS iocnUrl
+		FROM ocuoc_buttn_m B
+				 LEFT JOIN ocuoc_USBTN_m U
+						   ON U.BTN_CD = B.BTN_CD
+							   AND U.MENU_ID = B.MENU_ID
+							   AND U.ROLE_ID = #{roleId}
+		WHERE B.MENU_ID = #{menuId}
+		  AND B.USE_YN = 'Y'
+		ORDER BY B.BTN_CD
+	</select>
+
+	<delete id="deleteUserBtnParmission">
+		/* 관리자 (권한관리:단일) 버튼권한 삭제 쿼리 (deleteUserBtnParmission)*/
+		DELETE
+		FROM ocuoc_USBTN_m
+		WHERE ROLE_ID = #{roleId}
+		  and MENU_ID = #{menuId}
+	</delete>
+
+	<insert id="insertUserBtnParmission">
+		/* 관리자 (권한관리) 버튼권한 저장 쿼리 (insertUserBtnParmission)*/
+		INSERT INTO ocuoc_USBTN_m
+		(
+			ROLE_ID
+		, MENU_ID
+		, BTN_CD
+		, USE_YN
+		, FRST_REG_EMPNO
+		, FRST_REG_DTTM
+		)
+		VALUES
+			(
+				#{roleId}
+			, #{menuId}
+			, #{btnCd}
+			, 'Y'
+			, #{frstRegEmpno}
+			, TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			)
+	</insert>
+
+	<select id="searchUserList" resultType="com.agilesoda.module.admin.vo.CommonUserListVO">
+		/* 사용자정보 모달 조회 쿼리 (searchUserList)*/
+		select A.EMPNO			AS empNo
+			 , A.EMP_KOR_FLNM	AS empKorFlnm
+		     , A.BLNG_BRCD		AS blngBrcd
+			 , B.BR_NM			AS brNm
+		     , A.BSORGCD		AS bsorgcd
+		     , A.EMP_JOBCLS_CD	AS empJobclsCd
+		     , (SELECT CD_NM FROM OCUOC_CCDTL_L WHERE CD_GROUP = '217000' AND CD_VAL = A.EMP_JOBCLS_CD) AS empJobclsNm
+		     , A.HRA_PSTN_CD	AS hraPstnCd
+		     , A.HRA_PSTN_NM	AS hraPstnNm
+		     , A.RETM_DT		AS retmDt
+		     , A.AUT_GRP_CD		AS autGrpCd
+		     , A.OJBB_EMP_DVCD	AS ojbbEmpDvcd
+		     , A.WORK_STCD		AS workStcd
+		     , A.BRDD 			AS brdd
+		from OCUOC_USERI_M A
+		    ,OCUOC_DPRMI_M B
+		where A.BLNG_BRCD = B.BR_CD
+		<if test="empNo != null and empNo != ''">
+			and A.EMPNO like '%'||#{empNo}||'%'
+		</if>
+		<if test="empKorFlnm != null and empKorFlnm != ''">
+			and A.EMP_KOR_FLNM like '%'||#{empKorFlnm}||'%'
+		</if>
+	</select>
+
+</mapper>

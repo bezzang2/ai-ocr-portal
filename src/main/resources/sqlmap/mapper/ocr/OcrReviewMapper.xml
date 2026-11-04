@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 판독결과 검토의 Portal 데이터(사용자·역할). 검토 상태·확인값은 Agent API 로 다룬다. -->
+<mapper namespace="com.agilesoda.module.ocr.mapper.OcrReviewMapper">
+
+	<select id="selectUserNm" resultType="string">
+		/* [판독결과 검토] 조회 - selectUserNm */
+		SELECT U.EMP_KOR_FLNM
+		  FROM ocuoc_useri_m U
+		 WHERE U.EMPNO = #{userId}
+	</select>
+
+	<!-- 담당자·검증자·저장자 이름 -->
+	<select id="selectUserNmList" resultType="com.agilesoda.module.ocr.vo.OcrReviewerVO">
+		/* [판독결과 검토] 조회 - selectUserNmList */
+		SELECT U.EMPNO        AS userId,
+		       U.EMP_KOR_FLNM AS userNm
+		  FROM ocuoc_useri_m U
+		 WHERE U.EMPNO IN
+		<foreach collection="userIds" item="userId" open="(" separator="," close=")">
+			#{userId}
+		</foreach>
+	</select>
+
+	<select id="countAssignAuthority" resultType="int">
+		/* [판독결과 검토] 담당자 지정 권한 - countAssignAuthority */
+		SELECT COUNT(*)
+		  FROM ocuoc_useri_m U
+		 WHERE U.EMPNO = #{userId}
+		   AND (
+		       <choose>
+		         <when test="positionCodes != null and !positionCodes.isEmpty()">
+		           U.HRA_PSTN_CD IN
+		           <foreach collection="positionCodes" item="code" open="(" separator="," close=")">#{code}</foreach>
+		         </when>
+		         <otherwise>1 = 0</otherwise>
+		       </choose>
+		       <if test="roles != null and !roles.isEmpty()">
+		       OR EXISTS (SELECT 1
+		                    FROM ocuoc_usrol_r R
+		                   WHERE R.USER_ID = U.EMPNO
+		                     AND NVL(R.USE_YN, 'Y') = 'Y'
+		                     AND R.ROLE_ID IN
+		                     <foreach collection="roles" item="role" open="(" separator="," close=")">#{role}</foreach>)
+		       </if>
+		   )
+	</select>
+</mapper>

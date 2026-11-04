@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.agilesoda.module.common.CommonMapper">
+
+    <select id="selectListComCode" parameterType="string" resultType="map">
+		SELECT CD_VAL
+			 , CD_NM
+		FROM OCUOC_CCDTL_L
+		WHERE 1=1
+		  AND CD_GROUP = #{groupCd}
+		  AND UZ_YN = 'Y'
+		ORDER BY LNUP_SER
+	</select>
+
+	<select id="selectListEmpInfo" parameterType="map" resultType="map">
+		SELECT T1.EMPNO
+		    , T1.EMP_KOR_FLNM
+		  , T1.BLNG_BRCD
+		  , T1.BSORGCD
+		  , T1.EMP_JOBCLS_CD
+		  , T1.HRA_PSTN_CD
+		  , T1.HRA_PSTN_NM
+		  , T2.BR_NM
+		FROM OCUOC_USERI_M T1
+		    INNER JOIN OCUOC_DPRMI_M T2 ON T1.BLNG_BRCD = T2.BR_CD
+		WHERE 1=1
+		    <choose>
+		        <when test="gubun == 1">
+		          AND T1.EMP_KOR_FLNM LIKE '%' || #{keyword} || '%'
+		        </when>
+		        <when test="gubun == 2">
+		          AND T2.BR_NM LIKE '%' || #{keyword} || '%'
+		        </when>
+		    </choose>
+		ORDER BY T1.EMP_KOR_FLNM, T1.EMPNO
+		<if test="limit != null">
+		FETCH FIRST #{limit} ROWS ONLY
+		</if>
+	</select>
+
+	<insert id="registApproval" parameterType="ocuocAprvlEntity"  useGeneratedKeys="false" keyProperty="aprvlId" keyColumn="APRVL_ID">
+		<selectKey keyProperty="aprvlId" resultType="long" order="BEFORE">
+			SELECT SQ_OCUOC_APRVL_L_01.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO OCUOC_APRVL_L( APRVL_ID
+			 , APPC_ID
+			 , APPC_TYP_CD
+			 , APRVL_SEQNO
+			 , APOF_ID
+			 , APPC_STA_CD
+			 , RGSR_ID
+			 , REG_DT
+        )
+		VALUES(
+			#{aprvlId}
+			, #{appcId}
+			, #{appcTypCd}
+			, #{aprvlSeqno}
+			, #{apofId}
+			, 'WAIT'
+			, #{userId}
+			, SYSDATE
+		)
+	</insert>
+
+	<select id="commonMenuList" parameterType="string" resultType="com.agilesoda.module.common.entity.CommonMenuEntity">
+		/* 최초 메뉴 조회 commonMenuList */
+		select M.MENU_ID         as menuId
+			 , M.MENU_NM         as menuNm
+			 , M.MENU_LEVEL      as menuLevel
+			 , M.UPRN_MENU_ID    as uprnMenuId
+			 , (SELECT MENU_NM FROM OCUOC_MENUN_M WHERE MENU_ID = M.UPRN_MENU_ID) AS uprnMenuNm
+			 , M.MENU_SER        as menuSer
+			 , M.MENU_URL        as menuUrl
+			 , M.USE_YN          as useYn
+			 , M.LAST_CHNG_EMPNO as lastChngEmpno
+			 , M.LAST_CHNG_DTTM  as lastChngDttm
+		from OCUOC_MENUN_M m
+		where M.USE_YN = 'Y'
+		  AND (#{userId} = 'TEST'
+			OR EXISTS(SELECT 1
+					  FROM OCUOC_USERI_M UM
+					  WHERE UM.EMPNO = #{userId})
+			)
+		  and (EXISTS(SELECT 1
+					  FROM OCUOC_USROL_R R
+							   JOIN OCUOC_ROLEM_M RM ON RM.ROLE_ID = R.ROLE_ID
+							   join OCUOC_USMUA_R U on R.ROLE_ID = U.ROLE_ID
+					  WHERE R.USER_ID = #{userId}
+						AND U.MENU_ID = M.MENU_ID
+						AND U.USE_YN = 'Y'
+						AND RM.USE_YN = 'Y'
+						AND R.USE_YN = 'Y')
+			OR EXISTS(SELECT 1
+					  FROM OCUOC_USROL_R R
+							   JOIN OCUOC_ROLEM_M RM ON RM.ROLE_ID = R.ROLE_ID
+							   join OCUOC_USMUA_R U on R.ROLE_ID = U.ROLE_ID
+							   JOIN OCUOC_MENUN_M C ON C.MENU_ID = U.MENU_ID
+					  WHERE R.USER_ID = #{userId}
+						AND U.USE_YN = 'Y'
+						AND R.USE_YN = 'Y'
+						AND RM.USE_YN = 'Y'
+						AND C.UPRN_MENU_ID = M.MENU_ID)
+			)
+			START WITH M.MENU_LEVEL = 1
+		CONNECT BY PRIOR M.MENU_ID = M.UPRN_MENU_ID
+		order SIBLINGS BY M.MENU_SER
+	</select>
+
+	<select id="commonRoleButtonList"  parameterType="string" resultType="com.agilesoda.module.common.entity.CommonMenuEntity">
+		/* 최초 버튼권한 조회 commonRoleButtonList */
+		SELECT DISTINCT
+			B.BTN_CD 	AS btnCd
+					  ,B.BTN_NM 		AS btnNm
+					  ,B.AREA_CD 	AS areaCd
+					  ,B.ACTION_CD 	AS actionCd
+					  ,B.IOCN_URL 	AS iocnUrl
+					  ,B.MENU_ID		AS menuId
+					  ,B.BTN_SEQ     AS btnSeq
+		FROM OCUOC_USROL_R A
+				 JOIN OCUOC_ROLEM_M R ON A.ROLE_ID = R.ROLE_ID
+				 join ocuoc_USBTN_m U on a.ROLE_ID = U.ROLE_ID
+				 join ocuoc_buttn_m B on U.MENU_ID = B.MENU_ID and U.BTN_CD = B.BTN_CD
+		where A.USER_ID = #{userId}
+		  and A.USE_YN = 'Y'
+		  and U.USE_YN = 'Y'
+		  and B.USE_YN = 'Y'
+		  and R.USE_YN = 'Y'
+		ORDER BY B.BTN_SEQ
+	</select>
+
+
+	<select id="selectUserInfo"  parameterType="string" resultType="com.agilesoda.module.admin.vo.SsoLoginUserVO">
+		/* 최초 사용자정보 조회 selectUserInfo */
+		select A.EMPNO			AS userId
+			 , A.EMP_KOR_FLNM	AS userName
+			 , A.BLNG_BRCD		AS deptCode
+			 , B.BR_NM			AS deptName
+		from OCUOC_USERI_M A
+				 JOIN OCUOC_DPRMI_M B ON A.BLNG_BRCD = B.BR_CD
+		where 1=1
+		  and A.EMPNO = #{userId}
+	</select>
+
+	<insert id="insertExcelDownloadHistory" parameterType="com.agilesoda.module.common.entity.CommonExcelEntity">
+		/*  메뉴화면통계텝 엑셀다운 사유 저장 (insertExcelDownloadHistory) */
+		INSERT INTO OCUOC_EXDWN_H
+		( EXDWN_ID
+		, USER_ID
+		, MENU_ID
+		, DOWN_REASON
+		, FRST_REG_EMPNO
+		, FRST_REG_DTTM)
+		VALUES ( SQ_OCUOC_EXDWN_H_01.NEXTVAL
+			   , #{userId}
+			   , #{menuId}
+			   , #{downloadReason}
+			   , #{frstRegEmpno}
+			   , TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			   )
+	</insert>
+</mapper>

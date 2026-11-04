@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+  <meta charset="UTF-8">
+  <title>서식간 규칙 관리 | AI OCR 서류판독시스템</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+    <!-- 규칙을 문장처럼 만들고 저장 전에 실제 판독값으로 확인한다. 데이터는 CrossRuleDefController 를 fetch 로 받는다. -->
+    <main class="content" id="crb-page" th:attr="data-wk-id=${wkId},data-user-id=${userId}">
+      <div class="page-header crb-head">
+        <h1 class="page-header__title">서식간 규칙 관리</h1>
+      </div>
+      <form class="crb-filter" method="get" th:action="@{/module/apply/crossRule}">
+        <input type="hidden" name="menuId" th:value="${menuId}">
+        <label class="crb-label" for="crb-wk">업무</label>
+        <select id="crb-wk" name="wkId" class="input">
+          <option th:each="wk : ${workflowList}" th:value="${wk.wkId}" th:text="${wk.wkNm}" th:selected="${wk.wkId == wkId}">업무명</option>
+        </select>
+      </form>
+      <div id="crb-root"><p class="crb-empty">불러오는 중입니다.</p></div>
+      <template th:replace="~{module/ocr/cross-verify-detail :: cardTemplate}"></template>
+    </main>
+<link rel="stylesheet" th:href="@{/css/pages/cross-rule-builder.css}">
+<div th:insert="~{common/commonModals :: commonModals}"></div>
+<div id="crb-toast" class="crb-toast" role="status" aria-live="polite"></div>
+<script th:src="@{/js/modal.js}"></script>
+<script th:src="@{/js/doc-viewer.js}"></script>
+<script th:src="@{/js/cross-rule-cards.js}"></script>
+<script th:src="@{/js/cross-rule-sentence.js}"></script>
+<script th:src="@{/js/cross-rule-starters.js}"></script>
+<script th:src="@{/js/list-pagination.js}"></script>
+<script th:src="@{/js/cross-rule-builder.js}"></script>
+<script th:src="@{/js/lnb.js}"></script>
+</body>
+</html>

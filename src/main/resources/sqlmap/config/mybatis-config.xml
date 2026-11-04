@@ -10,5 +10,29 @@
 
     <typeAliases>
         <typeAlias alias="map" type="java.util.Map"/>
+        
+        <!-- table entity -->
+        <typeAlias alias="ocuocBzwkaEntity" type="com.agilesoda.module.apply.entity.OcuocBzwkaEntity" />
+        <typeAlias alias="ocuocBzwkfEntity" type="com.agilesoda.module.apply.entity.OcuocBzwkfEntity" />
+        <typeAlias alias="ocuocBzaffEntity" type="com.agilesoda.module.apply.entity.OcuocBzaffEntity" />
+        <typeAlias alias="ocuocBzafrEntity" type="com.agilesoda.module.apply.entity.OcuocBzafrEntity" />
+        <typeAlias alias="ocuocBzaafEntity" type="com.agilesoda.module.apply.entity.OcuocBzaafEntity" />
+        <typeAlias alias="ocuocBzscnEntity" type="com.agilesoda.module.apply.entity.OcuocBzscnEntity" />
+
+        <typeAlias alias="ocuocAprvlEntity" type="com.agilesoda.module.common.entity.OcuocAprvlEntity" />
+
+        <typeAlias alias="boardEntity" type="com.agilesoda.sample.entity.BoardEntity" />
+        <typeAlias alias="boardAttachEntity" type="com.agilesoda.sample.entity.BoardAttachEntity" />
+        
+        <!-- request entity -->
+        <typeAlias alias="userInqDto" type="com.agilesoda.sample.dto.UserInqDto" />
+        <typeAlias alias="boardInqDto" type="com.agilesoda.sample.dto.BoardInqDto" />
+        <typeAlias alias="taskInfoReqEntity" type="com.agilesoda.module.apply.entity.TaskInfoReqEntity" />
+        <typeAlias alias="taskListResEntity" type="com.agilesoda.module.apply.entity.TaskListResEntity" />
+        
+        <!-- response entity -->
+        <typeAlias alias="userResDto" type="com.agilesoda.sample.dto.UserResDto" />
+        <typeAlias alias="boardResDto" type="com.agilesoda.sample.dto.BoardResDto" />
+        <typeAlias alias="taskInfoResEntity" type="com.agilesoda.module.apply.entity.TaskInfoResEntity" />
     </typeAliases>
 </configuration>

@@ -1,0 +1,221 @@
+/* A 시안: 서식 선택 → 원본 대조 → 확인값 수정 → 검증완료. */
+/* 검토 알림만 B4 시안 적용. 다른 업무의 공통 모달에는 영향을 주지 않는다. */
+.ocr-review-page .modal-overlay:has(> .alert) { padding: 20px 16px; background: #14223880; }
+.ocr-review-page .alert { position: relative; width: 480px; max-width: 100%; max-height: calc(100dvh - 40px); overflow-y: auto; min-height: 0; padding: 48px 24px 32px; gap: 24px; align-items: center; border: 0; border-radius: 16px; box-shadow: 0 16px 48px #14223830; }
+.ocr-review-page .alert__header { width: 80px; height: 80px; flex-shrink: 0; justify-content: center; border-radius: 50%; background: #e7efff; }
+.ocr-review-page .alert__title { display: none; }
+.ocr-review-page .alert__icon { width: 36px; height: 36px; }
+.ocr-review-page #warning-alert-modal .alert__icon { display: none; }
+.ocr-review-page #warning-alert-modal .alert__header::after { content: ''; width: 16px; height: 29px; border: solid #145cb6; border-width: 0 5px 5px 0; border-radius: 2px; transform: translateY(-4px) rotate(45deg); }
+.ocr-review-page .alert__close { position: absolute; top: 12px; right: 12px; width: 44px; height: 44px; border-radius: 8px; }
+.ocr-review-page .alert__close img { width: 20px; height: 20px; }
+.ocr-review-page .alert__message { padding: 0; min-height: 0; }
+.ocr-review-page .alert__message p { color: #102342; font-size: 22px; font-weight: 600; line-height: 1.45; letter-spacing: -.5px; text-align: center; overflow-wrap: anywhere; white-space: pre-line; }
+.ocr-review-page .alert__actions { gap: 12px; }
+.ocr-review-page .alert__actions button { flex: 1; width: auto !important; min-width: 0; min-height: 48px; height: auto; padding: 12px 16px; border: 0; border-radius: 9px; font-size: 16px; font-weight: 500; line-height: 1.5; cursor: pointer; background: #155cb5; color: #fff; }
+.ocr-review-page .alert__actions #alertNo { background: #e9edf6; color: #102342; }
+.ocr-review-page .alert__actions img { display: none; }
+.ocr-review-page .alert__actions button:hover { background: #104d99; }
+.ocr-review-page .alert__actions #alertNo:hover { background: #dce4f2; }
+.ocr-review-page .alert button:focus-visible { outline: 3px solid #397bc6; outline-offset: 3px; }
+@media (max-width: 480px) { .ocr-review-page .alert { padding: 44px 20px 24px; gap: 20px; } .ocr-review-page .alert__message p { font-size: 20px; } }
+.ocr-portal .gnb .breadcrumb__item--current { display: none; }
+.ocr-portal .gnb__review-help { display: inline-flex; position: relative; }
+.ocr-portal [data-review-help] { display: inline-flex; align-items: center; gap: 6px; padding: 5px 0; border: 0; background: transparent; color: var(--text-neutral-secondary); font: inherit; font-size: var(--font-size-13); font-weight: var(--font-weight-medium); cursor: help; white-space: nowrap; }
+.ocr-portal [data-review-help] > svg { color: var(--text-neutral-tertiary); }
+.ocr-portal .gnb__review-tooltip { position: absolute; top: calc(100% + 9px); left: 0; width: 280px; padding: 12px 14px; background: #fff; border: 1px solid #d7e0eb; border-radius: 6px; box-shadow: 0 4px 14px #1c355018; color: #526b87; font-size: 12px; line-height: 1.7; z-index: 10; white-space: normal; }
+.ocr-portal .gnb__review-tooltip[hidden] { display: none; }
+.ocr-portal .ocr-review {
+  --surface-primary-default: #225f9f;
+  --text-primary-medium: #225f9f;
+  --border-primary-default: #3a7ac6;
+  --surface-neutral-faint: #f8fafd;
+  --border-neutral-subtle: #dfe6ef;
+  --surface-primary-faint: #f0f6ff;
+  --border-primary-subtle: #81abdd;
+  --text-neutral-secondary: #263b55;
+  --text-neutral-tertiary: #75879f;
+  padding: 20px 24px 12px;
+  gap: 12px;
+  background: #eef3f9;
+}
+.ocr-review__accessible-heading { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ocr-portal .ocr-review .page-header__title { font-size: 25px; font-weight: 750; color: #1e2e43; letter-spacing: -1px; }
+.ocr-portal .ocr-review__description { font-size: 12px; }
+.ocr-portal .ocr-review__context { flex: 1 1 620px; min-width: 0; padding: 0; border: 0; border-radius: 0; background: transparent; gap: 12px; flex-wrap: wrap; }
+.ocr-portal .ocr-review__document-icon { display: none; }
+.ocr-portal .ocr-review__document-name { flex-direction: row; align-items: center; gap: 8px; }
+.ocr-portal .ocr-review__document-name strong { font-size: 12px; color: #40546d; }
+.ocr-portal .ocr-review__summary { font-size: 11px; }
+.ocr-portal .ocr-review__change-nav { font-size: 10px; }
+.ocr-portal .ocr-review__context .btn-neutral { min-height: 26px; font-size: 10px; background: #f8fafd; }
+.ocr-portal .ocr-review .split-view__body { min-height: 480px; border-radius: 9px; background: #fff; box-shadow: 0 3px 10px #1c355006; }
+.ocr-portal .ocr-review .file-list { background: #f9fbfe; }
+.ocr-portal .ocr-review .file-list__header { min-height: 51px; padding: 10px 14px; font-size: 12px; }
+.ocr-portal .ocr-review__file-count { background: transparent; color: #8393aa; }
+.ocr-portal .ocr-review .file-list__items { gap: 3px; padding: 8px 6px; }
+.ocr-portal .ocr-review .result-file-group__file { min-height: 48px; padding: 10px 9px; border: 0; border-radius: 3px; }
+.ocr-portal .ocr-review .result-file-group__file-inner { align-items: flex-start; gap: 8px; }
+.ocr-portal .ocr-review .result-file-group__file-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; font-size: 11px; line-height: 1.7; }
+.ocr-portal .ocr-review .result-file-group__dot { flex: none; margin-top: 3px; }
+.ocr-portal .ocr-review .result-file-group__file.is-active { background: #eaf2ff; box-shadow: inset 2px 0 #3177c6; }
+/* 결과를 아직 받지 못한 판독작업: 상태 + 결과 다시 가져오기 */
+.ocr-portal .ocr-review .result-file-group__pending { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 6px; margin: 2px 0 6px; padding: 6px 8px; border-radius: 3px; background: #fff7e6; font-size: 11px; }
+.ocr-portal .ocr-review .result-file-group__pending-status { color: #a15c00; font-weight: 600; white-space: nowrap; }
+.ocr-portal .ocr-review .result-file-group__refresh { flex: none; min-height: 24px; padding: 0 8px; font-size: 11px; }
+.ocr-portal .ocr-review__list-note { font-size: 10px; padding: 14px; }
+.ocr-portal .ocr-review .doc-viewer--document { min-height: 0; background: #e5ecf4; border-right: 0; }
+.ocr-portal .ocr-review .doc-viewer__toolbar { min-height: 51px; padding: 10px 14px; }
+.ocr-portal .ocr-review__viewer-title { font-size: 12px; flex-basis: auto; }
+.ocr-portal .ocr-review .doc-viewer__toolbar .btn-neutral { font-size: 10px; padding: 4px 6px; }
+.ocr-portal .ocr-review .doc-viewer__focusbar { padding: 6px 10px; background: #f8fafd; }
+.ocr-portal .ocr-review .doc-viewer__viewport { margin: 18px; background: #e5ecf4; }
+.ocr-portal .ocr-review .doc-viewer__stage { box-shadow: 0 3px 12px #23334b20; }
+.ocr-portal .ocr-review .doc-viewer__controls { padding: 9px 10px; gap: 8px; background: #f8fafd; flex-wrap: wrap; }
+.ocr-portal .ocr-review .doc-viewer__controls button { font-size: 10px; padding: 4px 7px; }
+.ocr-portal .ocr-review .doc-viewer__controls output { font-size: 11px; }
+.ocr-portal .ocr-review [data-workspace-resize] { flex-basis: 4px; min-width: 4px; width: 4px; }
+.ocr-portal .ocr-review [data-workspace-resize]::after { width: 1px; left: 1px; background: #dfe6ef; }
+.ocr-portal .ocr-review .result-panels { position: relative; padding-top: 54px; background: #fff; }
+.ocr-review__comparison-heading { position: absolute; top: 0; left: 0; right: 0; height: 54px; display: flex; align-items: center; gap: 12px; padding: 10px 18px; border-bottom: 1px solid #e3e8ee; }
+.ocr-review__comparison-heading h2 { font-size: 15px; font-weight: 700; color: #1e2e43; margin: 0; flex: none; }
+/* 두 열을 하나의 네이티브 스크롤로 이동해 행 정렬을 유지한다. */
+.ocr-review__comparison-scroll { display: flex; flex: 1; min-width: 0; min-height: 0; overflow-y: auto; }
+.ocr-portal .ocr-review .result-panel:not(.is-collapsed):not(.is-user-collapsed) { overflow: visible; }
+.ocr-portal .ocr-review .result-panel { border: 0; }
+.ocr-portal .ocr-review .result-panel--recognized:not(.is-collapsed):not(.is-user-collapsed) { flex-grow: 1.25; }
+.ocr-portal .ocr-review .result-panel__body { padding: 0 12px 20px; gap: 20px; }
+.ocr-portal .ocr-review .result-panel__section > .section-title { height: 42px; min-height: 42px; align-items: center; gap: 4px; font-size: 11px; color: #75879f; }
+.ocr-portal .ocr-review .result-panel .section-title--row > span { font-weight: 500; gap: 3px; }
+.ocr-portal .ocr-review .result-panel .section-title__btn-group { gap: 3px; }
+.ocr-portal .ocr-review .result-panel .section-title__btn-group .btn-neutral { height: 24px; min-height: 24px; padding: 3px; font-size: 9px; background: #f8fafd; border-color: #e5eaf2; }
+.ocr-portal .ocr-review [data-panel-collapse-btn] { width: 26px; }
+.ocr-portal .ocr-review [data-panel-expand-btn] { width: 43px; }
+.ocr-portal .ocr-review [data-panel-expand-icon] { width: 12px; height: 12px; flex-basis: 12px; }
+.ocr-portal .ocr-review__badge { font-size: 9px; }
+.ocr-portal .ocr-review__panel-note { display: none; }
+.ocr-portal .ocr-review .result-panel__group { gap: 0; }
+.ocr-portal .ocr-review .result-field { position: relative; min-height: 78px; padding: 16px 0; border-bottom: 1px solid #e9eef5; gap: 8px; }
+.ocr-portal .ocr-review .result-field .input { font-size: 12px; height: 36px; padding: 7px 8px; color: #274465; border-color: #d7dfe8; }
+.ocr-portal .ocr-review .result-field input[readonly] { background: transparent; color: #697e99; border-color: transparent; padding: 0; text-overflow: ellipsis; }
+.ocr-portal .ocr-review .result-field__label { font-size: 11px; font-weight: 600; line-height: 1.6; }
+.ocr-portal .ocr-review .result-panel--recognized .result-field { display: grid; grid-template-columns: minmax(64px,.8fr) minmax(0,1fr); }
+.ocr-portal .ocr-review .result-panel--confirm .result-field > .result-field__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ocr-portal .ocr-review .result-panel--confirm .is-modified { background: #f4f8ff; }
+.ocr-portal .ocr-review .result-panel--confirm .result-field.is-modified .ocr-review__change-label { position: absolute; right: 0; bottom: 0; font-size: 9px; }
+.ocr-portal .ocr-review .result-panel--confirm .is-modified > .result-field__label { position: absolute; left: 0; right: 0; bottom: 0; clip-path: none; width: auto; height: auto; min-height: 0; overflow: visible; font-size: 0; }
+/* 셀 안에 수정 표시 공간을 확보한다. 입력 34px·위아래 여백 17px·테두리 1px로 기존 행 높이 52px을 유지한다. */
+.ocr-portal .ocr-review .result-panel--confirm .result-panel__table td { position: relative; padding: 4px 8px 13px; }
+.ocr-portal .ocr-review .result-panel--confirm td .ocr-review__change-label { position: absolute; right: 8px; bottom: 2px; margin: 0; font-size: 9px; line-height: 10px; white-space: nowrap; }
+.ocr-review__footer { flex: none; min-height: 64px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 10px 14px; background: #fff; border: 1px solid #dfe6ef; border-radius: 8px; }
+.ocr-review__footer-actions { display: flex; align-items: center; flex: none; gap: 8px; margin-left: auto; }
+.ocr-portal .ocr-review [data-verify-btn] { background: #225f9f; border-color: #225f9f; font-size: 13px; font-weight: 650; min-height: 40px; }
+.ocr-portal .ocr-review [data-verify-btn]:hover { background: #174f88; }
+.ocr-portal .ocr-review [data-verify-btn]:disabled { background: var(--surface-neutral-medium); border-color: var(--surface-neutral-medium); color: var(--text-disabled); cursor: not-allowed; }
+/* 개별 열을 확대한 경우에는 필드 이름을 두 열 모두 다시 표시한다. */
+.ocr-portal .ocr-review .result-panel.is-expanded .result-field { display: flex; }
+.ocr-portal .ocr-review .result-panel--confirm.is-expanded .result-field > .result-field__label { position: static; width: auto; height: auto; clip-path: none; white-space: normal; font-size: 11px; }
+@media (min-width: 1700px) {
+  .ocr-portal .ocr-review .result-panel__body { padding-left: 20px; padding-right: 20px; }
+  .ocr-portal .ocr-review .result-field .input { font-size: 13px; }
+}
+@media (max-width: 1050px) {
+  .ocr-portal .ocr-review .result-media { height: 640px; }
+  .ocr-portal .ocr-review .result-panels { min-height: 470px; }
+}
+@media (max-width: 600px) {
+  .ocr-portal .ocr-review { padding: 16px 12px; }
+  .ocr-portal .ocr-review__context { align-items: flex-start; }
+  .ocr-portal .ocr-review__document-name { flex-wrap: wrap; }
+  .ocr-portal .ocr-review .result-media { height: auto; }
+  .ocr-portal .ocr-review .doc-viewer--document { min-height: 510px; }
+  .ocr-portal .ocr-review .result-panels { min-height: 0; }
+  .ocr-portal .ocr-review .result-panel--recognized .result-field { display: flex; }
+  .ocr-portal .ocr-review .result-panel--confirm .result-field > .result-field__label { position: static; width: auto; height: auto; clip-path: none; white-space: normal; font-size: 11px; }
+  .ocr-portal .ocr-review .result-panel .section-title--row > span { flex-direction: row; }
+  .ocr-review__footer { flex-wrap: wrap; padding-top: 8px; }
+  .ocr-review__footer-actions { margin-left: auto; }
+}
+
+.ocr-portal .ocr-review .doc-viewer__viewport { margin: 12px; }
+.ocr-portal .ocr-review .doc-viewer__note { display: block; height: 36px; min-height: 36px; padding: 6px 12px; }
+.ocr-portal .ocr-review .doc-viewer__note:not(:empty) { padding-top: 6px; padding-bottom: 6px; }
+@media (min-width: 601px) {
+  .ocr-portal .ocr-review .result-field { height: 78px; flex: none; }
+  .ocr-portal .ocr-review .result-field__label { max-height: 44px; overflow-y: auto; }
+}
+.ocr-portal .ocr-review .result-panel__table th { height: 32px; }
+.ocr-portal .ocr-review .result-panel__table td { height: 52px; }
+.ocr-portal .result-panels:has(.result-panel--recognized.is-user-collapsed) .result-panel--confirm .result-field > .result-field__label { position: static; width: auto; height: auto; clip-path: none; white-space: normal; font-size: 11px; }
+.ocr-portal .are-detail-panels-collapsed .result-panels { padding-top: 0; }
+.ocr-portal .are-detail-panels-collapsed .ocr-review__comparison-heading { display: none; }
+
+/* 하단 보조 버튼(수정 초기화·원본 JSON·임시저장·검증완료 취소)은 같은 크기로 맞춘다. */
+.ocr-portal .ocr-review__footer-actions > .btn-neutral { min-height: 40px; padding: 9px 16px; border-color: #d7dfe8; border-radius: 6px; background: #fff; color: #40546d; font-size: 12px; }
+/* .btn-neutral 의 display 가 브라우저 기본 [hidden] 보다 우선하므로 숨김을 되살린다(검증완료 취소). */
+.ocr-portal .ocr-review__footer-actions > [hidden] { display: none; }
+@media (max-width: 600px) {
+  .ocr-portal .gnb__review-tooltip { left: auto; right: -60px; width: min(280px, calc(100vw - 28px)); }
+}
+
+.ocr-portal .ocr-review__footer .ocr-review__document-name { min-width: 0; }
+.ocr-portal .ocr-review__footer .ocr-review__document { min-width: 0; flex: 1 1 155px; }
+.ocr-portal .ocr-review__footer [data-result-selected-file] { max-width: 220px; }
+.ocr-portal .ocr-review__footer .ocr-review__context-actions { flex-wrap: wrap; gap: 8px; }
+@media (max-width: 600px) {
+  .ocr-portal .ocr-review__footer { padding: 12px; gap: 12px; }
+  .ocr-portal .ocr-review__footer .ocr-review__context { flex-basis: 100%; }
+  .ocr-portal .ocr-review__footer .ocr-review__document { flex-basis: auto; }
+  .ocr-portal .ocr-review__footer .ocr-review__context-actions { width: 100%; }
+  .ocr-portal .ocr-review__footer [data-result-selected-file] { max-width: calc(100vw - 90px); }
+  .ocr-portal .ocr-review__footer .ocr-review__footer-actions { flex-wrap: wrap; }
+}
+
+/* 페이지 입력은 인접한 이동 버튼과 균형을 맞춘다. 키보드 숫자 입력은 유지한다. */
+.ocr-portal .ocr-review .doc-viewer__controls [data-viewer-page] { flex: 0 0 32px; width: 32px; min-width: 32px; max-width: 32px; min-height: 28px; padding: 3px 2px; font-size: 11px; appearance: textfield; }
+.ocr-portal .ocr-review [data-viewer-page]::-webkit-inner-spin-button,
+.ocr-portal .ocr-review [data-viewer-page]::-webkit-outer-spin-button { margin: 0; -webkit-appearance: none; }
+
+.ocr-portal .ocr-review__comparison-help { display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; cursor: help; }
+.ocr-portal .ocr-review__comparison-help svg { color: #8390a0; }
+.ocr-portal .ocr-review__comparison-heading .gnb__review-tooltip { left: 18px; top: calc(100% - 2px); }
+/* 항목 위에 머무르는 것으로 근거를 확인하며, 입력 컨트롤은 편집 커서를 유지한다. */
+.ocr-portal [data-result-region]:not(input):not(select) { cursor: default; }
+
+@media (max-width: 600px) {
+  .ocr-review__comparison-scroll { flex-direction: column; overflow: visible; }
+}
+/* 판독 원본 JSON 모달(js/result-raw-json.js) */
+.raw-json .raw-json__modal { width: 760px; max-width: 92vw; }
+.raw-json__meta { display: grid; grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 6px 12px; margin: 0 0 12px; font-size: 12px; color: #5b6b80; }
+.raw-json__meta dt { white-space: nowrap; }
+.raw-json__meta dd { min-width: 0; margin: 0; }
+.raw-json__meta code { display: block; overflow: hidden; padding: 2px 7px; border: 1px solid #e3e9f1; border-radius: 4px; background: #f5f7fa; color: #2b3a4d; font: 500 11.5px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; text-overflow: ellipsis; white-space: nowrap; }
+.raw-json__bar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.raw-json__spacer { flex: 1; }
+.raw-json__tabs { display: inline-flex; overflow: hidden; border: 1px solid #d5dde8; border-radius: 4px; }
+.raw-json__tabs button { padding: 4px 10px; border: 0; background: #fff; color: #5b6b80; font-family: inherit; font-size: 12px; cursor: pointer; }
+.raw-json__tabs button[aria-selected="true"] { background: #eaf2ff; color: #1d5fae; font-weight: 600; }
+.raw-json__tabs button:focus-visible { outline: 2px solid #3177c6; outline-offset: -2px; }
+.raw-json__code { height: min(430px, 52vh); margin: 0; overflow: auto; padding: 12px 14px; border-radius: 6px; background: #0f1b2b; color: #d6e2f0; font: 12.5px/1.6 var(--font-family-base); white-space: pre; }
+.raw-json__key { color: #8cc4ff; }
+.raw-json__str { color: #b6e3a1; }
+.raw-json__num { color: #f5c27a; }
+.raw-json__lit { color: #f29bb3; }
+/* 서식 검증완료 표시와 판독작업 담당자 지정(js/result-review.js) */
+.ocr-portal .ocr-review .result-file-group__review { flex: none; margin-left: auto; padding: 0 6px; border-radius: 9px; background: #eef1f5; color: #5b6b80; font-size: 10px; line-height: 18px; white-space: nowrap; }
+.ocr-portal .ocr-review .result-file-group__review[hidden] { display: none; }
+.ocr-portal .ocr-review .result-file-group__review.is-verified { background: var(--status-success-surface); color: var(--status-success-default); font-weight: 600; }
+.ocr-portal .ocr-review__summary.is-unsaved { color: #a15c00; }
+/* 담당자가 아니거나 검증완료한 서식의 확인값: 입력칸 모양은 두고 읽기 전용으로 보인다. */
+.ocr-portal .ocr-review .result-panel--confirm.is-locked .result-field input[readonly],
+.ocr-portal .ocr-review .result-panel--confirm.is-locked td input[readonly] { padding: 0 var(--size-space-s); border-color: #e3e9f1; background: #f5f7fa; color: #40546d; }
+.review-assign { position: fixed; z-index: 1000; width: 300px; max-width: calc(100vw - 16px); padding: 12px; border: 1px solid #d5dde8; border-radius: 8px; background: #fff; box-shadow: 0 8px 24px #1c355024; }
+.review-assign[hidden] { display: none; }
+.review-assign__header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; font-size: 13px; color: #1e2e43; }
+.review-assign__close { width: 28px; height: 28px; border: 0; border-radius: 4px; background: transparent; color: #5b6b80; cursor: pointer; }
+.review-assign__close:hover { background: #eef3fa; }
+.review-assign__current { margin: 0 0 8px; font-size: 12px; color: #5b6b80; }
+.review-assign__actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.review-assign__actions .btn-neutral { min-height: 28px; padding: 0 10px; font-size: 12px; }
+.review-assign__actions [hidden] { display: none; }

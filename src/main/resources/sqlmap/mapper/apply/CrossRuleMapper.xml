@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 서식간 규칙(업무 WK_ID 단위). Rule·버전·이력은 Portal 소유 테이블이다. -->
+<mapper namespace="com.agilesoda.module.apply.mapper.CrossRuleMapper">
+
+	<insert id="insertRule">
+		<selectKey keyProperty="rule.ruleId" resultType="long" order="BEFORE">
+			SELECT SQ_OCUOC_BZCRR_L_01.NEXTVAL FROM dual
+		</selectKey>
+		/* [서식간 규칙] 등록 - insertRule */
+		INSERT INTO ocuoc_bzcrr_l (RULE_ID, RULE_NM, CMPR_TYP_CD, WK_ID, RGSR_ID, REG_DT)
+		VALUES (#{rule.ruleId}, #{rule.ruleNm}, #{rule.cmprTypCd}, #{rule.wkId}, #{userId}, SYSTIMESTAMP)
+	</insert>
+
+	<update id="updateRule">
+		/* [서식간 규칙] 수정 - updateRule */
+		UPDATE ocuoc_bzcrr_l
+		   SET RULE_NM = #{rule.ruleNm}, CMPR_TYP_CD = #{rule.cmprTypCd},
+		       EDTR_ID = #{userId}, CHNG_DT = SYSTIMESTAMP
+		 WHERE RULE_ID = #{rule.ruleId}
+	</update>
+
+	<delete id="deleteRule">
+		/* [서식간 규칙] 삭제 - deleteRule */
+		DELETE FROM ocuoc_bzcrr_l WHERE RULE_ID = #{ruleId}
+	</delete>
+
+	<insert id="insertHistory">
+		/* [서식간 규칙] 이력 등록 - insertHistory */
+		INSERT INTO ocuoc_bzcrh_h (HSTR_ID, RULE_ID, CHNG_CTNT, RGSR_ID, REG_DT)
+		VALUES (SQ_OCUOC_BZCRH_H_01.NEXTVAL, #{ruleId}, #{chngCtnt}, #{userId}, SYSTIMESTAMP)
+	</insert>
+
+	<!-- 규칙: 사용 버전(CUR_VER)의 정의를 함께 읽는다 -->
+	<sql id="defRuleColumns">
+		SELECT R.RULE_ID AS ruleId, R.WK_ID AS wkId, R.RULE_NM AS ruleNm, R.CMPR_TYP_CD AS cmprTypCd,
+		       R.CUR_VER AS curVer, R.USE_YN AS useYn, V.DEF_JSON AS defJson,
+		       R.RGSR_ID AS rgsrId, TO_CHAR(R.REG_DT, 'YYYY-MM-DD HH24:MI') AS regDt,
+		       R.EDTR_ID AS edtrId, TO_CHAR(R.CHNG_DT, 'YYYY-MM-DD HH24:MI') AS chngDt
+		  FROM ocuoc_bzcrr_l R
+		  JOIN ocuoc_bzcrv_l V ON V.RULE_ID = R.RULE_ID AND V.RULE_VER = R.CUR_VER
+	</sql>
+
+	<select id="selectDefRuleList" resultType="com.agilesoda.module.apply.vo.CrossRuleVO">
+		/* [서식간 규칙] 조회 - selectDefRuleList */
+		<include refid="defRuleColumns"/>
+		 WHERE R.WK_ID = #{wkId}
+		 ORDER BY R.RULE_ID
+	</select>
+
+	<select id="selectDefRule" resultType="com.agilesoda.module.apply.vo.CrossRuleVO">
+		/* [서식간 규칙] 조회 - selectDefRule */
+		<include refid="defRuleColumns"/>
+		 WHERE R.RULE_ID = #{ruleId}
+	</select>
+
+	<insert id="insertVersion">
+		/* [서식간 규칙] 버전 등록 - insertVersion */
+		INSERT INTO ocuoc_bzcrv_l (RULE_ID, RULE_VER, SCHEMA_VER, DEF_JSON, RGSR_ID, REG_DT)
+		VALUES (#{ruleId}, #{ruleVer}, #{schemaVer}, #{defJson,jdbcType=CLOB}, #{userId}, SYSTIMESTAMP)
+	</insert>
+
+	<update id="updateDefHeader">
+		/* [서식간 규칙] 새 형식 머리글 수정 - updateDefHeader */
+		UPDATE ocuoc_bzcrr_l
+		   SET CUR_VER = #{rule.curVer}, USE_YN = #{rule.useYn}
+		 WHERE RULE_ID = #{rule.ruleId}
+	</update>
+
+	<update id="updateUse">
+		/* [서식간 규칙] 사용 여부 변경 - updateUse */
+		UPDATE ocuoc_bzcrr_l
+		   SET USE_YN = #{useYn}, EDTR_ID = #{userId}, CHNG_DT = SYSTIMESTAMP
+		 WHERE RULE_ID = #{ruleId}
+	</update>
+
+	<select id="selectRoles" resultType="com.agilesoda.module.apply.vo.CrossRoleVO">
+		/* [서식간 규칙] 역할 설정 조회 - selectRoles */
+		SELECT WK_ID AS wkId, LEFRM_ID AS formId, ROLE_NM AS roleNm, ROLE_MTHD_CD AS methodCd, FILD_KEY AS fieldKey
+		  FROM ocuoc_ocrwr_l
+		 WHERE WK_ID = #{wkId}
+		 ORDER BY LEFRM_ID, ROLE_NM
+	</select>
+
+	<insert id="mergeRole">
+		/* [서식간 규칙] 역할 설정 저장 - mergeRole */
+		MERGE INTO ocuoc_ocrwr_l T
+		USING (SELECT #{role.wkId} AS WK_ID, #{role.formId} AS LEFRM_ID, #{role.roleNm} AS ROLE_NM FROM dual) S
+		   ON (T.WK_ID = S.WK_ID AND T.LEFRM_ID = S.LEFRM_ID AND T.ROLE_NM = S.ROLE_NM)
+		 WHEN MATCHED THEN
+		   UPDATE SET T.ROLE_MTHD_CD = #{role.methodCd}, T.FILD_KEY = #{role.fieldKey, jdbcType=VARCHAR}
+		 WHEN NOT MATCHED THEN
+		   INSERT (WK_ID, LEFRM_ID, ROLE_NM, ROLE_MTHD_CD, FILD_KEY, RGSR_ID, REG_DT)
+		   VALUES (S.WK_ID, S.LEFRM_ID, S.ROLE_NM, #{role.methodCd}, #{role.fieldKey, jdbcType=VARCHAR}, #{userId}, SYSTIMESTAMP)
+	</insert>
+
+	<delete id="deleteRole">
+		/* [서식간 규칙] 역할 설정 삭제 - deleteRole */
+		DELETE FROM ocuoc_ocrwr_l WHERE WK_ID = #{wkId} AND LEFRM_ID = #{formId} AND ROLE_NM = #{roleNm}
+	</delete>
+</mapper>

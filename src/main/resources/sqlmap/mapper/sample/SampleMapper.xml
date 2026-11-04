@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.agilesoda.sample.SampleMapper">
+    <select id="selectUserInfo" parameterType="string" resultType="userResDto">
+        select user_id   AS userId
+            , user_nm   AS userNm
+            , user_pwd  AS userPwd
+            , email     AS email
+            , hp_no     AS hpNo
+        from t_user
+        where 1=1
+            and user_id = #{userId}
+    </select>
+    
+    <insert id="insBoard" parameterType="boardEntity" useGeneratedKeys="true"
+        keyProperty="seq">
+        insert into t_board(subject, detail, writer, reg_dt, reg_id, mod_dt, mod_id)
+        values(
+            #{subject}
+            , #{detail}
+            , #{writer}
+            , NOW()
+            , #{regId}
+            , NOW()
+            , #{modId}
+        )
+    </insert>
+    
+    <insert id="insAttachFiles" parameterType="boardAttachEntity">
+        insert into t_board_attach(board_seq, file_nm, origin_file_nm, path, ext, reg_dt, reg_id, mod_dt, mod_id)
+        values(#{boardSeq}
+            , #{fileNm}
+            , #{originFileNm}
+            , #{path}
+            , #{ext}
+            , NOW()
+            , #{regId}
+            , NOW()
+            , #{modId}
+        )
+    </insert>
+    
+    <select id="selectBoardCnt" parameterType="boardInqDto" resultType="int">
+       select count(*)
+       from t_board
+       where 1=1
+           <if test='subject != null and subject != ""'>
+               and subject = #{subject}
+           </if>
+           <if test='writer != null and writer != ""'>
+               and writer = #{writer}
+           </if>
+    </select>
+    
+    <resultMap id="boardResultMap" type="boardResDto">
+        <id property="seq" column="seq" />
+        <result property="num" column="num" />
+        <result property="subject" column="subject" />
+        <result property="detail" column="detail" />
+        <result property="writer" column="writer" />
+        <result property="regDt" column="reg_dt" />
+        <result property="regId" column="reg_id" />
+        <result property="modDt" column="mod_dt" />
+        <result property="modId" column="mod_id" />
+        <collection property="attaches" javaType="java.util.ArrayList" ofType="boardAttachEntity">
+            <id property="seq" column="attach_seq" />
+            <result property="fileNm" column="file_nm" />
+            <result property="originFileNm" column="origin_file_nm" />
+            <result property="path" column="path" />
+            <result property="ext" column="ext" />
+        </collection>
+    </resultMap>
+    
+    <select id="selectBoardList" parameterType="boardInqDto" resultMap="boardResultMap">
+	    select t1.num
+		    , t1.seq       
+		    , t1.subject  
+		    , t1.detail  
+		    , t1.writer
+		    , t1.reg_dt
+		    , t1.reg_id
+		    , t1.mod_dt
+		    , t1.mod_id
+		    , t2.seq              AS attach_seq
+		    , t2.file_nm
+		    , t2.origin_file_nm
+		    , t2.path
+		    , t2.ext
+		from (
+		    select @num:=@num+1     AS num
+		        , seq       
+		        , subject  
+		        , detail  
+		        , writer
+		        , reg_dt
+		        , reg_id
+		        , mod_dt
+		        , mod_id
+		    from (select @num:=0) a, t_board
+	           <if test='subject != null and subject != ""'>
+	               AND subject = #{subject}
+	           </if>
+	           <if test='writer != null and writer != ""'>
+	               AND writer = #{writer}
+	           </if>
+		    where 1=1
+		    order by num desc
+		    limit #{offset}, #{limit}
+		) t1
+		    left outer join t_board_attach t2 on t1.seq = t2.board_seq and t2.del_yn = 'N'
+		where 1=1
+		order by t1.num desc
+    </select>
+
+    <select id="selectTrxStatus" parameterType="string" resultType="int">
+        select status
+        from t_trx_status
+        where trx_id = #{trxId}
+    </select>
+</mapper>

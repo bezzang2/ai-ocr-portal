@@ -1,0 +1,38 @@
+{
+  "transaction_id": "019fb646-5a20-7835-9250-70e50a6f16c5",
+  "status": "completed",
+  "documents":[
+    {
+      "document_id": "019fb646-5a22-7c10-b0a1-9f2e4d7c8a31",
+      "status": "pass",
+      "document_name": "사업자등록증.jpg",
+      "doc_type": "사업자등록증",
+      "ordinal": 1,
+      "page_range":{
+        "start": 1,
+        "end": 1
+      },
+      "fields": [{
+          "key": "company_name",
+          "value": "디자인이즈",
+          "confidence": null
+        }, {
+          "key": "biz_reg_no",
+          "value": "123-45-67890",
+          "confidence": null
+        }
+      ],
+      "confidence_summary": {
+        "mean": null,
+        "min": null
+      },
+      "validation_attribute": {
+        "status": "pass",
+        "reason": null,
+        "flagged_fields": [],
+        "rule_set_version": "v1",
+        "evaluated_at": "2026-07-31T03:41:07Z"
+      }
+    }
+  ]
+}

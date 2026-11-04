@@ -1,0 +1,115 @@
+/* 메뉴 트리 — LNB(components/lnb.css)와 같은 개념의 아코디언 위젯이지만 좌측 고정
+   내비게이션이 아니라 "패널 안에 담기는 트리"라 별도 컴포넌트로 뒀다. 관리자>메뉴관리·
+   권한관리(부서 트리), 메뉴 선택 모달에서도 동일 마크업·동작으로 재사용된다
+   (화면마다 조합이 달라지는 patterns/가 아니라 항상 동일하게 재사용되는 완결형 위젯이라
+   components/로 뒀다 — 2026-08-18).
+   출처: get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 604:5190, 617:7189) 실측.
+   열림/닫힘 토글은 js/menu-tree.js가 .menu-tree__group에 is-open을 붙여 담당한다
+   (LNB의 js/lnb.js와 동일한 방식 — 트리 하나 안에서는 한 번에 한 그룹만 열린다). */
+
+.menu-tree {
+  display: flex;
+  flex-direction: column;
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--surface-white);
+  border-right: 1px solid var(--border-neutral-subtle);
+}
+.menu-tree__header {
+  display: flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 16px;
+  border-bottom: 1px solid #e3e5ec; /* 실측 리터럴 — neutral/100(#d6d9dd)과 다른 값 */
+  font-size: var(--font-size-14);
+  font-weight: var(--font-weight-medium);
+  color: #2d2f46; /* 실측 리터럴 — neutral/700(#32363e)과 다른 값 */
+}
+.menu-tree__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 4px;
+  padding: 8px;
+  overflow-y: auto;
+}
+
+/* ---- 1depth 항목(그룹 헤더 겸용) ---- */
+.menu-tree__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 8px;
+  border: none;
+  background: none;
+  color: var(--text-neutral-tertiary); /* Neutral/500 */
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: -0.0442px;
+  cursor: pointer;
+}
+.menu-tree__item span { flex: 1; min-width: 0; text-align: left; }
+.menu-tree__chevron { width: 16px; height: 16px; flex-shrink: 0; transition: transform 0.15s ease; }
+
+/* ---- 아코디언 그룹 — 1depth(.menu-tree__item) + 2depth(.menu-tree__sub) 묶음.
+   604:5565 실측 — item과 sub 사이 gap 6px(펼쳐졌을 때만 의미 있음, gap은 hidden
+   자식에는 적용되지 않아 접힘 상태에도 별도 처리가 필요 없다). ---- */
+.menu-tree__group {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  gap: 6px;
+}
+.menu-tree__group.is-open > .menu-tree__item {
+  background: var(--surface-neutral-medium); /* Neutral/600 #4a4e58 */
+  border-radius: 4px;
+  color: var(--text-inverse);
+}
+.menu-tree__group.is-open > .menu-tree__item .menu-tree__chevron { transform: rotate(180deg); }
+.menu-tree__group > .menu-tree__sub { display: none; }
+.menu-tree__group.is-open > .menu-tree__sub { display: flex; }
+
+/* ---- 2depth 서브메뉴 ---- */
+.menu-tree__sub {
+  flex-direction: column;
+  width: 100%;
+  gap: 4px;
+}
+.menu-tree__subitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 30px;
+  padding: 0 16px 0 32px;
+  border-radius: 4px;
+  color: var(--text-neutral-tertiary); /* Neutral/500 — 기본 */
+  font-size: var(--font-size-13); /* 2026-08-20 사용자 요청 — 실측 12px에서 13으로 변경 */
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -0.0408px;
+  line-height: 1.4;
+  cursor: pointer;
+}
+.menu-tree__subitem-dot {
+  width: 16px;
+  height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.menu-tree__subitem-dot::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  border-radius: var(--size-radius-round);
+  background: var(--icon-neutral-default); /* Neutral/500 — 선택 여부와 무관하게 항상 회색(실측) */
+}
+.menu-tree__subitem.is-active {
+  background: var(--surface-neutral-faint); /* Neutral/50 */
+  color: var(--text-neutral-secondary); /* Neutral/700 */
+}

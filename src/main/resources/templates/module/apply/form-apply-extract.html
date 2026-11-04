@@ -1,0 +1,2165 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{common/layouts/defaultLayout}" layout:fragment="Content">
+<head>
+<meta charset="UTF-8">
+<title>OCR서식신청 - 추출설명 | AI OCR 서류판독시스템</title>
+<link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+
+
+    <main class="content">
+
+      <input type="hidden" id="afApplId" th:value="${applId}">
+
+      <!-- 페이지 헤더 — get_design_context(481:7618) 실측 -->
+      <div class="page-header">
+        <h1 class="page-header__title">OCR서식신청</h1>
+        <div class="page-header__actions">
+          <button type="button" class="btn-outline-primary btn-outline-primary--square" aria-label="새로고침" id="btnAfReset">
+            <span class="btn-icon-slot"><svg viewBox="0 0 11.2 12.8662" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><g><path d="M9.13449 3.72478C8.67096 3.25973 8.12006 2.8909 7.51348 2.6395C6.9069 2.3881 6.25661 2.2591 5.6 2.25991C4.27397 2.26007 3.0023 2.78691 2.06465 3.72456C1.12701 4.6622 0.600167 5.93387 0.6 7.25991C0.600166 8.58652 1.1268 9.85884 2.06427 10.7975C3.00173 11.7361 4.27339 12.2644 5.6 12.2662C6.92672 12.2644 8.19847 11.736 9.13596 10.7973C10.0734 9.85848 10.6 8.586 10.6 7.25927" stroke="currentColor" stroke-width="1.2" stroke-miterlimit="10" stroke-linecap="round"/><path d="M8.67728 0.60014L9.27635 3.03298C9.32952 3.24863 9.29498 3.47656 9.18031 3.66678C9.06563 3.85699 8.88019 3.99395 8.66467 4.04761L6.22489 4.64542" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></g></svg></span>
+          </button>
+          <button type="button" class="btn-outline-primary" style="width:70px" id="btnAfTempSave">임시저장</button>
+          <button type="button" class="btn-outline-primary" style="width:70px" id="btnAfCancel"
+            th:attr="data-proc-stat-cd=${formAppl?.procStatCd}" th:disabled="${formAppl?.procStatCd != 'APPL'}">신청취소</button>
+          <button type="button" class="btn btn-primary" style="width:70px" id="btnAfSubmit"
+            th:disabled="${formAppl?.procStatCd == 'APPL'}">신청</button>
+        </div>
+      </div>
+
+      <!-- 검색영역+본문을 한 컨테이너로 묶어 .content의 gap(12px)이 둘 사이에 끼지 않게 한다
+           (검색영역 하단 border-radius 0 / 본문 상단 border-top 없음이 이미 서로 맞닿는 것을 전제) -->
+      <div class="split-view">
+
+      <!-- 검색영역 — get_design_context(537:18402) 실측(서식명/신청자/업무분류/담당자/이미지) -->
+      <form class="split-view__search">
+        <div class="split-view__search-item">
+          <span class="split-view__search-label">서식명</span>
+          <input class="input" style="width:200px" type="text" id="afFormNm" th:value="${formAppl?.formNm}">
+        </div>
+        <div class="split-view__search-item">
+          <span class="split-view__search-label">신청자</span>
+          <input class="input" style="width:200px" type="text" id="afApplicantNm" th:value="${formAppl?.applicantNm} ?: ${session.ssoLoginUser?.userName}" readonly>
+        </div>
+        <div class="split-view__search-item">
+          <span class="split-view__search-label">담당자</span>
+          <div class="split-view__search-combo">
+            <button type="button" class="btn-neutral" style="width:91px" id="btnAfPickStaff" data-modal-open="approvalLineModal">
+              <img th:src="@{/images/icons/buttons/ic-16-flow.svg}" alt="">
+              직원선택
+            </button>
+            <ul style="list-style:none; margin:0; padding:0; display:inline-flex; flex-wrap:wrap; align-items:center; gap:6px;" id="afMgrList">
+              <li th:each="mgr : ${mgrList}" th:data-mgr-user-id="${mgr.mgrUserId}" th:data-mgr-type-cd="${mgr.mgrTypeCd}"
+                  th:data-mgr-user-nm="${mgr.mgrUserNm}"
+                  th:text="${mgr.mgrUserNm} + ' '"></li>
+            </ul>
+          </div>
+        </div>
+        <div class="split-view__search-item">
+          <span class="split-view__search-label">이미지</span>
+          <button type="button" class="btn-neutral" style="width:80px" id="btnAfImgUpload">
+            <img th:src="@{/images/icons/buttons/ic-16-upload.svg}" alt="">
+            업로드
+          </button>
+          <input type="file" id="afImageInput" accept="image/*" style="display: none;">
+        </div>
+      </form>
+
+      <!-- 본문 — get_design_context(492:9602) 실측(파일목록/문서뷰어/추출결과) -->
+      <div class="split-view__body">
+
+        <!-- 뷰어+추출결과를 비율(1.64 : 2)로 나눠 가질 컨테이너 — 서식판독결과 화면과 동일한
+             구조(파일목록+뷰어를 하나의 그룹으로 묶어 그 그룹과 본문을 나눈다)로 맞췄다("같은
+             뷰어를 사용해야 해", 2026-09-01). get_design_context(492:9602) 실측(파일목록 200 +
+             뷰어 538 : 추출결과 900 ≈ 1.64 : 2, 서식판독결과의 목록 200 + 뷰어 540 : 패널 450×2와
+             거의 동일한 비율) — 이전엔 파일목록을 이 비율 계산에서 빼고 뷰어에만 고정폭 37.5%를
+             줬는데, 그러면 화면이 넓어질수록 뷰어(회색 배경)만 계속 넓어지면서 문서 이미지
+             좌우로 빈 여백이 과하게 커 보였다(2026-09-01 사용자 피드백). -->
+        <div class="split-view__body-main">
+
+        <!-- 파일목록+문서뷰어 묶음 — get_design_context(585:2631)와 동일한 패턴(patterns/에는
+             없다 — 이 화면 조합에서만 쓰는 폭 비율이라 페이지 CSS에 둔다). -->
+        <div class="doc-viewer-group">
+
+        <!-- 파일목록 — get_design_context(492:9603) 실측 -->
+        <nav class="file-list">
+          <div class="file-list__header">서식목록 &nbsp;
+            <button type="button" class="btn-icon" id="btnAfFileDelete" aria-label="서식 삭제">
+              <svg viewBox="0 0 11.2 12.3111" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" aria-hidden="true"><path d="M7.82222 2.82222V2.37778C7.82222 1.7555 7.82222 1.44436 7.70112 1.20668C7.59459 0.997609 7.42461 0.827631 7.21555 0.721105C6.97787 0.600001 6.66673 0.600001 6.04444 0.600001H5.15556C4.53328 0.600001 4.22213 0.600001 3.98446 0.721105C3.77539 0.827631 3.60541 0.997609 3.49888 1.20668C3.37778 1.44436 3.37778 1.7555 3.37778 2.37778V2.82222M4.48889 5.87778V8.65556M6.71111 5.87778V8.65556M0.6 2.82222H10.6M9.48889 2.82222V9.04445C9.48889 9.97787 9.48889 10.4446 9.30723 10.8011C9.14744 11.1147 8.89248 11.3697 8.57887 11.5295C8.22235 11.7111 7.75564 11.7111 6.82222 11.7111H4.37778C3.44436 11.7111 2.97765 11.7111 2.62113 11.5295C2.30752 11.3697 2.05256 11.1147 1.89277 10.8011C1.71111 10.4446 1.71111 9.97787 1.71111 9.04445V2.82222" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+
+          <div class="file-list__items" id="afFileList">
+            <button type="button" class="file-list__item" th:each="img, imgStat : ${formImgList}"
+              th:classappend="${imgStat.first} ? 'is-active'"
+              th:data-img-id="${img.imgId}" th:data-file="${img.fileNm}" th:data-img-type-cd="${img.imgTypeCd}"
+              th:attr="data-image-src=@{'/module/apply/img/' + ${img.imgId} + '/view'}">
+              <input type="checkbox" class="af-file-chk" onclick="event.stopPropagation();">
+              <span class="file-list__item-name" th:text="${img.fileNm}"></span>
+              <!--
+              <span class="btn-icon-slot"><svg viewBox="0 0 11.2 12.3111" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.82222 2.82222V2.37778C7.82222 1.7555 7.82222 1.44436 7.70112 1.20668C7.59459 0.997609 7.42461 0.827631 7.21555 0.721105C6.97787 0.600001 6.66673 0.600001 6.04444 0.600001H5.15556C4.53328 0.600001 4.22213 0.600001 3.98446 0.721105C3.77539 0.827631 3.60541 0.997609 3.49888 1.20668C3.37778 1.44436 3.37778 1.7555 3.37778 2.37778V2.82222M4.48889 5.87778V8.65556M6.71111 5.87778V8.65556M0.6 2.82222H10.6M9.48889 2.82222V9.04445C9.48889 9.97787 9.48889 10.4446 9.30723 10.8011C9.14744 11.1147 8.89248 11.3697 8.57887 11.5295C8.22235 11.7111 7.75564 11.7111 6.82222 11.7111H4.37778C3.44436 11.7111 2.97765 11.7111 2.62113 11.5295C2.30752 11.3697 2.05256 11.1147 1.89277 10.8011C1.71111 10.4446 1.71111 9.97787 1.71111 9.04445V2.82222" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              -->
+            </button>
+            <div class="file-list__item apply-form__file-empty" th:if="${#lists.isEmpty(formImgList)}">서식 없음</div>
+          </div>
+
+        </nav>
+
+        <!-- 문서 뷰어 — 서식판독결과 화면과 완전히 동일한 공용 뷰어(css/patterns/doc-viewer.css
+             .doc-viewer, js/doc-viewer-zoom.js)를 그대로 재사용한다("같은 뷰어를 사용해야 해",
+             2026-09-01) — 이전엔 이 화면 전용 단일 원형 확대 버튼(오버레이 없음, 확대만
+             가능)이었다. get_design_context(492:9612, 843:4111) 실측. 위 .doc-viewer-group
+             안에서 flex:1(파일목록의 고정폭 200px을 뺀 나머지 전부)만 이 화면 전용으로 얹는다
+             (서식판독결과의 .doc-viewer도 동일하게 flex:1, pages/search-result.css 참고). -->
+        <div class="doc-viewer" data-zoom>
+          <div class="doc-viewer__body" id="afImageView">
+            <img class="doc-viewer__image" th:if="${!#lists.isEmpty(formImgList)}" th:src="@{'/module/apply/img/' + ${formImgList[0].imgId} + '/view'}" alt="" data-zoom-target>
+            <span class="apply-form__doc-empty" th:if="${#lists.isEmpty(formImgList)}">이미지 없음</span>
+          </div>
+          <div class="doc-viewer__zoom">
+            <button type="button" class="btn-neutral btn-neutral--square" aria-label="축소" data-zoom-out>
+              <img th:src="@{/images/icons/result/ic-16-minus.svg}" alt="">
+            </button>
+            <span class="btn-neutral doc-viewer__zoom-value" data-zoom-value>100%</span>
+            <button type="button" class="btn-neutral btn-neutral--square" aria-label="확대" data-zoom-in>
+              <img th:src="@{/images/icons/result/ic-16-plus.svg}" alt="">
+            </button>
+          </div>
+        </div>
+
+        </div>
+        <!-- .doc-viewer-group 끝 -->
+
+        <!-- 추출결과 — get_design_context(492:9618) 실측 -->
+        <section class="extract-result">
+          <nav class="tabs tabs--sm">
+            <button type="button" class="tabs__item is-active" data-tab="desc" id="tabBtnDesc">추출설명</button>
+            <button type="button" class="extract-result__ai-btn" id="btnAiSuggest">
+              <svg viewBox="0 0 9 9" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M3.17036 1.55887C3.44072 0.767681 4.53392 0.74372 4.85447 1.48699L4.88159 1.55932L5.24645 2.6263C5.33006 2.871 5.46518 3.09492 5.64269 3.28296C5.8202 3.47099 6.03597 3.61878 6.27545 3.71634L6.37355 3.75296L7.44053 4.11736C8.23172 4.38772 8.25569 5.48092 7.51287 5.80146L7.44053 5.82859L6.37355 6.19344C6.12877 6.277 5.90477 6.4121 5.71665 6.58961C5.52853 6.76712 5.38068 6.98292 5.28307 7.22244L5.24645 7.3201L4.88205 8.38753C4.61168 9.17872 3.51848 9.20268 3.19839 8.45987L3.17036 8.38753L2.80596 7.32055C2.7224 7.07577 2.58731 6.85176 2.4098 6.66365C2.23228 6.47553 2.01648 6.32767 1.77696 6.23006L1.6793 6.19344L0.612327 5.82904C-0.179317 5.55868 -0.203278 4.46548 0.539989 4.14539L0.612327 4.11736L1.6793 3.75296C1.924 3.66934 2.14792 3.53423 2.33596 3.35672C2.524 3.17921 2.67178 2.96344 2.76934 2.72396L2.80596 2.6263L3.17036 1.55887ZM7.64308 8.16905e-08C7.72766 -1.06685e-07 7.81054 0.0237259 7.88231 0.0684817C7.95408 0.113237 8.01186 0.177228 8.04907 0.253181L8.07077 0.306078L8.22901 0.769942L8.69333 0.92818C8.77809 0.956978 8.85239 1.01029 8.90683 1.08136C8.96126 1.15243 8.99336 1.23806 8.99908 1.3274C9.00479 1.41674 8.98386 1.50576 8.93892 1.58319C8.89399 1.66062 8.82708 1.72296 8.74668 1.76232L8.69333 1.78402L8.22946 1.94226L8.07123 2.40658C8.04238 2.49132 7.98902 2.56558 7.91793 2.61997C7.84683 2.67436 7.76118 2.70641 7.67185 2.71208C7.58252 2.71774 7.49351 2.69676 7.41611 2.65179C7.33871 2.60682 7.2764 2.53989 7.23708 2.45947L7.21538 2.40658L7.05714 1.94271L6.59283 1.78448C6.50807 1.75568 6.43376 1.70237 6.37933 1.63129C6.3249 1.56022 6.29279 1.47459 6.28708 1.38525C6.28136 1.29592 6.3023 1.20689 6.34723 1.12947C6.39217 1.05204 6.45908 0.989694 6.53948 0.950334L6.59283 0.928632L7.05669 0.770394L7.21493 0.306078C7.24542 0.216753 7.30309 0.139208 7.37988 0.0843178C7.45666 0.0294273 7.54869 -5.66409e-05 7.64308 8.16905e-08Z" fill="currentColor"/></svg>
+              AI 제안
+            </button>
+            <button type="button" class="extract-result__ai-delete-btn" id="btnAiSuggestDelete">
+              <svg viewBox="0 0 11.2 12.3111" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" aria-hidden="true"><path d="M7.82222 2.82222V2.37778C7.82222 1.7555 7.82222 1.44436 7.70112 1.20668C7.59459 0.997609 7.42461 0.827631 7.21555 0.721105C6.97787 0.600001 6.66673 0.600001 6.04444 0.600001H5.15556C4.53328 0.600001 4.22213 0.600001 3.98446 0.721105C3.77539 0.827631 3.60541 0.997609 3.49888 1.20668C3.37778 1.44436 3.37778 1.7555 3.37778 2.37778V2.82222M4.48889 5.87778V8.65556M6.71111 5.87778V8.65556M0.6 2.82222H10.6M9.48889 2.82222V9.04445C9.48889 9.97787 9.48889 10.4446 9.30723 10.8011C9.14744 11.1147 8.89248 11.3697 8.57887 11.5295C8.22235 11.7111 7.75564 11.7111 6.82222 11.7111H4.37778C3.44436 11.7111 2.97765 11.7111 2.62113 11.5295C2.30752 11.3697 2.05256 11.1147 1.89277 10.8011C1.71111 10.4446 1.71111 9.97787 1.71111 9.04445V2.82222" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              AI제안 삭제
+            </button>
+          </nav>
+
+          <div class="extract-result__body">
+
+          <div data-tab-panel="desc" id="tabPanelDesc">
+
+            <!-- 추출설명 탭은 문서종류~발급기관(단일값 필드) 추출그룹타입만 갖는다 — 본인정보(반복/표
+                 형태)는 추출항목 탭의 본인정보 테이블로만 표현하고 여기서는 제외한다.
+                 get_design_context(493:9915, 547:18890, 547:18916, 547:18942) 재실측. -->
+            <div class="extract-group" id="afDescGroupArea">
+              <div class="apply-form__empty" th:if="${#lists.isEmpty(descGroupList)}">AI 제안 추출설명 없음</div>
+              <div class="apply-form__desc-group" th:each="group : ${descGroupList}"
+                th:data-group-fld-id="${group.groupFldId}" th:data-group-nm="${group.groupNm}"
+                th:attr="data-persisted=${group.groupFldId > 0} ? 'true' : null">
+                <div class="apply-form__desc-group-title" th:text="${group.groupNm}">그룹명</div>
+                <div class="apply-form__desc-group-desc" th:if="${group.groupDesc}" th:text="${group.groupDesc}">그룹설명</div>
+                <div class="extract-card" th:each="item : ${group.items}" th:data-fld-key="${item.fldKey}"
+                  th:data-fld-id="${item.fldId}"
+                  th:data-data-type-cd="${item.dataTypeCd}" th:data-data-len="${item.dataLen}"
+                  th:data-mask-yn="${item.maskYn}" th:data-mask-range="${item.maskRange}"
+                  th:data-data-cmpr-rule="${item.dataCmprRule}"
+                  th:data-match-fld-ids="${#strings.listJoin(item.matchFldIdList, ',')}"
+                  th:data-meta-clss="${item.metaClss}" th:data-meta-type="${item.metaType}"
+                  th:data-meta-word="${item.metaWord}" th:data-meta-lnm="${item.metaLnm}"
+                  th:data-meta-pnm="${item.metaPnm}"
+                  th:attr="data-persisted=${item.fldId > 0} ? 'true' : null">
+                  <div class="extract-card__top">
+                    <label class="checkbox checkbox--lg">
+                      <input type="checkbox" class="checkbox__input af-desc-row-chk" th:checked="${item.reqYn != 'N'}">
+                      <span class="checkbox__box">
+                        <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.83263 3.64645C10.0558 3.84171 10.0558 4.15829 9.83263 4.35355L5.2612 8.35355C5.03805 8.54882 4.67624 8.54882 4.45308 8.35355L2.16737 6.35355C1.94421 6.15829 1.94421 5.84171 2.16737 5.64645C2.39052 5.45118 2.75233 5.45118 2.97549 5.64645L4.85714 7.29289L9.02451 3.64645C9.24767 3.45118 9.60948 3.45118 9.83263 3.64645Z" fill="currentColor"/></svg>
+                      </span>
+                    </label>
+                    <span class="extract-card__label af-desc-row-nm" th:text="${item.fldNm}">항목명</span>
+                    <div class="extract-card__seg">
+                      <button type="button" class="extract-card__seg-btn af-btn-rule">규칙</button>
+                      <button type="button" class="extract-card__seg-btn af-btn-mapping">메타</button>
+                      <button type="button" class="extract-card__seg-btn extract-card__seg-btn--icon af-desc-row-remove" aria-label="삭제">
+                        <svg viewBox="0 0 11.2 12.3111" fill="none" xmlns="http://www.w3.org/2000/svg" width="12" height="12" aria-hidden="true"><path d="M7.82222 2.82222V2.37778C7.82222 1.7555 7.82222 1.44436 7.70112 1.20668C7.59459 0.997609 7.42461 0.827631 7.21555 0.721105C6.97787 0.600001 6.66673 0.600001 6.04444 0.600001H5.15556C4.53328 0.600001 4.22213 0.600001 3.98446 0.721105C3.77539 0.827631 3.60541 0.997609 3.49888 1.20668C3.37778 1.44436 3.37778 1.7555 3.37778 2.37778V2.82222M4.48889 5.87778V8.65556M6.71111 5.87778V8.65556M0.6 2.82222H10.6M9.48889 2.82222V9.04445C9.48889 9.97787 9.48889 10.4446 9.30723 10.8011C9.14744 11.1147 8.89248 11.3697 8.57887 11.5295C8.22235 11.7111 7.75564 11.7111 6.82222 11.7111H4.37778C3.44436 11.7111 2.97765 11.7111 2.62113 11.5295C2.30752 11.3697 2.05256 11.1147 1.89277 10.8011C1.71111 10.4446 1.71111 9.97787 1.71111 9.04445V2.82222" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <div class="extract-card__input af-desc-row-desc" th:if="${item.description}" th:text="${item.description}">설명</div>
+                  <div class="extract-card__input af-desc-row-desc apply-form__desc-empty" th:unless="${item.description}">설명 없음-클릭하여 편집</div>
+                </div>
+                <div class="apply-form__desc-group-footer">
+                  <button type="button" class="btn-neutral btn-neutral--dashed extract-add af-desc-add-row" style="width:95px">
+                    <img th:src="@{/images/icons/buttons/ic-16-plus.svg}" alt="">
+                    항목 추가
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <div data-tab-panel="items" hidden id="tabPanelItem">
+            <table class="table extract-basic__table" id="afRecogTable" style="table-layout:fixed;">
+              <tbody id="afRecogBody">
+              <tr class="af-recog-empty" th:if="${#lists.isEmpty(fldList)}">
+                <td>AI 제안 - 추출항목 없음</td>
+              </tr>
+              </tbody>
+            </table>
+          </div>
+
+          </div>
+          <!-- extract-result__body는 위에서 닫는다 — 바디(overflow:auto)와 아래 요청내용/첨부파일
+               footer를 형제로 분리해야 바디 콘텐츠가 많아져도 footer는 고정되고 바디 안에서만 스크롤된다. -->
+
+          <!-- 요청내용/첨부파일 — get_design_context(492:9662) 실측 -->
+          <div class="extract-result__footer">
+            <div class="extract-result__footer-row">
+              <div class="section-title">요청내용</div>
+              <textarea class="extract-result__request af-content-tab-panel" id="afContentDesc" data-tab-panel="desc"
+                data-src-type-cd="DESC" th:text="${descWriteCntn}"></textarea>
+              <textarea class="extract-result__request af-content-tab-panel" id="afContentItem" data-tab-panel="items"
+                data-src-type-cd="ITEM" style="display:none;" th:text="${itemWriteCntn}"></textarea>
+            </div>
+            <div class="extract-result__footer-row">
+              <div class="section-title section-title--row">
+                첨부파일
+                <div class="section-title__btn-group">
+                  <button type="button" class="btn-neutral" style="width:80px" id="btnAttachUpload">
+                    <img th:src="@{/images/icons/buttons/ic-16-upload.svg}" alt="">업로드
+                  </button>
+                  <button type="button" class="btn-neutral" style="width:80px" id="btnAttachDelete">삭제</button>
+                </div>
+                <input type="file" id="afAttachInput" style="display:none;" multiple>
+              </div>
+              <table class="table af-attach-tab-panel" id="afAttachBodyDesc" data-tab-panel="desc" data-src-type-cd="DESC">
+                <thead>
+                  <tr>
+                    <th>이름</th>
+                    <th style="width:200px">크기</th>
+                    <th style="width:60px"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="file : ${descFileList}" th:data-file-id="${file.fileId}">
+                    <td style="text-align:left">
+                      <input type="checkbox" style="margin-right:8px;">
+                      <span th:text="${file.fileNm}"></span>
+                    </td>
+                    <td th:text="${#numbers.formatDecimal(file.fileSize / 1024.0 / 1024.0, 1, 1)} + ' MByte'">0.0 MByte</td>
+                    <td>
+                      <button type="button" class="table-icon-delete af-attach-download" aria-label="첨부파일 다운로드">
+                        <span class="btn-icon-slot"><svg viewBox="0 0 7.725 7.725" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <table class="table af-attach-tab-panel" id="afAttachBodyItem" data-tab-panel="items" data-src-type-cd="ITEM" style="display:none;">
+                <thead>
+                  <tr>
+                    <th>이름</th>
+                    <th style="width:200px">크기</th>
+                    <th style="width:60px"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="file : ${itemFileList}" th:data-file-id="${file.fileId}">
+                    <td style="text-align:left">
+                      <input type="checkbox" style="margin-right:8px;">
+                      <span th:text="${file.fileNm}"></span>
+                    </td>
+                    <td th:text="${#numbers.formatDecimal(file.fileSize / 1024.0 / 1024.0, 1, 1)} + ' MByte'">0.0 MByte</td>
+                    <td>
+                      <button type="button" class="table-icon-delete af-attach-download" aria-label="첨부파일 다운로드">
+                        <span class="btn-icon-slot"><svg viewBox="0 0 7.725 7.725" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      </div>
+
+      </div>
+
+    </main>
+
+
+<!-- 결재선 지정 모달 -->
+<div id="approvalLineModal" class="modal-overlay" hidden>
+  <div class="modal modal--w1000">
+    <div class="modal__header">
+      <span class="modal__title">결재선 지정</span>
+      <button type="button" class="modal__close" aria-label="닫기" data-modal-close>
+        <svg width="7.725" height="7.725" viewBox="0 0 7.725 7.725" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div class="approval-picker">
+        <!-- 좌측: 직원 검색 + 목록 -->
+        <div class="approval-picker__col">
+          <form class="sub__search-area" id="laSearchForm" onsubmit="return false;">
+            <span class="search-area__label">검색어</span>
+            <div class="search-area__combo" style="flex:1">
+              <select class="input input--w120" disabled>
+                <option>이름</option>
+              </select>
+              <input class="input" type="text" style="flex:1" id="laSearchInput" placeholder="이름을 입력하세요" autocomplete="off">
+              <button type="submit" class="btn-outline-primary" id="btnLaSearch">
+                    <span class="btn-icon-slot">
+                      <svg width="11.5" height="11.5" viewBox="0 0 11.5 11.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                        <path d="M10.75 10.75L8.33333 8.33333M9.63889 5.19444C9.63889 7.64904 7.64904 9.63889 5.19444 9.63889C2.73985 9.63889 0.75 7.64904 0.75 5.19444C0.75 2.73985 2.73985 0.75 5.19444 0.75C7.64904 0.75 9.63889 2.73985 9.63889 5.19444Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                검색
+              </button>
+            </div>
+          </form>
+          <table class="table">
+            <thead>
+            <tr>
+              <th style="width: 32px; padding: 0 10px">
+                <label class="checkbox"><input type="checkbox" class="checkbox__input" id="laStaffCheckAll"/><span class="checkbox__box">
+                  <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M9.83263 3.64645C10.0558 3.84171 10.0558 4.15829 9.83263 4.35355L5.2612 8.35355C5.03805 8.54882 4.67624 8.54882 4.45308 8.35355L2.16737 6.35355C1.94421 6.15829 1.94421 5.84171 2.16737 5.64645C2.39052 5.45118 2.75233 5.45118 2.97549 5.64645L4.85714 7.29289L9.02451 3.64645C9.24767 3.45118 9.60948 3.45118 9.83263 3.64645Z" fill="currentColor" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                </label>
+              </th>
+              <th>이름</th>
+            </tr>
+            </thead>
+            <tbody id="laStaffBody">
+            <tr class="la-empty-row"><td colspan="2">이름으로 검색해 주세요.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 가운데: 이동 버튼 — 위아래 두 목록의 전체 높이 기준 세로 중앙 정렬 -->
+        <div class="approval-picker__actions" style="margin-top:calc(12px + var(--control-height-md) + var(--gap-lg))">
+          <button type="button" class="btn-neutral" style="width: 70px" id="btnLaAppr">
+            결재
+            <span class="btn-icon-slot">
+              <svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M0.75 8.75L4.75 4.75L0.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </span>
+          </button>
+          <button type="button" class="btn-neutral" style="width: 70px" id="btnLaRemove">
+                <span class="btn-icon-slot">
+                  <svg width="5.5" height="9.5" viewBox="0 0 5.5 9.5" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M4.75 8.75L0.75 4.75L4.75 0.75" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+            삭제
+          </button>
+        </div>
+
+        <!-- 우측: 결재선 목록 -->
+        <div class="approval-picker__col">
+          <div class="approval-picker__add" style="height:calc(12px + var(--control-height-md))"></div>
+          <table class="table">
+            <thead>
+            <tr>
+              <th style="width: 32px; padding: 0 10px">
+                <label class="checkbox"><input type="checkbox" class="checkbox__input" id="laLineCheckAll">
+                  <span class="checkbox__box">
+                    <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                       <path fill-rule="evenodd" clip-rule="evenodd" d="M9.83263 3.64645C10.0558 3.84171 10.0558 4.15829 9.83263 4.35355L5.2612 8.35355C5.03805 8.54882 4.67624 8.54882 4.45308 8.35355L2.16737 6.35355C1.94421 6.15829 1.94421 5.84171 2.16737 5.64645C2.39052 5.45118 2.75233 5.45118 2.97549 5.64645L4.85714 7.29289L9.02451 3.64645C9.24767 3.45118 9.60948 3.45118 9.83263 3.64645Z" fill="currentColor" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                </label>
+              </th>
+              <th style="width: 80px">구분</th>
+              <th>결재자정보</th>
+            </tr>
+            </thead>
+            <tbody id="laLineBody">
+              <tr class="la-empty-row"><td colspan="3">지정된 결재자가 없습니다.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <div class="modal__footer-actions">
+        <button type="button" class="btn btn-primary" id="btnLaConfirm">
+              <span class="btn-icon-slot">
+                <svg width="9.2" height="6.7" viewBox="0 0 9.2 6.7" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                  <path d="M8.6 0.6L3.1 6.1L0.6 3.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+          확인
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 규칙 등록 모달 — get_design_context(517:15884) 실측("신청관리-OCR서식신청-규칙 팝업" 프레임,
+     실제 표시 타이틀은 "규칙 등록"). OCR서식신청 추출화면(ocr-form-apply-extract.html) 추출항목
+     카드의 "규칙" 세그먼트 버튼에서 여는 팝업 — 실제 화면 연결은 개발자가 진행. -->
+<div id="rule-register-modal" class="modal-overlay" hidden>
+  <div class="modal modal--md">
+    <div class="modal__header">
+      <span class="modal__title">규칙 등록</span>
+      <button type="button" class="modal__close" aria-label="닫기" data-modal-close>
+        <svg width="7.725" height="7.725" viewBox="0 0 7.725 7.725" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div class="modal__summary">
+        <span class="search-area__label">항목</span>
+        <span class="modal__summary-value" id="rrFldNm"></span>
+      </div>
+
+      <div class="modal__field-row">
+        <div class="modal__field-item">
+          <span class="modal__row-label">필수여부</span>
+          <select class="input" style="flex:1" id="rrReqYn">
+            <option value="Y">Y</option>
+            <option value="N">N</option>
+          </select>
+        </div>
+        <div class="modal__field-item">
+          <span class="modal__row-label">데이터유형</span>
+          <select class="input" style="flex:1" id="rrDataTypeCd">
+            <option value="TEXT">텍스트</option>
+            <option value="NUMBER">숫자</option>
+            <option value="DATE">날짜</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal__field-row">
+        <div class="modal__field-item">
+          <span class="modal__row-label">마스킹여부</span>
+          <select class="input" style="flex:1" id="rrMaskYn">
+            <option value="Y">Y</option>
+            <option value="N">N</option>
+          </select>
+        </div>
+        <div class="modal__field-item">
+          <span class="modal__row-label">자리수</span>
+          <input class="input" type="text" style="flex:1" id="rrDataLen" inputmode="numeric" maxlength="10">
+        </div>
+      </div>
+
+      <div class="modal__field-row">
+        <div class="modal__field-item">
+          <span class="modal__row-label">마스킹범위</span>
+          <input class="input" type="text" style="flex:1" id="rrMaskRange" maxlength="100" placeholder="예) 중간 2자리 숫자 마스킹">
+        </div>
+      </div>
+
+      <div class="modal__field-row">
+        <div class="modal__field-item">
+          <span class="modal__row-label">날짜비교</span>
+          <select class="input" style="flex:1" id="rrDataCmprRule">
+            <option value="NONE">없음</option>
+            <option value="TODAY">당일</option>
+            <option value="1W">1주일 이내</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal__field-row">
+        <div class="modal__field-item">
+          <span class="modal__row-label">일치 Input 항목</span>
+            <select class="input rr-match-select" style="flex:1" id="rrMatchCd">
+              <option value="">선택</option>
+              <option th:each="cd : ${ruleMatchCdList}" th:value="${cd.cd}" th:text="${cd.cdNm}">코드명</option>
+            </select>
+            <button type="button" class="btn-neutral" style="width:70px; flex-shrink:0" id="rrMatchAddBtn">
+              <span class="btn-icon-slot"><svg width="10.6667" height="10.6667" viewBox="0 0 10.6667 10.6667" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5.33333 0.666667V10M0.666667 5.33333H10" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+              추가
+            </button>
+          </div>
+        </div>
+
+      <div id="rrMatchExtraRows" style="display:contents"></div>
+    </div>
+    <div class="modal__footer">
+      <div class="modal__footer-actions">
+        <button type="button" class="btn-outline-primary" data-modal-close>
+          <span class="btn-icon-slot"><svg width="7.725" height="7.725" viewBox="0 0 7.725 7.725" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          취소
+        </button>
+        <button type="button" class="btn btn-primary" id="rrSaveBtn">
+          <span class="btn-icon-slot"><svg width="9.2" height="6.7" viewBox="0 0 9.2 6.7" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8.6 0.6L3.1 6.1L0.6 3.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 메타 정보 모달 -->
+<div id="meta-modal" class="modal-overlay" hidden>
+  <div class="modal modal--md">
+    <div class="modal__header">
+      <span class="modal__title">메타 정보</span>
+      <button type="button" class="modal__close" aria-label="닫기" data-modal-close>
+        <svg width="7.725" height="7.725" viewBox="0 0 7.725 7.725" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+    <div class="modal__body">
+      <div class="modal__summary">
+        <span class="search-area__label">항목</span>
+        <span class="modal__summary-value" id="mtFldNm"></span>
+      </div>
+
+      <div class="modal__field-row">
+        <div class="modal__field-item">
+          <span class="modal__row-label">표준분류</span>
+          <input class="input" type="text" style="flex:1" id="mtStdCls" value="공통표준" readonly>
+        </div>
+      </div>
+      <div class="modal__field-row">
+        <div class="modal__field-item">
+          <span class="modal__row-label">사전유형</span>
+          <input class="input" type="text" style="flex:1" id="mtDicType" value="표준단어" readonly>
+        </div>
+      </div>
+      <div class="modal__field-row">
+        <div class="modal__field-item">
+          <span class="modal__row-label">표준단어</span>
+          <input class="input mt-input" type="text" style="flex:1" id="mtStdWord">
+        </div>
+      </div>
+      <div class="modal__field-row">
+        <div class="modal__field-item">
+          <span class="modal__row-label">표준단어논리명</span>
+          <input class="input mt-input" type="text" style="flex:1" id="mtStdWordLogNm">
+        </div>
+      </div>
+      <div class="modal__field-row">
+        <div class="modal__field-item">
+          <span class="modal__row-label">표준단어물리명</span>
+          <input class="input mt-input" type="text" style="flex:1" id="mtStdWordPhyNm">
+        </div>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <div class="modal__footer-actions">
+        <button type="button" class="btn-outline-primary" data-modal-close>
+          <span class="btn-icon-slot"><svg width="7.725" height="7.725" viewBox="0 0 7.725 7.725" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          취소
+        </button>
+        <button type="button" class="btn btn-primary" id="mtSaveBtn">
+          <span class="btn-icon-slot"><svg width="9.2" height="6.7" viewBox="0 0 9.2 6.7" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M8.6 0.6L3.1 6.1L0.6 3.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          저장
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script th:src="@{/js/file-list.js}"></script>
+<script th:src="@{/js/doc-viewer-zoom.js}"></script>
+<script th:src="@{/js/result-tabs.js}"></script>
+<script th:src="@{/js/modal.js}"></script>
+<script th:inline="none">
+  (function () {
+    // 문서뷰어
+    function resetDocViewerZoom() {
+      var doc = document.querySelector('.doc-viewer[data-zoom]');
+      if (!doc) {
+        return;
+      }
+      if (window.docViewerZoomRebind) {
+        window.docViewerZoomRebind(doc);
+        return;
+      }
+
+      var image = doc.querySelector('[data-zoom-target]');
+      var valueEl = doc.querySelector('[data-zoom-value]');
+      var outBtn = doc.querySelector('[data-zoom-out]');
+      var inBtn = doc.querySelector('[data-zoom-in]');
+      if (image) {
+        image.style.transform = 'scale(1)';
+      }
+      if (valueEl) {
+        valueEl.textContent = '100%';
+      }
+      if (outBtn) {
+        outBtn.disabled = true;
+      }
+      if (inBtn) {
+        inBtn.disabled = false;
+      }
+    }
+
+    // 추출서령 / 추출항목 탭 전환
+    // 내부적으로 ...
+    function activeTabKey() {
+      var activeBtn = document.querySelector('.tabs__item.is-active[data-tab]');
+      var tab = activeBtn ? activeBtn.getAttribute('data-tab') : 'desc';
+      return tab === 'item' ? 'item' : tab;
+    }
+
+    // 추출설명 탭 - 항목명/설명 클릭 시 인라인 편집
+    function bindDescRowEdit(nmEl, descEl) {
+      nmEl.addEventListener('click', function () {
+        if (nmEl.querySelector('input')) {
+          return;
+        }
+        var originalText = nmEl.textContent;
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'input';
+        input.value = originalText;
+
+        function restore() {
+          var value = input.value.trim();
+          nmEl.textContent = value || originalText;
+        }
+
+        input.addEventListener('blur', restore);
+        input.addEventListener('keydown', function (evt) {
+          if (evt.key === 'Enter') {
+            input.blur();
+          } else if (evt.key === 'Escape') {
+            input.value = originalText;
+            input.blur();
+          }
+        });
+
+        nmEl.textContent = '';
+        nmEl.appendChild(input);
+        input.focus();
+        input.select();
+      });
+
+      descEl.addEventListener('click', function () {
+        if (descEl.querySelector('textarea')) {
+          return;
+        }
+        var isEmpty = descEl.classList.contains('apply-form__desc-empty');
+        var originalText = isEmpty ? '' : descEl.textContent;
+        var textarea = document.createElement('textarea');
+        textarea.className = 'apply-form__desc-edit';;
+        textarea.value = originalText;
+
+        function restore() {
+          descEl.classList.remove('apply-form__desc-empty');
+          var value = textarea.value.trim();
+          if (value) {
+            descEl.textContent = value;
+          } else {
+            descEl.textContent = '설명 없음-클릭하여 편집';
+            descEl.classList.add('apply-form__desc-empty');
+          }
+        }
+
+        textarea.addEventListener('blur', restore);
+
+        descEl.textContent = '';
+        descEl.appendChild(textarea);
+        textarea.focus();
+      });
+    }
+
+    document.querySelectorAll('#tabPanelDesc .af-desc-row-nm').forEach(function (nmEl) {
+      var card = nmEl.closest('.extract-card');
+      bindDescRowEdit(nmEl, card.querySelector('.af-desc-row-desc'));
+    });
+
+    var afDescRowSeq = 100;
+
+    // 추출설명 탭 - 항목추가 클릭 시 새 카드를 추가
+    function handleDescAddRow(addBtn) {
+      var group = addBtn.closest('.apply-form__desc-group');
+      var footer = addBtn.closest('.apply-form__desc-group-footer');
+
+      var card = document.createElement('div');
+      card.className = 'extract-card';
+      card.dataset.fldKey = 'KEY_NM_' + (afDescRowSeq++);
+      card.innerHTML =
+        '<div class="extract-card__top">' +
+          '<label class="checkbox checkbox--lg">' +
+            '<input type="checkbox" class="checkbox__input af-desc-row-chk" checked>' +
+            '<span class="checkbox__box">' +
+              '<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.83263 3.64645C10.0558 3.84171 10.0558 4.15829 9.83263 4.35355L5.2612 8.35355C5.03805 8.54882 4.67624 8.54882 4.45308 8.35355L2.16737 6.35355C1.94421 6.15829 1.94421 5.84171 2.16737 5.64645C2.39052 5.45118 2.75233 5.45118 2.97549 5.64645L4.85714 7.29289L9.02451 3.64645C9.24767 3.45118 9.60948 3.45118 9.83263 3.64645Z" fill="currentColor"/></svg>' +
+            '</span>' +
+          '</label>' +
+          '<span class="extract-card__label af-desc-row-nm">키이름</span>' +
+          '<div class="extract-card__seg">' +
+            '<button type="button" class="extract-card__seg-btn af-btn-rule">규칙</button>' +
+            '<button type="button" class="extract-card__seg-btn af-btn-mapping">메타</button>' +
+            '<button type="button" class="extract-card__seg-btn extract-card__seg-btn--icon af-desc-row-remove" aria-label="삭제">-</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="extract-card__input af-desc-row-desc apply-form__desc-empty">설명 없음-클릭하여 편집</div>';
+      group.insertBefore(card, footer);
+
+      bindDescRowEdit(card.querySelector('.af-desc-row-nm'), card.querySelector('.af-desc-row-desc'));
+      card.querySelector('.af-desc-row-nm').click();
+    }
+
+    // 항목추가
+    document.querySelectorAll('#tabPanelDesc .af-desc-add-row').forEach(function (addBtn) {
+      addBtn.addEventListener('click', function () {
+        handleDescAddRow(addBtn);
+      });
+    });
+
+    // 추출설명 탭 - 카드 삭제 / "규칙" 클릭 시 규칙 등록 모달 표시
+    document.getElementById('tabPanelDesc').addEventListener('click', function (e) {
+      var removeBtn = e.target.closest('.af-desc-row-remove');
+      if (removeBtn) {
+        removeBtn.closest('.extract-card').remove();
+      }
+
+      var ruleBtn = e.target.closest('.af-btn-rule');
+      if (ruleBtn) {
+        openRuleRegisterModal(ruleBtn.closest('.extract-card'));
+        return;
+      }
+
+      var metaBtn = e.target.closest('.af-btn-mapping');
+      if (metaBtn) {
+        openMetaModal(metaBtn.closest('.extract-card'));
+      }
+    });
+
+    // 메타 정보 모달.
+    var metaModalCard = null;
+
+    function readCardMeta(card) {
+      var ds = card.dataset;
+      return {
+        metaClss: ds.metaClss || null,
+        metaType: ds.metaType || null,
+        metaWord: ds.metaWord || null,
+        metaLnm: ds.metaLnm || null,
+        metaPnm: ds.metaPnm || null
+      };
+    }
+
+    function applyCardMeta(card, meta) {
+      card.dataset.metaClss = meta.metaClss || '';
+      card.dataset.metaType = meta.metaType || '';
+      card.dataset.metaWord = meta.metaWord || '';
+      card.dataset.metaLnm = meta.metaLnm || '';
+      card.dataset.metaPnm = meta.metaPnm || '';
+    }
+
+    function openMetaModal(card) {
+      var nmEl = card.querySelector('.af-desc-row-nm');
+      var nmInput = nmEl.querySelector('input');
+      var meta = readCardMeta(card);
+      var clssInput = document.getElementById('mtStdCls');
+      var typeInput = document.getElementById('mtDicType');
+
+      metaModalCard = card;
+      document.getElementById('mtFldNm').textContent = nmInput ? nmInput.value : nmEl.textContent;
+      clssInput.value = meta.metaClss || clssInput.defaultValue;
+      typeInput.value = meta.metaType || typeInput.defaultValue;
+      document.getElementById('mtStdWord').value = meta.metaWord || '';
+      document.getElementById('mtStdWordLogNm').value = meta.metaLnm || '';
+      document.getElementById('mtStdWordPhyNm').value = meta.metaPnm || '';
+      document.getElementById('meta-modal').hidden = false;
+    }
+
+    function closeMetaModal() {
+      metalModalCard = null;
+      document.getElementById('meta-modal').hidden = true;
+    }
+
+    // 메타정보 저장
+    document.getElementById('mtSaveBtn').addEventListener('click', function () {
+      var card = metaModalCard;
+      if (!card || !card.isConnected) {
+        closeMetaModal();
+        return;
+      }
+
+      var meta = {
+        metaClss: document.getElementById('mtStdCls').value,
+        metaType: document.getElementById('mtDicType').value,
+        metaWord: document.getElementById('mtStdWord').value.trim() || null,
+        metaLnm: document.getElementById('mtStdWordLogNm').value.trim() || null,
+        metaPnm: document.getElementById('mtStdWordPhyNm').value.trim() || null
+      };
+
+      var applId = Number(document.getElementById('afApplId').value) || 0;
+      var fldId = Number(card.dataset.fldId) || 0;
+      var persisted = card.getAttribute('data-persisted') === 'true' && fldId > 0 && applId > 0;
+
+      // 아직 DB에 없는 카드(항목 추가로 만든 카드 등)는 카드에만 반영하고, 임시 저장시 함계 저장된다.
+      if (!persisted) {
+        applyCardMeta(card, meta);
+        closeMetaModal();
+        alert('메타 정보가 반영되었습니다. 임시 저장시 함께 저장됩니다.');
+        return;
+      }
+
+      var saveBtn = this;
+      saveBtn.disabled = true;
+      fetch(contextPath + 'module/apply/fld/' + fldId + '/meta?applId=' + applId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(meta)
+      }).then(function (res) {
+        if (!res.ok) {
+          throw new Error('메타 정보 실패: ' + res.status);
+        }
+        applyCardMeta(card, meta);
+        closeMetaModal();
+        alert('메타 정보가 저장되었습니다.');
+      }).catch(function (err) {
+        console.error(err);
+        alert('메타 정보 저장 중 오류가 발생했습니다.')
+      }).finally(function () {
+        saveBtn.disabled = false;
+      });
+    });
+
+    // 규칙 등록 모달.
+    var ruleModalCard = null;
+
+    // 저장된 값이 선택지에 없으면(코드 삭제 등) 첫 번째 옶션으로 둔다
+    function setSelectValue(select, value) {
+      select.value = value == null ? '' : value;
+      if (select.selectedIndex < 0) {
+        select.selectedIndex = 0;
+      }
+    }
+
+    function readCardRule(card) {
+      var ds = card.dataset;
+      return {
+        reqYn: card.querySelector('.af-desc-row-chk').checked ? 'Y' : 'N',
+        dataTypeCd: ds.dataTypeCd || null,
+        dataLen: ds.dataLen ? Number(ds.dataLen) : null,
+        maskYn: ds.maskYn || null,
+        maskRange: ds.maskRange || null,
+        dataCmprRule: ds.dataCmprRule || null,
+        matchFldIdList: ds.matchFldIds ? ds.matchFldIds.split(',') : []
+      };
+    }
+
+    function applyCardRule(card, rule) {
+      card.querySelector('.af-desc-row-chk').checked = rule.reqYn !== 'N';
+      card.dataset.dataTypeCd = rule.dataTypeCd || '';
+      card.dataset.dataLen = rule.dataLen == null ? '' : String(rule.dataLen);
+      card.dataset.maskYn = rule.maskYn || '';
+      card.dataset.maskRange = rule.maskRange || '';
+      card.dataset.dataCmprRule = rule.dataCmprRule || '';
+      card.dataset.matchFldIds = (rule.matchFldIdList || []).join(',');
+    }
+
+    // 일치 Input 항목...
+    function matchSelects() {
+      return Array.prototype.slice.call(document.querySelectorAll('#rule-register-modal .rr-match-select'));
+    }
+
+    function renumberMatchRows() {
+      document.querySelectorAll('#rrMatchExtraRows .modal__row-label').forEach(function (label, idx) {
+        label.textContent = '일치 Input 항목' + (idx + 2);
+      });
+    }
+
+    function addMatchRow(value) {
+      var row = document.createElement('div');
+      row.className = 'modal__field-row';
+      row.innerHTML =
+        '<div class="modal__field-item">' +
+          '<span class="modal__row-label"></span>' +
+          '<select class="input rr-match-select" style="flex:1"></select>' +
+          '<button type="button" class="btn-neutral" style="width:70px; flex-shrink:0">삭제</button>' +
+        '</div>';
+      var select = row.querySelector('select');
+      select.innerHTML = document.getElementById('rrMatchCd').innerHTML;
+      setSelectValue(select, value);
+      row.querySelector('button').addEventListener('click', function () {
+        row.remove();
+        renumberMatchRows();
+      });
+      document.getElementById('rrMatchExtraRows').appendChild(row);
+      renumberMatchRows();
+      return select;
+    }
+
+    // 저장된 값이 있으면 줄마다 해당 코드를 선택해 둔다(없으면 첫 줄 "선택")
+    function fillMatchRows(matchFldIdList) {
+      document.getElementById('rrMatchExtraRows').innerHTML = '';
+      setSelectValue(document.getElementById('rrMatchCd'), matchFldIdList[0] || '');
+      matchFldIdList.slice(1).forEach(function (cd) {
+        addMatchRow(cd);
+      });
+    }
+
+    // 규칙 모달
+    function openRuleRegisterModal(card) {
+      var nmEl = card.querySelector('.af-desc-row-nm');
+      var nmInput = nmEl.querySelector('input');
+      var rule = readCardRule(card);
+
+      ruleModalCard = card;
+      document.getElementById('rrFldNm').textContent = nmInput ? nmInput.value : nmEl.textContent;
+      setSelectValue(document.getElementById('rrReqYn'), rule.reqYn);
+      setSelectValue(document.getElementById('rrDataTypeCd'), rule.dataTypeCd);
+      setSelectValue(document.getElementById('rrMaskYn'), rule.maskYn || 'N');
+      document.getElementById('rrDataLen').value = rule.dataLen == null ? '' : rule.dataLen;
+      document.getElementById('rrMaskRange').value = rule.maskRange;
+      setSelectValue(document.getElementById('rrDataCmprRule'), rule.dataCmprRule);
+      fillMatchRows(rule.matchFldIdList);
+      document.getElementById('rule-register-modal').hidden = false;
+    }
+
+    function closeRuleRegisterModal() {
+      ruleModalCard = null;
+      document.getElementById('rule-register-modal').hidden = true;
+    }
+
+    document.getElementById('rrMatchAddBtn').addEventListener('click', function () {
+      // 선택지(코드 수)보다 많은 줄은 만들지 않는다("선택" 옵션 제외)
+      if (matchSelects().length >= document.getElementById('rrMatchCd').options.length - 1) {
+        alert('더 추가할 일치 Input 항목이 없습니다.');
+        return;
+      }
+      addMatchRow('').focus();
+    });
+
+    // 규칙 모달 저장
+    document.getElementById('rrSaveBtn').addEventListener('click', function () {
+      var card = ruleModalCard;
+      if (!card || !card.isConnected) {
+        closeRuleRegisterModal();
+        return;
+      }
+
+      var dataLenText = document.getElementById('rrDataLen').value.trim();
+      if (dataLenText && !/^\d+$/.test(dataLenText)) {
+        alert('자리수는 숫자로 입력해 주세요.');
+        document.getElementById('rrDatalen').focus();
+        return;;
+      }
+
+      // 줄 순서대로 선택된 코드만 모으고, 같은 코드를 여러 줄에서 고르면 한 번만 저장한다.
+      var matchFldIdList = [];
+      matchSelects().forEach(function (select) {
+        if (select.value && matchFldIdList.indexOf(select.value) < 0) {
+          matchFldIdList.push(select.value);
+        }
+      });
+
+      var rule = {
+        reqYn: document.getElementById('rrReqYn').value,
+        dataTypeCd: document.getElementById('rrDataTypeCd').value,
+        dataLen: dataLenText ? Number(dataLenText) : null,
+        maskYn: document.getElementById('rrMaskYn').value,
+        maskRange: document.getElementById('rrMaskRange').value.trim() || null,
+        dataCmprRule: document.getElementById('rrDataCmprRule').value,
+        matchFldIdList: matchFldIdList
+      };
+
+      var applId = Number(document.getElementById('afApplId').value) || 0;
+      var fldId = Number(card.dataset.fldId) || 0;
+      var persisted = card.getAttribute('data-persisted') === 'true' && fldId > 0 && applId > 0;
+
+      // 아직 DB에 없는 카드(항목 추가로 만든 카드 등)는 카드에만 반영하고, 임시저장 시 함께 저장된다
+      if (!persisted) {
+        applyCardRule(card, rule);
+        closeRuleRegisterModal();
+        alert('규칙이 반영되었습니다. 임시 저장시 함께 저장됩니다.')
+        return;
+      }
+
+      var saveBtn = this;
+      saveBtn.disabled = true;
+      fetch(contextPath + 'module/apply/fld/' + fldId + '/rule?applId=' + applId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rule)
+      }).then(function (res) {
+        if (!res.ok) {
+          throw new Error('규칙 저장 실패: ' + res.status);
+        }
+        applyCardRule(card, rule);
+        closeRuleRegisterModal();
+        alert('규칙이 저장되었습니다.');
+      }).catch(function (err) {
+        console.error(err);
+        alert('규칙 저장 중 오류가 발생했습니다.')
+      }).finally(function () {
+        saveBtn.disabled = false;
+      });
+    });
+
+    // 헤더 사용자 선택(로그인)에 따른 신청자 정보 표시
+
+    // 결재선 지정 모달...
+    var GUBUN_DEFAULT = { cd: 'APPR', nm: '결재' };
+    var laStaffList = []; //검색된 직원 목록: { id, name }
+    var laApprLine = []; // 결재선에 담긴 목록
+
+    function renderMgrList(mgrList) {
+      var ul = document.getElementById('afMgrList');
+      ul.innerHTML = '';
+      (mgrList || []).forEach(function (mgr) {
+        var li = document.createElement('li');
+        li.dataset.mgrUserId = mgr.mgrUserId;
+        li.dataset.mgrUserNm = mgr.mgrUserNm;
+        li.dataset.mgrTypeCd = mgr.mgrTypeCd;
+        li.textContent = mgr.mgrUserNm + '(' + (mgr.mgrTypeCd || '') + ')';
+        ul.appendChild(li);
+      });
+    }
+
+    // 좌측 직원목록 그리기
+    function renderLaStaffList() {
+      var tbody = document.getElementById('laStaffBody');
+      if (laStaffList.length === 0) {
+        tbody.innerHTML = '<tr class="la-empty-row"><td colspan="2">이름으로 검색해 주세요.</td></tr>';
+        document.getElementById('laStaffCheckAll').checked = false;
+        return;
+      }
+      tbody.innerHTML = laStaffList.map(function (p) {
+        return '<tr data-id="' + escapeHtml(p.id) + '">' +
+                '<td style="width:32px;padding:0 10px"><input type="checkbox" class="la-staff-chk"></td>' +
+                '<td style="text-align:left">' + escapeHtml(p.name) + '</td>' +
+                '</tr>';
+      }).join('');
+    }
+
+    // 우측 결재선 목록 그리기
+    function renderLaLineList() {
+      var tbody = document.getElementById('laLineBody');
+      if (laApprLine.length === 0) {
+        tbody.innerHTML = '<tr class="la-empty-row"><td colspan="3">지정된 결재자가 없습니다.</td></tr>';
+        document.getElementById('laLineCheckAll').checked = false;
+        return;
+      }
+      tbody.innerHTML = laApprLine.map(function (p, idx) {
+        return '<tr data-index="' + idx + '">' +
+                '<td style="width:32px;padding:0 10px"><input type="checkbox" class="la-line-chk"></td>' +
+                '<td>' + escapeHtml(p.gubunNm) + '</td>' +
+                '<td style="text-align:left">' + escapeHtml(p.name) + '</td>' +
+                '</tr>';
+      }).join('');
+    }
+
+    // 검색 : 이름으로만 검색한다
+    function searchLaStaff(keyword) {
+      if (!keyword) {
+        laStaffList = [];
+        renderLaStaffList();
+        return;
+      }
+      fetch(contextPath + 'module/apply/staff/search?keyword=' + encodeURIComponent(keyword))
+        .then(function (res) {
+          if (!res.ok) {
+            throw new Error('직원 검색 실패');
+          }
+          return res.json();
+        })
+        .then(function (rows) {
+          laStaffList = rows.map(function (row) {
+            return { id: row.userId, name: row.userNm };
+          });
+          renderLaStaffList();
+        })
+        .catch(function (err) {
+          console.error(err);
+          laStaffList = [];
+          renderLaStaffList();
+        });
+    }
+
+    document.getElementById('laSearchForm').addEventListener('submit', function () {
+      searchLaStaff(document.getElementById('laSearchInput').value.trim());
+    });
+
+    document.getElementById('laStaffCheckAll').addEventListener('change', function () {
+      var checked = this.checked;
+      document.querySelectorAll('#laStaffBody .la-staff-chk').forEach(function (chk) {
+        chk.checked = checked;
+      });
+    });
+    document.getElementById('laLineCheckAll').addEventListener('change', function () {
+      var checked = this.checked;
+      document.querySelectorAll('#laLineBody .la-line-chk').forEach(function (chk) {
+        chk.checked = checked;
+      });
+    });
+
+    // id로 지정된...
+    function addToLaApprLine(id) {
+      var staff = laStaffList.find(function (p) { return p.id === id; });
+      if (!staff) {
+        return;
+      }
+      var alreadyIn = laApprLine.some(function (p) { return p.id === id; });
+      if (alreadyIn) {
+        return;
+      }
+      laApprLine.push({ id: staff.id, name: staff.name, gubunCd: GUBUN_DEFAULT.cd, gubunNm: GUBUN_DEFAULT.nm });
+    }
+
+    // "결재" : 좌측에서 체크된 직원들을 우측 결재선 목록에 추가한다(중복 제외)ㄴ
+    document.getElementById('btnLaAppr').addEventListener('click', function () {
+      document.querySelectorAll('#laStaffBody tr[data-id] .la-staff-chk:checked').forEach(function (chk) {
+        addToLaApprLine(chk.closest('tr').dataset.id);
+      });
+      renderLaLineList();
+    });
+
+    // 좌측 직원목록 - 행 더블클릭 시 바로 우측 결재선 목록에 추가한다.ㄴ
+    document.getElementById('laStaffBody').addEventListener('dblclick', function (e) {
+      var tr = e.target.closest('tr[data-id]');
+      if (!tr) {
+        return;
+      }
+      addToLaApprLine(tr.dataset.id);
+      renderLaLineList();
+    });
+
+    // "삭제" : 우측에서 체크된 결재자들을 목록에서 제거한다.
+    document.getElementById('btnLaRemove').addEventListener('click', function () {
+      var checkedIndexes = Array.prototype.map.call(
+        document.querySelectorAll('#laLineBody .la-line-chk:checked'),
+        function (chk) { return Number(chk.closest('tr').dataset.index); }
+      );
+      laApprLine = laApprLine.filter((function (p, idx) { return checkedIndexes.indexOf(idx) === -1; }))
+      renderLaLineList();
+    });
+
+    // 우축 결재선목록 - 행 더블클릭 시 바로 목록에서 제거한다.
+    document.getElementById('laLineBody').addEventListener('dblclick', function (e) {
+      var tr = e.target.closest('tr[data-index]');
+      if (!tr) {
+        return;
+      }
+      var index = Number(tr.dataset.index);
+      laApprLine = laApprLine.filter(function (p, idx) { return idx !== index; });
+      renderLaLineList();
+    });
+
+    // 직원선택 모달
+    document.getElementById('btnAfPickStaff').addEventListener('click', function (e) {
+      if (e.target.id === 'approvalLineModal') {
+        e.stopPropagation();
+      }
+      laApprLine = Array.prototype.map.call(document.querySelectorAll('#afMgrList li'), function (li) {
+        return {
+          id: li.dataset.mgrUserId, name: li.dataset.mgrUserNm,
+          gubunCd: GUBUN_DEFAULT.cd,  gubunNm: li.dataset.mgrTypeCd || GUBUN_DEFAULT.nm
+        };
+      });
+      laStaffList = [];
+      document.getElementById('laSearchInput').value = '';
+      renderLaStaffList();
+      renderLaLineList();
+      openApprovalLineModal();
+    }, true);
+
+    function openApprovalLineModal() {
+      var modal =document.getElementById('approvalLineModal');
+      modal.hidden = false;
+      modal.style.display = '';
+    }
+
+    ['mousedown', 'click'].forEach(function (evt) {
+      window.addEventListener(evt, function (e) {
+        var modal = document.getElementById('approvalLineModal');
+        if (!modal || modal.hidden || getComputedStyle(modal).display === 'none') return;
+
+        var box = modal.querySelector('.modal');
+        if (box && !box.contains(e.target)) {
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      }, true);
+    });
+
+    // "확인" : 결재선 목록을 화면의 담당자 목록에 반영하고 모달을 닫는다
+    document.getElementById('btnLaConfirm').addEventListener('click', function (elementId) {
+      if (laApprLine.length === 0) {
+        alert('결재자를 한 명 이상 지정해 주세요.');
+        return;
+      }
+      renderMgrList(laApprLine.map(function (p) {
+        return { mgrUserId: p.id, mgrUserNm: p.name, mgrTypeCd: p.gubunNm };
+      }));
+      document.getElementById('approvalLineModal').hidden = true;
+      document.getElementById('approvalLineModal').style.display = 'none';
+    });
+
+    window.addEventListener('message', function (e) {
+      if (!e.data || !e.data.type) {
+        return;
+      }
+      // if (e.data.type === 'login-user-changed') {
+      //   loadApplicantInfo();
+      // }
+    });
+
+    function escapeHtml(str) {
+      var div = document.createElement('div');
+      div.textContent = str == null ? '' : str;
+      return div.innerHTML;
+    }
+
+    // 서식목록 비어있을 때 "서식 없음" 표시
+    function refreshFileListEmptyState() {
+      var fileList = document.getElementById('afFileList');
+      var hasFile = fileList.querySelector('.file-list__item:not(.apply-form__file-empty)');
+      var emptyItem = fileList.querySelector('.apply-form__file-empty');
+      if (hasFile) {
+        if (emptyItem) {
+          emptyItem.remove();
+        }
+      } else if (!emptyItem) {
+        var div = document.createElement('div');
+        div.className = 'file-list__item apply-form__file-empty';
+        div.textContent = '서식 없음';
+        fileList.appendChild(div);
+      }
+    }
+
+    // 뷰어에 떠 있던 서식이 삭제된 뒤,...
+    function selectFirstFileListItem() {
+      var fileList = document.getElementById('afFileList');
+      var imageView = document.getElementById('afImageView');
+      var firstItem = fileList.querySelector('.file-list__item:not(.apply-form__file-empty)');
+
+      fileList.querySelectorAll('.file-list__item').forEach(function (el) {
+        el.classList.remove('is-active');
+      });
+
+      if (!firstItem) {
+        imageView.innerHTML = '<span class="apply-form__doc-empty">이미지 없음</span>';
+        resetDocViewerZoom();
+        return;
+      }
+
+      firstItem.classList.add('is-active');
+      var imageSrc = firstItem.getAttribute('data-image-src');
+      if (imageSrc) {
+        imageView.innerHTML = '<img class="doc-viewer__image" src="' + imageSrc + '" alt="'
+          + escapeHtml(firstItem.getAttribute('data-file')) + '" data-zoom-target>';
+      } else {
+        imageView.innerHTML = '<span class="apply-form__doc-empty">이미지 없음</span>';
+      }
+      resetDocViewerZoom();
+    }
+
+    // 서식목록 선택 -> 미리보기 갱신
+    document.getElementById('afFileList').addEventListener('click', function (e) {
+      if (e.target.classList.contains('af-file-chk')) {
+        return;
+      }
+      var item = e.target.closest('.file-list__item');
+      if (!item || item.classList.contains('apply-form__file-empty')) {
+        return;
+      }
+      document.querySelectorAll('#afFileList .file-list__item').forEach(function (el) {
+        el.classList.remove('is-active');
+      });
+      item.classList.add('is-active');
+
+      var fileName = item.getAttribute('data-file');
+
+      var imageSrc = item.getAttribute('data-image-src');
+      var imageView = document.getElementById('afImageView');
+      if (imageSrc) {
+        imageView.innerHTML = '<img class="doc-viewer__image" src="' + imageSrc + '" alt="' + escapeHtml(fileName) + '" data-zoom-target>';
+      } else {
+        imageView.innerHTML = '<span class="apply-form__doc-empty">이미지 없음</span>';
+      }
+
+      resetDocViewerZoom();
+      //applyAiSuggestImgFilter();
+    });
+
+    // 서식목록 삭제
+    document.getElementById('btnAfFileDelete').addEventListener('click', function () {
+      var checkedItems = document.querySelectorAll('#afFileList .file-list__item .af-file-chk:checked');
+      if (checkedItems.length === 0) {
+        alert('삭제 할 서식 목록이 없습니다.');
+        return;
+      }
+      if (!confirm('선택한 서식 목록을 삭제하시겠습니까?')) {
+        return;
+      }
+
+      var checkedItemEls = Array.prototype.filter.call(
+              document.querySelectorAll('#afFileList .file-list__item'),
+              function (item) {
+                var chk = item.querySelector('.af-file-chk');
+                return chk && chk.checked;
+              }
+      );
+      var savedItems = checkedItemEls.filter(function (item) { return item.dataset.imgId; });
+      var newItems = checkedItemEls.filter(function (item) { return !item.dataset.imgId; });
+
+      var applId = Number(document.getElementById('afApplId').value) || 0;
+
+      // 뷰어에 떠 있는 이미지가 이번에 삭제되는지를 DOM에서 지우기 전에 미리 판단한다...
+      var activeItem = document.querySelector('#afFileList .file-list__item.is-active');
+      var activeDeleted = activeItem != null && checkedItemEls.indexOf(activeItem) !== -1;
+      var keepActiveImgId = !activeItem || activeDeleted ? null : (activeItem.dataset.imgId || null);
+
+      if (savedItems.length === 0) {
+        newItems.forEach(function (item) { item.remove(); });
+        refreshFileListEmptyState();
+        if (activeDeleted) {
+          selectFirstFileListItem();
+        }
+        //applyAiSuggestImgFilter();
+        return;
+      }
+
+      var query = savedItems.map(function (item) { return 'imgId=' + item.dataset.imgId; }).join('&');
+      fetch(contextPath + 'module/apply/img?' + query + '&applId=' + applId, { method: 'DELETE'})
+              .then(function (res) {
+                if (!res.ok) {
+                  throw new Error('시식목록 이미지 삭제 실패');
+                }
+                return res.json();
+              })
+              .then(function (result) {
+                if (result.applDeleted) {
+                  //window.location.href = window.location.pathname;
+                  window.location.href = contextPath + 'module/apply/extract?menuId=MENU0307&applId=' + applId;
+                  return;
+                }
+                newItems.forEach(function (item) { item.remove(); });
+                renderFormImgList(result.formImgList, keepActiveImgId);
+                //renderAiSuggestFldList(result.fldList, true);
+                //renderFldGroupList(result.groupList, true);
+                //applyAiSuggestImgFilter();
+              })
+              .catch(function (err) {
+                console.error(err);
+                alert('서식 목록 삭제 중 오류가 발생했습니다.');
+              });
+    });
+
+
+    // AI 제안 판독 항목 - 항목명 클릭 시 입력 가능
+    // 규칙/매핑 버튼 클릭 시 하단에 입력 행을 펼침
+    // 그룹(테이블) 컬럼 헤더 규칙/매핑
+    // 항목추가
+
+    function getActiveImgId() {
+      var activeItem = document.querySelector('#afFileList .file-list__item.is-active');
+      return activeItem ? (Number(activeItem.dataset.imgId) || null) : null;
+    }
+
+    function getActiveImgKey() {
+      var activeItem = document.querySelector('#afFileList .file-list__item.is-active');
+      if (!activeItem) {
+        return null;
+      }
+      if (activeItem.dataset.imgId) {
+        return 'img:' + activeItem.dataset.imgId;;
+      }
+      if (activeItem.dataset.tempKey) {
+        return 'temp:' + activeItem.dataset.tempKey;
+      }
+      return null;
+    }
+
+    function applyAiSuggestImgFilter() {
+      var activeImgKey = getActiveImgKey();
+      var hasVisibleFld = false;
+
+      document.querySelectorAll('#afRecogBody tr[data-fld-id]').forEach(function (row) {
+        var rowImgKey = row.dataset.imgKey || null;
+        var visible = activeImgKey != null && rowImgKey === activeImgKey;
+        row.style.display = visible ? '' : 'none';
+        if (visible) {
+          hasVisibleFld = true;
+        }
+      });
+
+      document.querySelectorAll('#afRecogGrouArea .extract-basic').forEach(function (wrap) {
+        var hasMatchingCell = activeImgKey != null
+          && Array.prototype.some.call(wrap.querySelectorAll('td[data-img-key]'), function (td) {
+            return td.dataset.imgKey === activeImgKey;
+          });
+        wrap.style.display = hasMatchingCell ? '' : 'none';
+      });
+
+      var afRecogBody = document.getElementById('afRecogBody');
+      var emptyRow = afRecogBody.querySelector('.af-recog-empty');
+      if (!hasVisibleFld && !emptyRow) {
+        emptyRow = document.createElement('tr');
+        emptyRow.className = 'af-recog-empty';
+        emptyRow.innerHTML = '<td colspan="6">AI 제안 판독 항목 없음</td>';
+        afRecogBody.insertBefore(emptyRow, document.getElementById('afRecogAddRowTemplate'));
+      } else if (hasVisibleFld && emptyRow) {
+        emptyRow.remove();
+      }
+    }
+
+    // AI 제안 버튼 - 엔진 기반 스키마 추천을 제출하고, 완료될 때까지 폴링한 뒤 결과를 DB에 저장하고 화면을 다시 그린다.
+    document.getElementById('btnAiSuggest').addEventListener('click', function () {
+      var applId = Number(document.getElementById('afApplId').value) || 0;
+      if (applId <= 0) {
+        alert('AI 제안을 실행하려면 먼저 임시저장을 해주세요.');
+        return;
+      }
+
+      var imgKey = getActiveImgKey();
+      if (imgKey == null) {
+        alert('AI 제안을 실행하려면 서식목록에서 이미지를 먼저 선택해 주세요.');
+        return;
+      }
+
+      var btn = this;
+      btn.disabled = true;
+      var originalText = btn.textContent;
+      btn.textContent = 'AI 제안 요청 중';
+
+      requestAiSuggestEngine(applId)
+        .then(function (result) {
+          renderDescGroupList(result.descGroupList, true);
+          //renderAiSuggestFldList(result.fldList, true);
+          //renderFldGroupList(result.groupList, true);
+          //applyAiSuggestImgFilter();
+        })
+        .catch(function (err) {
+          console.error(err);
+          alert(err && err.message ? err.message : 'AI 제안 중 오류가 발생했습니다.')
+        })
+        .finally(function () {
+          btn.disabled = false;
+          btn.textContent = originalText;
+        });
+    });
+
+    // 스키마 추천 제출
+    function requestAiSuggestEngine(applId) {
+      var POLL_TIMEOUT_MS = 1200000; //1200000, 120초 2분
+      var DEFAULT_POLL_INTERVAL_MS = 5000; //5초
+      var startedAt = Date.now();
+
+      function parseBody(res) {
+        if (res.status === 4001) {
+          throw new Error('로그인 세션이 완료되었습니다. 다시 로그인 이후 시도해 주세요.')
+        }
+        return res.json().then(function (body) {
+          if (!res.ok || body.success === false) {
+            throw new Error(body && body.message ? body.message : 'AI 제안 요청이 실패했습니다.')
+          }
+          return body.data;
+        });
+      }
+
+      function poll(suggestionId) {
+        if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+          return Promise.reject(new Error('스키마 추천 결과 대기 시간이 초과되었습니다.'))
+        }
+
+        return fetch(contextPath + 'api/v1/schema-suggestions/' + encodeURIComponent(suggestionId))
+          .then(parseBody)
+          .then(function (result) {
+            if (result.status === 'succeeded') {
+              return result;
+            }
+            if (result.status === 'failed') {
+              throw new Error(result.error || '스키마 추천이 실패했습니다.');
+            }
+            var waitMs = result.pollAfterMs || DEFAULT_POLL_INTERVAL_MS;
+            return new Promise(function (resolve) {
+              setTimeout(resolve, waitMs);
+            }).then(function () {
+              return poll(suggestionId);
+            });
+          });
+      }
+
+      return fetch(contextPath + 'api/v1/schema-suggestions?applId=' + applId, { method: 'POST' })
+        .then(parseBody)
+        .then(function (submitResult) {
+          var suggestionId = submitResult.suggestionId;
+          return poll(suggestionId).then(function () {
+            return fetch(contextPath + 'api/v1/schema-suggestions/' + encodeURIComponent(suggestionId) + '/apply?applId=' + applId,
+              { method: 'POST'} );
+          });
+        })
+        .then(parseBody);
+    }
+
+    // AI 제안 삭제 버튼
+    document.getElementById('btnAiSuggestDelete').addEventListener('click', function () {
+      var imgId = getActiveImgId();
+      var imgKey = getActiveImgKey();
+      if (imgKey == null) {
+        alert('삭제할 서식목록 이미지를 먼저 선택해 주세요.');
+        return;
+      }
+      if (!confirm('선택한 이미지에 연결된 AI 제안 판독 항목을 모두 삭제하시겠습니다?')) {
+        return;;
+      }
+
+      var applId = Number(document.getElementById('afApplId').value) || 0;
+
+      if (!imgId || applId <= 0) {
+        //renderAiSuggestFldList([], false, imgId, imgKey);
+        //renderFldGroupList([], false, imgId, imgKey);
+        //applyAiAiSuggestImgFilter();
+        return;
+      }
+
+      fetch(contextPath + 'module/apply/img/' + imgId + '/fld?applId=' + applId, { method: 'DELETE' })
+        .then(function (res) {
+          if (!res.ok) {
+            throw new Error('AI 제안 삭제 실패')
+          }
+          return res.json();
+        }).then(function (result) {
+          renderDescGroupList(result.descGroupList, true);
+          //renderAiSuggestFldList(result.fldList, true);
+          //renderFldGroupList(result.groupList, true);
+          //applyAiSuggestImgFilter();
+        }).catch(function (err) {
+          console.error(err);
+          alert('AI 제안 삭제 중 오류가 발생했습니다.')
+        });
+    });
+
+    // AI 제안 결과로 추출설명 탭을 다시 그린다
+    function renderDescGroupList(descGroupList, persisted) {
+      var area = document.getElementById('afDescGroupArea');
+      area.innerHTML = '';
+
+      if (!descGroupList || descGroupList.length === 0) {
+        var empty = document.createElement('div');
+        empty.className = 'apply-form__empty';
+        empty.textContent = 'AI 제안 추출설명 없음';
+        area.appendChild(empty);
+        return;
+      }
+
+      (descGroupList || []).forEach(function (group) {
+        var groupEl = document.createElement('div');
+        groupEl.className = 'apply-form__desc-group';
+        groupEl.dataset.groupFldId = group.groupFldId;
+        groupEl.dataset.groupNm = group.groupNm;
+        if (persisted && group.groupFldId > 0) {
+          groupEl.setAttribute('data-persisted', 'true');
+        }
+
+        var html = '<div class="apply-form__desc-group-title">' + escapeHtml(group.groupNm) + '</div>';
+        if (group.groupDesc) {
+          html += '<div class="apply-form__desc-group-desc">' + escapeHtml(group.groupDesc) + '</div>';
+        }
+        (group.items || []).forEach(function (item) {
+          var hasDesc = !!(item.description && item.description.trim());
+          var rowAttrs = 'data-fld-key="' + escapeHtml(item.fldKey) + '"';
+          if (persisted) {
+            rowAttrs += ' data-fld-id="' + item.fldId + '" data-persisted="true"';
+          }
+          var reqChecked = item.reqYn !== 'N';
+          html +=
+            '<div class="extract-card" ' +rowAttrs + '>' +
+              '<div class="extract-card__top">' +
+                '<label class="checkbox checkbox--lg">' +
+                  '<input type="checkbox" class="checkbox__input af-desc-row-chk"' + (reqChecked ? ' checked' : '') + '>' +
+                  '<span class="checkbox__box">' +
+                    '<svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path fill-rule="evenodd" clip-rule="evenodd" d="M9.83263 3.64645C10.0558 3.84171 10.0558 4.15829 9.83263 4.35355L5.2612 8.35355C5.03805 8.54882 4.67624 8.54882 4.45308 8.35355L2.16737 6.35355C1.94421 6.15829 1.94421 5.84171 2.16737 5.64645C2.39052 5.45118 2.75233 5.45118 2.97549 5.64645L4.85714 7.29289L9.02451 3.64645C9.24767 3.45118 9.60948 3.45118 9.83263 3.64645Z" fill="currentColor"/></svg>' +
+                  '</span>' +
+                '</label>' +
+                '<span class="extract-card__label af-desc-row-nm">' + escapeHtml(item.fldNm) + '</span>' +
+                '<div class="extract-card__seg">' +
+                  '<button type="button" class="extract-card__seg-btn af-btn-rule">규칙</button>' +
+                  '<button type="button" class="extract-card__seg-btn af-btn-mapping">메타</button>' +
+                  '<button type="button" class="extract-card__seg-btn extract-card__seg-btn--icon af-desc-row-remove" aria-label="삭제">-</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="extract-card__input af-desc-row-desc' + (hasDesc ? '' : ' apply-form__desc-empty') + '">' +
+                  (hasDesc ? escapeHtml(item.description) : '설명 없음-클릭하여 편집') +
+              '</div>' +
+            '</div>';
+        });
+        html += '<div class="apply-form__desc-group-footer"><button type="button" class="btn-neutral btn-neutral--dashed extract-add af-desc-add-row" style="width:95px">항목 추가</button></div>';
+
+        groupEl.innerHTML = html;
+        area.appendChild(groupEl);
+
+        groupEl.querySelectorAll('.extract-card').forEach(function (card, idx) {
+          var item = group.items[idx];
+          applyCardRule(card, {
+            reqYn: item.reqYn,
+            dataTypeCd: item.dataTypeCd,
+            dataLen: item.dataLen,
+            maskYn: item.maskYn,
+            maskRange: item.maskRange,
+            dataCmprRule: item.dataCmprRule,
+            matchFldIdList: item.matchFldIdList
+          });
+          applyCardMeta(card, item);
+          bindDescRowEdit(card.querySelector('.af-desc-row-nm'), card.querySelector('.af-desc-row-desc'));
+        });
+        var addBtn = groupEl.querySelector('.af-desc-add-row');
+        if (addBtn) {
+          addBtn.addEventListener('click', function () {
+            handleDescAddRow(addBtn);
+          });
+        }
+      });
+    }
+
+    // AI 제안 결과(또는 저장 완료 응답)로 판독 항목 테이블 다시 그리기
+
+    // AI 제안 결과(또는 저장 완료 응답)로 그룹별 미니 테이블을 다시 그리기
+    // 임시저장 완료 후 서버에 저장된 첨부파일 목록으로 다시 그리기
+    function renderAttachFileList(fileList) {
+      var tbodyDesc = document.querySelector('#afAttachBodyDesc tbody');
+      var tbodyItem = document.querySelector('#afAttachBodyItem tbody');
+      tbodyDesc.innerHTML = '';
+      tbodyItem.innerHTML = '';
+
+      (fileList || []).forEach(function (file) {
+        var sizeMb = (file.fileSize / (1024 * 1024)).toFixed(1) + ' MByte'
+        var tr = document.createElement('tr');
+        tr.dataset.fileId = file.fileId;
+        tr.innerHTML = '<td style="text-align:left"><input type="checkbox" style="margin-right:8px;"><span>' +
+          escapeHtml(file.fileNm) + '</span></td><td>' + sizeMb + '</td>' +
+          '<td><button type="button" class="table-icon-delete af-attach-download" aria-label="첨부파일 다운로드">' +
+          '<span class="btn-icon-slot"><svg viewBox="0 0 7.725 7.725" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/></svg></span>' +
+          '</button></td>';
+        var tbody = file.srcTypeCd === 'DESC' ? tbodyDesc : tbodyItem;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // 임시저장 완료 후 서버에 저장된 서식목록 이미지로 다시 그리기
+    function renderFormImgList(formImgList, resolvedActiveImgId) {
+      var fileList = document.getElementById('afFileList');
+      var activeImgId = resolvedActiveImgId != null
+        ? String(resolvedActiveImgId)
+        : (fileList.querySelector('.file-list__item.is-active') ? fileList.querySelector('.file-list__item.is-active').dataset.imgId : null);
+      fileList.innerHTML = '';
+
+      if (!formImgList || formImgList.length === 0) {
+        refreshFileListEmptyState();
+        document.getElementById('afImageView').innerHTML = '<span class="apply-form__doc-empty">이미지 없음</span>';
+        resetDocViewerZoom();
+        return;
+      }
+
+      formImgList.forEach(function (img, index) {
+        var item = document.createElement('button');
+        item.type = 'button';
+        item.className = 'file-list__item';
+        item.dataset.imgId = img.imgId;
+        item.setAttribute('data-file', img.fileNm);
+        item.setAttribute('data-img-type-cd', img.imgTypeCd);
+        item.setAttribute('data-image-src', '/module/apply/img/' +img.imgId + '/view');
+        if (String(img.imgId) === activeImgId || (!activeImgId && index === 0)) {
+          item.classList.add('is-active');
+        }
+        item.innerHTML = '<input type="checkbox" class="af-file-chk" onclick="event.stopPropagation();">' +
+          '<span class="file-list__item-name">' + escapeHtml(img.fileNm) + '</span>';
+        fileList.appendChild(item);
+      });
+
+      refreshFileListEmptyState();
+
+      var activeItem = fileList.querySelector('.file-list__item.is-active');
+      if (activeItem) {
+        document.getElementById('afImageView').innerHTML = '<img class="doc-viewer__image" src="' + activeItem.getAttribute('data-image-src') + '" alt="' + escapeHtml(activeItem.getAttribute('data-file')) + '" data-zoom-target>';
+      }
+      resetDocViewerZoom();
+    }
+
+    function getActiveAttachTbody() {
+      var activeTab = activeTabKey();
+      return activeTab === 'item'
+        ? document.querySelector('#afAttachBodyItem tbody')
+        : document.querySelector('#afAttachBodyDesc tbody');
+    }
+
+    // 첨부파일 업로드
+    document.getElementById('btnAttachUpload').addEventListener('click', function () {
+      document.getElementById('afAttachInput').click();
+    })
+
+    document.getElementById('afAttachInput').addEventListener('change', function (e) {
+      var tbody = getActiveAttachTbody();
+      Array.prototype.forEach.call(e.target.files, function (file) {
+        var sizeMb = (file.size / (1024 * 1024)).toFixed(1) + ' MByte';
+        var tr = document.createElement('tr');
+        tr.className = 'af-attach-new-row';
+        tr._file = file;
+        tr.innerHTML = '<td style="text-align:left"><input type="checkbox" style="margin-right:8px;">' +
+          escapeHtml(file.name) + '</td><td>' + sizeMb + '</td><td></td>';
+        tbody.appendChild(tr);
+      });
+      e.target.value = '';
+    });
+
+    // 첨부파일 삭제
+    document.getElementById('btnAttachDelete').addEventListener('click', function () {
+      var tbody = getActiveAttachTbody();
+      var checkedRows = Array.prototype.filter.call(tbody.querySelectorAll('tr'), function (tr) {
+        var chk = tr.querySelector('input[type="checkbox"]');
+        return chk && chk.checked;
+      });
+
+      if (checkedRows.length === 0) {
+        return;
+      }
+
+      var savedRows = checkedRows.filter(function (tr) { return tr.dataset.fileId; });
+      var newRows = checkedRows.filter(function (tr) { return !tr.dataset.fileId; });
+
+      if (savedRows.length === 0) {
+        newRows.forEach(function (tr) { tr.remove(); });
+        return;;
+      }
+
+      if (!confirm('선택한 첨부파일을 삭제하시겠습니까?')) {
+        return;
+      }
+
+      var applId = Number(document.getElementById('afApplId').value) || 0;
+
+      Promise.all(savedRows.map(function (tr) {
+        return fetch(contextPath + 'module/apply/file/' + tr.dataset.fileId + '?applId=' + applId, { method : 'DELETE' })
+          .then(function (res) {
+            if (!res.ok) {
+              throw new Error('첨부파일 삭제 실패: ' + tr.dataset.fileId);
+            }
+            tr.remove();
+          });
+      })).then(function () {
+        newRows.forEach(function (tr) { tr.remove(); });
+        alert('첨부파일이 삭제되었습니다.');
+        window.location.href = contextPath + 'module/apply/extract?menuId=MENU0307&applId=' + applId;
+      }).catch(function (err) {
+        console.error(err);
+        alert('첨부파일 삭제 중 오륙 발생했습니다.')
+      });
+    });
+
+    // 첨부파일 다운로드
+    function handleAttachRowClick(e) {
+      if (e.target.tagName === 'INPUT') {
+        return;
+      }
+      var row = e.target.closest('tr[data-file-id]');
+      if (row) {
+        window.location.href = contextPath + 'module/apply/file/' + row.dataset.fileId + '/download';
+      }
+    }
+    document.querySelector('#afAttachBodyDesc tbody').addEventListener('click', handleAttachRowClick);
+    document.querySelector('#afAttachBodyItem tbody').addEventListener('click', handleAttachRowClick);
+
+    // 새로고침 버튼
+    document.getElementById('btnAfReset').addEventListener('click', function () {
+      if (!confirm('작성 중인 내용을 초기화 하시겠습니까?')) {
+        return;
+      }
+      var applId = Number(document.getElementById('afApplId').value) || 0;
+      window.location.href = contextPath + 'module/apply/extract' + (applId > 0 ? '?applId=' + applId : '');
+    });
+
+    // 임시저장(submit=false)과 신청(submit=true)이 공유하는 저장 로직
+    function saveFormAppl(submit) {
+      //document.querySelectorAll('.apply-form__rule-row, .apply-form__mapping-row').forEach(closeExpandRow);
+      //document.querySelectorAll('.apply-form__col-rule-row, .apply-form__col-mapping-row').forEach(closeColExpandRow);
+
+      //var hasAiSuggestFld = document.querySelector('#afRecogBody tr[data-fld-id], #afRecogBody tr.af-added-row, #afRecogGroupArea .extract-basic, #tabPanelDesc .extract-card') != null;
+      var hasFormImg = document.querySelector('#afFileList .file-list__item:not(.apply-form__file-empty)') != null;
+      if (!hasFormImg) {
+        alert('AI 제안 판독 항목을 저장하려면 서식목록에 이미지를 먼저 업로드해 주세요.');
+        return;
+      }
+
+      var applId = Number(document.getElementById('afApplId').value) || 0;
+      var formNm = document.getElementById('afFormNm').value;
+      var writeCntnList = [
+        { srcTypeCd: 'DESC', writeCntn: document.getElementById('afContentDesc').value },
+        { srcTypeCd: 'ITEM', writeCntn: document.getElementById('afContentItem').value }
+      ];
+      var rows = document.querySelectorAll('#afRecogBody tr[data-fld-id], #afRecogBody tr.af-added-row');
+      var fldList = Array.prototype.map.call(rows, function (row) {
+        var reqChk = row.querySelector('td:nth-child(1) input[type="checkkbox"]');
+        var labelCell = row.querySelector('.af-item-label');
+        var labelInput = labelCell.querySelector('input[type="texts"]');
+        var fldNm = labelInput ? labelInput.value : labelCell.textContent;
+        var fldVal = row.querySelector('td:nth-child(3) input[type="text"]').value;
+        var ruleBtn = row.querySelector('.af-btn-rule');
+        var mappingBtn = row.querySelector('.af-btn-mapping');
+
+        var isPersisted = row.getAttribute('data-persisted') === 'true';
+
+        return {
+          fldId: isPersisted ? (Number(row.dataset.fldId) || 0) : 0,
+          imgId: row.dataset.imgId ? Number(row.dataset.imgId) : null,
+          srcTypeCd: 'ITEM',
+          fldNm: fldNm,
+          fldVal: fldVal,
+          reqYn: reqChk.checked ? 'Y' : 'N',
+          validRule: ruleBtn.getAttribute('data-value') || '',
+          metaRule: mappingBtn ? (mappingBtn.getAttribute('data-value') || '') : ''
+        };
+      });
+
+      function readDescRow(row) {
+        var nmEl = row.querySelector('.af-desc-row-nm');
+        var nmInput = nmEl.querySelector('input[type="text"]');
+        var fldNm = nmInput ? nmInput.value : nmEl.textContent;
+
+        var descEl = row.querySelector('.af-desc-row-desc');
+        var descTextarea = descEl.querySelector('textarea');
+        var isDescEmpty = descEl.classList.contains('apply-form__desc-empty');
+        var fldDesc = descTextarea ? descTextarea.value : (isDescEmpty ? '' : descEl.textContent);
+
+        var isPersisted = row.getAttribute('data-persisted') === 'true';
+
+        return {
+          fldId: isPersisted ? (Number(row.dataset.fldId) || 0) : 0,
+          fldNm: fldNm,
+          fldDesc: fldDesc,
+          reqYn: row.querySelector('.af-desc-row-chk').checked ? 'Y' : 'N'
+        };
+      }
+
+      var descFldList = [];
+      var descGroupList = [];
+      document.querySelectorAll('#tabPanelDesc .apply-form__desc-group').forEach(function (groupEl) {
+        var groupFldId = Number(groupEl.dataset.groupFldId) || 0;
+        var descRows = groupEl.querySelectorAll('.extract-card');
+
+        if (groupFldId > 0) {
+          var groupPersisted = groupEl.getAttribute('data-persisted') === 'true';
+          var cells = Array.prototype.map.call(descRows, function (row) {
+            var item = readDescRow(row);
+            return {
+              fldId: item.fldId,
+              imgId: null,
+              upFldId: groupFldId,
+              rowNo: 1,
+              fldTypeCd: 'GROUP_ITEM',
+              srcTypeCd: 'DESC',
+              fldNm: item.fldNm,
+              fldVal: null,
+              fldDesc: item.fldDesc,
+              reqYn: item.reqYn,
+              validRule: '',
+              metaRule: ''
+            };
+          });
+          descGroupList.push({
+            groupFldId: groupPersisted ? groupFldId : 0,
+            groupNm: groupEl.dataset.groupNm,
+            srcTypeCd: 'DESC',
+            columns: [],
+            rows: cells.map(function (cell) { return [cell]; })
+          });
+        } else {
+          Array.prototype.forEach.call(descRows, function (row) {
+            var item = readDescRow(row);
+            descFldList.push({
+              fldId: item.fldId,
+              imgId: null,
+              srcTypeCd: 'DESC',
+              fldNm: item.fldNm,
+              fldVal: null,
+              fldDesc: item.fldDesc,
+              reqYn: item.reqYn,
+              validRule: '',
+              metaRule: ''
+            });
+          });
+        }
+      });
+      fldList = fldList.concat(descFldList);
+
+      var groupList = Array.prototype.map.call(
+        document.querySelectorAll('#afRecogGroupArea .extract-basic'),
+        function (wrap) {
+          var groupPersisted = wrap.getAttribute('data-persisted') === 'true'
+            || wrap.querySelector('td[data-persisted="true"]') != null;
+          var columns = Array.prototype.map.call(
+            wrap.querySelectorAll('thead tr:first-child th'),
+            function (th) { return th.textContent; }
+          );
+          var rows = Array.prototype.map.call(
+            wrap.querySelectorAll('tbody tr'),
+            function (tr) {
+              return Array.prototype.map.call(
+                tr.querySelectorAll('td[data-fld-id]'),
+                function (td) {
+                  var cellPersisted = td.getAttribute('data-persisted') === 'true';
+                  return {
+                    fldId: cellPersisted ? (Number(td.dataset.fldId) || 0) : 0,
+                    imgId: td.dataset.imgId ? Number(td.dataset.imgId) : null,
+                    upFldId: Number(td.dataset.upFldId) || null,
+                    rowNo: Number(td.dataset.rowNo) || null,
+                    fldTypeCd: 'GROUP_ITEM',
+                    fldNm: td.dataset.fldNm,
+                    fldVal: td.querySelector('input[type="text"]').value,
+                    reqYn: td.dataset.reqYn === 'Y' ? 'Y' : 'N',
+                    validRule: td.dataset.ruleValue || '',
+                    metaRule: td.dataset.mappingValue || ''
+                  };
+                }
+              );
+            }
+          );
+
+          return {
+            groupFldId: groupPersisted ? (Number(wrap.dataset.groupFldId) || 0) : 0,
+            groupNm: wrap.dataset.groupNm,
+            srcTypeCd: 'ITEM',
+            columns: columns,
+            rows: rows
+          };
+        }
+      );
+      groupList = groupList.concat(descGroupList);
+
+      var newAttachFiles = [];
+      var attachSrcTypeCdList = [];
+      document.querySelectorAll('.af-attach-tab-panel').forEach(function (table) {
+        var srcTypeCd = table.dataset.srcTypeCd;
+        table.querySelectorAll('tr.af-attach-new-row').forEach(function (row) {
+          newAttachFiles.push(row._file);
+          attachSrcTypeCdList.push(srcTypeCd);
+        });
+      });
+
+      var allFileItems = document.querySelectorAll('#afFileList .file-list__item:not(.apply-form__file-empty)');
+      var newFileItems = Array.prototype.filter.call(allFileItems, function (item) { return item._file; });
+      var newFormImgFiles = newFileItems.map(function (item) { return item._file; });
+      var formImgList = newFileItems.map(function (item) {
+        var sortOrd = Array.prototype.indexOf.call(allFileItems, item);
+        return {
+          imgTypeCd: sortOrd === 0 ? 'ORIGIN' : 'SIMILAR',
+          sortOrd: sortOrd,
+          active: item.classList.contains('is-active')
+        };
+      });
+
+      var mgrList = Array.prototype.map.call(
+        document.querySelectorAll('#afMgrList li'),
+        function (li, index) {
+          return {
+            mgrTypeCd: li.dataset.mgrTypeCd || '',
+            mgrSeq: index + 1,
+            mgrUserId: li.dataset.mgrUserId
+          };
+        }
+      );
+
+      var formData = new FormData();
+      formData.append('data', new Blob(
+        [JSON.stringify({
+          applId: applId, formNm: formNm, writeCntnList: writeCntnList, fldList: fldList, groupList: groupList,
+          attachSrcTypeCdList: attachSrcTypeCdList, formImgList: formImgList, activeImgId: getActiveImgId(),
+          mgrList: mgrList, submit: submit
+        })],
+        { type: 'application/json' }
+      ));
+      newAttachFiles.forEach(function (file) {
+        formData.append('files', file);
+      });
+      newFormImgFiles.forEach(function (file) {
+        formData.append('formImages', file);
+      })
+
+      var actionNm = submit ? '신청' : '임시저장';
+
+      fetch(contextPath + 'module/apply/tempSave', {
+        method: 'POST',
+        body: formData
+      }).then(function (res) {
+        if (res.status === 401) {
+          alert('로그인 세션이 만료되었습니다. 다시 로그인한 후 ' + actionNm + '해 주세요.');
+          throw new Error(actionNm + ' 실패: 인증 만료(401)');
+        }
+        if (!res.ok) {
+          throw new Error(actionNm + ' 실패');
+        }
+        return res.json();
+      }).then(function (result) {
+        document.getElementById('afApplId').value = result.applId;
+        //renderAiSuggestFldList(result.fldList, true);
+        //renderFldGroupList(result.groupList, true);
+        renderDescGroupList(result.descGroupList, true);
+        (result.writeCntnList || []).forEach(function (item) {
+          if (item.srcTypeCd === 'DESC') {
+            document.getElementById('afContentDesc').value = item.writeCntn || '';
+          } else if (item.srcTypeCd === 'ITEM') {
+            document.getElementById('afContentItem').value = item.writeCntn || '';
+          }
+        });
+        renderAttachFileList(result.fileList);
+        renderFormImgList(result.formImgList, result.activeImgId);
+        renderMgrList(result.mgrList);
+        //applyAiSuggestImgFilter();
+        updateActionButtonsByProcStatCd(result.procStatCd);
+
+        if (submit) {
+          alert('서식신청이 접수되었습니다. 접수 내역은 OCR신청조회 화면에서 확인 할 수 있습니다.');
+        } else {
+          alert('임시저장 되었습니다.')
+        }
+        //window.location.href = window.location.pathname;
+        window.location.href = contextPath + 'module/apply/extract?menuId=MENU0307&applId=' + applId;
+
+      }).catch(function (err) {
+        console.error(err);
+      });
+    }
+
+    // 상태변경
+    function updateActionButtonsByProcStatCd(procStatCd) {
+      document.getElementById('btnAfCancel').disabled = procStatCd !== 'APPL';
+      document.getElementById('btnAfSubmit').disabled = procStatCd === 'APPL';
+    }
+
+    // 임시저장
+    document.getElementById('btnAfTempSave').addEventListener('click', function () {
+      saveFormAppl(false);
+    });
+
+    // 신청 전 필수 입력 체크
+    function vallidateSubmit() {
+      var formNmEl = document.getElementById('afFormNm');
+      if (!formNmEl.value.trim()) {
+        alert('서식명을 입력해 주세요.');
+        formNmEl.focus();
+        return false;
+      }
+
+      if (document.querySelector('#afFileList .file-list__item:not(.apply-form__file-empty)') == null) {
+        alert('서식목록에 이미지를 업로드해 주세요.');
+        return false;
+      }
+
+      if (document.querySelector('#afMgrList li') == null) {
+        alert('직원선택에서 담당자를 지정해 주세요.');
+        return false;
+      }
+
+      if (document.querySelector('#afRecogBody tr[data-fld-id], #afRecogBody tr.af-added-row, #afRecogGroupArea .extract-basic, #tabPanelDesc .extract-card') == null) {
+        alert('AI 제안을 실행하여 추출 항목을 생성해 주세요.');
+        return false;
+      }
+
+      var contentDesc = document.getElementById('afContentDesc');
+      var contentItem = document.getElementById('afContentItem');
+      if (!contentDesc.value.trim() && !contentItem.value.trim()) {
+        alert('요청 내용을 입력해 주세요.');
+        (activeTabKey() === 'item' ? contentItem : contentDesc).focus();
+        return false;
+      }
+
+      return true;
+    }
+
+    // 신청
+    document.getElementById('btnAfSubmit').addEventListener('click', function () {
+      if (document.getElementById('btnAfSubmit').disabled) {
+        return;
+      }
+      if (!vallidateSubmit()) {
+        return;
+      }
+      if (!confirm('서식신청을 제출하시겠습니까? 제출 후에는 신청취소를 통해서만 되돌릴  수 있습니다.')) {
+        return;
+      }
+      saveFormAppl(true);
+    })
+
+    // 신청취소
+    document.getElementById('btnAfCancel').addEventListener('click', function () {
+      var applId = Number(document.getElementById('afApplId').value) || 0;
+      if (applId <= 0) {
+        return;
+      }
+      if (!confirm('신청을 취소하시겠습니까?')) {
+        return;
+      }
+      //fetch(contextPath + 'module/apply/img?' + query + '&applId=' + applId, { method: 'DELETE'})
+      fetch(contextPath +  'module/apply/' + applId + '/cancel', { method: 'POST'} )
+         .then(function (res) {
+           if (res.status === 401) {
+             alert('로그인 세션이 만료되었습니다. 다시 로그인한 후 시도해 주세요.');
+             throw new Error('신청취소 실패: 인증 만료(401)');
+           }
+           if (res.status === 409) {
+             alert('신청 상태인 건만 취소할 수 있습니다.');
+             throw new Error('신청취소 실패: 취소 불가 상태(409)');
+           }
+           if (!res.ok) {
+             throw new Error('신청취소 실패');
+           }
+           alert('신청이 취소되었습니다.')
+           window.location.href = contextPath + 'module/apply/extract?menuId=MENU0307&applId=' + applId;
+         })
+         .catch(function (err) {
+           console.error(err);
+         });
+    });
+
+    // 서식목록 업로드
+    document.getElementById('btnAfImgUpload').addEventListener('click', function () {
+      document.getElementById('afImageInput').click();
+    });
+
+    document.getElementById('afImageInput').addEventListener('change', function (e) {
+      var file = e.target.files[0];
+      if (!file) {
+        return;
+      }
+
+      var fileList = document.getElementById('afFileList');
+      document.querySelectorAll('#afFileList .file-list__item').forEach(function (el) {
+        el.classList.remove('is-active');
+      });
+
+      var emptyItem = fileList.querySelector('.apply-form__file-empty');
+      if (emptyItem) {
+        emptyItem.remove();
+      }
+
+      var item = document.createElement('button');
+      item.type = 'button';
+      item.className = 'file-list__item is-active';
+      item.setAttribute('data-file', file.name);
+      item.setAttribute('data-temp-key', 'new-' + Date.now() + '-' + Math.random().toString(36).slice(2));
+      item._file = file;
+      item.innerHTML = '<input type="checkbox" class="af-file-chk" onclick="event.stopPropagation();"><span class="file-list__item-name">' + escapeHtml(file.name) + '</span>';
+      fileList.appendChild(item);
+
+      var reader = new FileReader();
+      reader.onload = function (readerEvent) {
+        var imageSrc = readerEvent.target.result;
+        item.setAttribute('data-image-src', imageSrc);
+        document.getElementById('afImageView').innerHTML = '<img class="doc-viewer__image" src="' + imageSrc + '" alt="' + escapeHtml(file.name) + '" data-zoom-target>';
+        resetDocViewerZoom();
+      };
+      reader.readAsDataURL(file);
+
+      //applyAiSuggestImgFilter();
+
+      e.target.value = '';
+    });
+
+    // 최초 로딩 시...
+
+  })();
+</script>
+
+
+</body>
+</html>

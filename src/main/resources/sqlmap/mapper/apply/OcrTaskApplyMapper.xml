@@ -1,0 +1,325 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.agilesoda.module.apply.mapper.OcrTaskApplyMapper">
+	<insert id="registTask" parameterType="ocuocBzwkaEntity"  useGeneratedKeys="false" keyProperty="appcId" keyColumn="APPC_ID">
+		<selectKey keyProperty="appcId" resultType="long" order="BEFORE">
+			SELECT SQ_OCUOC_OCRDF_L_01.NEXTVAL FROM DUAL
+		</selectKey>
+	    INSERT INTO OCUOC_BZWKA_M(APPC_ID
+	        , WKFLOW_NM
+		    , WKFLOW_DESC
+		    , BZWK_CD
+		    , APCT_DPRM_CD
+		    , PRGS_ST_CD
+		    , RGSR_ID
+		    , REG_DT
+		    , EDTR_ID
+		    , CHNG_DT
+		)VALUES(
+			#{appcId}
+			, #{wkflowNm}
+			, #{wkflowDesc}
+			, #{bzwkCd}
+			, #{apctDprmCd}
+			, #{prgsStCd}
+			, #{userId}
+			, SYSDATE
+			, #{userId}
+			, SYSDATE
+		)
+    </insert>
+
+	<insert id="registMappingTaskForm" parameterType="ocuocBzwkfEntity">
+		INSERT INTO OCUOC_BZWKF_L(APPC_ID
+			, WKFLOW_ID
+			, WKFLOW_NM
+			, RGSR_ID
+			, REG_DT
+		)VALUES(
+			#{appcId}
+			, #{wkflowId}
+			, #{wkflowNm}
+			, #{userId}
+			, SYSDATE
+		)
+	</insert>
+
+	<insert id="registRule" parameterType="ocuocBzaffEntity" useGeneratedKeys="false" keyProperty="ruleId" keyColumn="RULE_ID">
+		<selectKey keyProperty="ruleId" resultType="long" order="BEFORE">
+			SELECT SQ_OCUOC_BZAFF_L_01.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO OCUOC_BZAFF_L( RULE_ID
+			 , APPC_ID
+			 , RULE_NM
+			 , RULE_CD
+			 , RGSR_ID
+			 , REG_DT
+			 , CHNG_ID
+			 , CHNG_DT
+		)VALUES( #{ruleId}
+		    , #{appcId}
+		    , #{ruleNm}
+		    , #{ruleCd}
+		    , #{userId}
+		    , SYSDATE
+	    	, #{userId}
+			, SYSDATE
+       )
+	</insert>
+
+	<insert id="registRuleFieldMapping" parameterType="ocuocBzafrEntity" useGeneratedKeys="false" keyProperty="cmprItemId" keyColumn="CMPR_ITEM_ID">
+		<selectKey keyProperty="cmprItemId" resultType="long" order="BEFORE">
+			SELECT SQ_OCUOC_BZAFR_L_01.NEXTVAL FROM DUAL
+		</selectKey>
+		INSERT INTO OCUOC_BZAFR_L(CMPR_ITEM_ID
+			, RULE_ID
+			, WKFLOW_ID
+			, WKFLOW_NM
+			, CMPR_FIELD
+			, RGSR_ID
+			, REG_DT
+			, CHNG_ID
+			, CHNG_DT
+		)VALUES( #{cmprItemId}
+			, #{ruleId}
+			, #{wkflowId}
+			, #{wkflowNm}
+			, #{cmprField}
+			, #{userId}
+			, SYSDATE
+			, #{userId}
+			, SYSDATE
+	   )
+	</insert>
+
+	<insert id="registAttachFile" parameterType="ocuocBzaafEntity">
+		INSERT INTO OCUOC_BZAAF_L(FILE_NM
+			 , APPC_ID
+			 , ORG_FILE_NM
+			 , FILE_PATH
+			 , FILE_EXT
+			 , RGSR_ID
+			 , REG_DT
+		)VALUES( #{fileNm}
+			   , #{appcId}
+			   , #{orgFileNm}
+			   , #{filePath}
+			   , #{fileExt}
+			   , #{userId}
+			   , SYSDATE
+        )
+	</insert>
+
+	<insert id="registScnNo" parameterType="ocuocBzscnEntity">
+		INSERT INTO OCUOC_BZSCN_L(APPC_ID
+								 , WKFLOW_ID
+								 , SCN_NO
+								 , RGSR_ID
+								 , REG_DT
+								 , CHNG_ID
+								 , CHNG_DT
+		)VALUES( #{appcId}
+			   , #{wkflowId}
+			   , #{scnNo}
+			   , #{userId}
+			   , SYSDATE
+			   , #{userId}
+			   , SYSDATE
+			   )
+	</insert>
+
+	<select id="selectTaskCnt" parameterType="taskInfoReqEntity" resultType="int">
+		SELECT count(*) AS totCnt
+		FROM OCUOC_BZWKA_M T1
+		<include refid="taskListWhere" />
+	</select>
+
+	<select id="selectListTask" parameterType="taskInfoReqEntity" resultType="taskInfoResEntity">
+		SELECT X.num                    AS idx
+             , X.APPC_ID                AS appcId
+	         , X.WKFLOW_NM              AS wkflowNm
+	         , X.WKFLOW_ID              AS wkflowId
+	         , X.WKFLOW_DESC            AS wkflowDesc
+	         , X.BZWK_CD                AS bzWkCd
+	         , X.BZWK_NM                AS bzwkNm
+	         , X.APCT_DPRM_CD           AS apctDprmCd
+	         , X.BR_NM                  AS brNm
+	         , X.PRGS_ST_CD             AS prgsStCd
+	         , X.PRGS_ST_NM             AS prgsStNm
+	         , X.RGSR_ID                AS regId
+	         , X.REG_NM                 AS regNm
+		     , X.REG_DT                 AS regDt
+		     , X.EDTR_ID                AS modId
+		     , X.MOD_NM                 AS modNm
+		     , X.MOD_DT                 AS modDt
+		FROM (
+	        SELECT ROWNUM AS num
+  	             , T1.APPC_ID
+                 , T1.WKFLOW_NM 
+                 , T1.WKFLOW_ID
+                 , T1.WKFLOW_DESC
+                 , T1.BZWK_CD
+                 , ( SELECT CD_NM FROM OCUOC_CCDTL_L WHERE CD_GROUP = 'BZWK_CD' AND CD_VAL = T1.BZWK_CD) AS BZWK_NM
+                 , T1.APCT_DPRM_CD
+                 , ( SELECT BR_NM FROM OCUOC_DPRMI_M WHERE BR_CD = T1.APCT_DPRM_CD) AS BR_NM
+                 , T1.PRGS_ST_CD
+                 , ( SELECT CD_NM FROM OCUOC_CCDTL_L WHERE CD_GROUP = 'PRGS_ST_CD' AND CD_VAL = T1.PRGS_ST_CD) AS PRGS_ST_NM
+                 , T1.RGSR_ID
+                 , ( SELECT EMP_KOR_FLNM FROM OCUOC_USERI_M WHERE EMPNO = T1.RGSR_ID) AS REG_NM
+	             , TO_CHAR(T1.REG_DT, 'YYYY-MM-DD HH:MI:SS') AS REG_DT
+	             , T1.EDTR_ID
+	             , ( SELECT EMP_KOR_FLNM FROM OCUOC_USERI_M WHERE EMPNO = T1.EDTR_ID) AS MOD_NM
+	             , TO_CHAR(T1.CHNG_DT, 'YYYY-MM-DD HH:MI:SS') AS MOD_DT
+	        FROM OCUOC_BZWKA_M T1
+	        <include refid="taskListWhere" />
+	        ORDER BY T1.APPC_ID DESC
+		) X
+		WHERE 1=1
+		  AND X.num <![CDATA[ > ]]> #{stPos}
+		  AND X.num <![CDATA[ <= ]]> #{endPos}
+	</select>
+	
+	<resultMap id="TaskListMap" type="TaskListResEntity">
+        <id property="appcId" column="APPC_ID" />
+        <result property="wkflowNm" column="WKFLOW_NM" />
+        <result property="wkflowId" column="WKFLOW_ID" />
+        <collection property="wkflows" javaType="java.util.ArrayList" ofType="ocuocBzwkfEntity">
+            <id property="wkflowId" column="T2_WKFLOW_ID" />
+            <result property="wkflowNm" column="T2_WKFLOW_NM" />
+        </collection>
+    </resultMap>
+	
+	<select id="selectListTaskWkflow" parameterType="string" resultMap="TaskListMap">
+		SELECT T1.APPC_ID
+		    , T1.WKFLOW_ID
+			, T1.WKFLOW_NM
+			, T2.WKFLOW_ID   AS T2_WKFLOW_ID
+			, T2.WKFLOW_NM   AS T2_WKFLOW_NM
+		FROM OCUOC_BZWKA_M T1, OCUOC_BZWKF_L T2
+		WHERE 1=1
+		    AND T1.APPC_ID = T2.APPC_ID 
+		    AND T1.PRGS_ST_CD = 'DPLY_DONE'
+		    <if test='keyword != null and keyword != ""'>
+		      AND T1.WKFLOW_NM LIKE '%' || #{keyword} || '%'
+		    </if>
+	</select>
+
+	<resultMap id="TaskInfoMap" type="taskInfoResEntity">
+		<id property="appcId" column="APPC_ID" />
+		<result property="wkflowNm" column="WKFLOW_NM" />
+		<result property="wkflowId" column="WKFLOW_ID" />
+		<result property="wkflowDesc" column="WKFLOW_DESC" />
+		<result property="bzwkCd" column="BZWK_CD" />
+		<result property="bzwkNm" column="BZWK_NM" />
+        <result property="apctDprmCd" column="APCT_DPRM_CD" />
+        <result property="brNm" column="BR_NM" />
+        <result property="prgsStCd" column="PRGS_ST_CD" />
+        <result property="prgsStNm" column="PRGS_ST_NM" />
+        <result property="regId" column="RGSR_ID" />
+        <result property="regNm" column="REG_NM" />
+        <result property="regDt" column="REG_DT" />
+        <result property="modId" column="EDTR_ID" />
+        <result property="modNm" column="MOD_NM" />
+        <result property="modDt" column="CHNG_DT" />
+		<collection property="wkflows" javaType="java.util.ArrayList" ofType="ocuocBzwkfEntity">
+			<id property="wkflowId" column="T2_WKFLOW_ID" />
+			<result property="wkflowNm" column="T2_WKFLOW_NM" />
+		</collection>
+		<collection property="rules" javaType="java.util.ArrayList" ofType="ocuocBzaffEntity">
+			<id property="ruleId" column="RULE_ID" />
+			<result property="ruleNm" column="RULE_NM" />
+			<result property="ruleCd" column="RULE_CD" />
+			<collection property="fields" javaType="java.util.ArrayList" ofType="ocuocBzafrEntity">
+				<id property="wkflowId" column="T4_WKFLOW_ID" />
+				<result property="wkflowNm" column="T4_WKFLOW_NM" />
+				<result property="cmprField" column="CMPR_FIELD" />
+			</collection>
+		</collection>
+		<collection property="attaches" javaType="java.util.ArrayList" ofType="ocuocBzaafEntity">
+            <id property="fileNm" column="FILE_NM" />
+            <result property="orgFileNm" column="ORG_FILE_NM" />
+            <result property="filePath" column="FILE_PATH" />
+            <result property="fileExt" column="FILE_EXT" />
+        </collection>
+		<collection property="screens" javaType="java.util.ArrayList" ofType="ocuocBzscnEntity">
+			<result property="scnNo" column="SCN_NO" />
+		</collection>
+	</resultMap>
+
+	<select id="selectTaskDetail" parameterType="string" resultMap="TaskInfoMap">
+		SELECT T1.APPC_ID
+             , T1.WKFLOW_NM
+             , T1.WKFLOW_ID
+             , T1.WKFLOW_DESC
+             , T1.BZWK_CD
+             , ( SELECT CD_NM FROM OCUOC_CCDTL_L WHERE CD_GROUP = 'BZWK_CD' AND CD_VAL = T1.BZWK_CD) AS BZWK_NM
+             , T1.APCT_DPRM_CD
+             , ( SELECT BR_NM FROM OCUOC_DPRMI_M WHERE BR_CD = T1.APCT_DPRM_CD) AS BR_NM
+             , T1.PRGS_ST_CD
+             , ( SELECT CD_NM FROM OCUOC_CCDTL_L WHERE CD_GROUP = 'PRGS_ST_CD' AND CD_VAL = T1.PRGS_ST_CD) AS PRGS_ST_NM
+             , T1.RGSR_ID
+             , ( SELECT EMP_KOR_FLNM FROM OCUOC_USERI_M WHERE EMPNO = T1.RGSR_ID) AS REG_NM
+             , TO_CHAR(T1.REG_DT, 'YYYY-MM-DD HH:MI:SS') AS REG_DT
+             , T1.EDTR_ID
+             , ( SELECT EMP_KOR_FLNM FROM OCUOC_USERI_M WHERE EMPNO = T1.EDTR_ID) AS MOD_NM
+             , TO_CHAR(T1.CHNG_DT, 'YYYY-MM-DD HH:MI:SS') AS CHNG_DT
+			 , T2.WKFLOW_ID  AS T2_WKFLOW_ID
+			 , T2.WKFLOW_NM  AS T2_WKFLOW_NM
+			 , T3.RULE_ID
+			 , T3.RULE_NM
+			 , T3.RULE_CD
+			 , T4.WKFLOW_ID  AS T4_WKFLOW_ID
+			 , T4.WKFLOW_NM  AS T4_WKFLOW_NM
+			 , T4.CMPR_FIELD
+		     , T5.FILE_NM
+			 , T5.ORG_FILE_NM
+			 , T5.FILE_PATH
+			 , T5.FILE_EXT
+			 , T6.SCN_NO
+		FROM OCUOC_BZWKA_M T1
+		    INNER JOIN OCUOC_BZWKF_L T2 ON T1.APPC_ID = T2.APPC_ID
+			LEFT OUTER JOIN OCUOC_BZAFF_L T3 ON T1.APPC_ID = T3.APPC_ID AND T3.USE_YN = 'Y'
+			LEFT OUTER JOIN OCUOC_BZAFR_L T4 ON T3.RULE_ID = T4.RULE_ID
+			LEFT OUTER JOIN OCUOC_BZAAF_L T5 ON T1.APPC_ID = T5.APPC_ID
+			LEFT OUTER JOIN OCUOC_BZSCN_L T6 ON T1.APPC_ID = T6.APPC_ID AND T6.USE_YN = 'Y'
+		WHERE 1=1
+		  AND T1.APPC_ID = #{appcId}
+	</select>
+
+	<update id="updateWkflowId" parameterType="map">
+		UPDATE OCUOC_BZWKA_M
+			SET WKFLOW_ID = #{wkflowId}, EDTR_ID = #{userId}, CHNG_DT = SYSDATE
+		WHERE APPC_ID = #{appcId}
+	</update>
+
+	<sql id="taskListWhere">
+		<where>
+			<if test='bzwkCd != null and bzwkCd != ""'>
+				AND T1.BZWK_CD = #{bzwkCd}
+			</if>
+			<if test='prgsStCd != null and prgsStCd != ""'>
+				AND T1.PRGS_ST_CD = #{prgsStCd}
+			</if>
+			<if test='fromDt != null and fromDt != ""'>
+				AND T1.REG_DT <![CDATA[ >= ]]> TO_DATE(#{fromDt}, 'YYYY-MM-DD')
+			</if>
+			<if test='toDt != null and toDt != ""'>
+				AND T1.REG_DT <![CDATA[ < ]]> TO_DATE(#{toDt}, 'YYYY-MM-DD') + 1
+			</if>
+			<choose>
+	            <when test='gubun == 1'>
+	                AND T1.WKFLOW_NM LIKE '%' || #{keyword} || '%'
+	            </when>
+	            <when test='gubun == 2'>
+	                AND T1.WKFLOW_DESC LIKE '%' || #{keyword} || '%'
+	            </when>
+			    <otherwise>
+			        AND (T1.WKFLOW_NM LIKE '%' || #{keyword} || '%' OR T1.WKFLOW_DESC LIKE '%' || #{keyword} || '%')
+			    </otherwise>
+			</choose>
+			<if test='userId != null and userId != ""'>
+				and T1.RGSR_ID = #{userId}
+			</if>
+		</where>
+	</sql>
+</mapper>

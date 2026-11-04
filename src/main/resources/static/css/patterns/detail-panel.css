@@ -1,0 +1,30 @@
+/* 레코드 하나의 필드 값을 나열해 보여주는 흰 배경 상세정보 박스 — 서식간 규칙 등록 모달의
+   규칙명/비교유형 영역, 역할권한 상세 모달의 상세정보, 관리자>메뉴관리·권한관리의 상세정보 폼,
+   신청관리>OCR업무신청의 Rule 상세(규칙명/비교유형)까지 5곳이 같은 성격이라 patterns/로
+   등록했다(2026-08-20).
+   지금까지는 각자 .sub__search-area(회색 채움, 6px 12px 패딩) 또는 .search-area의
+   --detail 모디파이어(회색 채움, 12px 24px 패딩)를 빌려 쓰고 있었는데, 흰 배경+Neutral/100
+   보더 조합은 어느 쪽에도 없던 값이라 재실측해서 새 클래스로 분리했다.
+   출처: get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 522:16459, 서식간 규칙
+   등록 모달의 규칙명/비교유형 박스) 재실측 — 흰 배경 + Border/Neutral-Subtle 확인.
+   패딩(좌우 24px, 상하 12px)은 이 4곳이 공유하는 기준값으로 지정.
+
+   .sub__search-area(patterns/sub-search-area.css)는 여전히 별도로 존재한다 — 결재선 지정
+   모달·일괄변경 상세 모달의 검색/필터 바는 "레코드 값 나열"이 아니라 "조회 조건 입력"이라
+   성격이 달라 회색 인라인 바 스타일을 그대로 유지한다. */
+.detail-panel {
+  display: flex;
+  align-items: center;
+  gap: var(--gap-xl); /* 16px — 한 줄 배치일 때(서식간 규칙 등록, 역할권한 상세) 기준 */
+  background: var(--surface-white);
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: 8px;
+  padding: var(--gap-lg) 24px; /* 상하 12px, 좌우 24px */
+}
+/* 여러 줄로 쌓는 변형 — 관리자>메뉴관리·권한관리의 상세정보 폼(각 줄은
+   .search-area__row--detail, 항목은 .search-area__item--equal 재사용). */
+.detail-panel--column {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--gap-lg); /* 12px — 줄 사이 간격 */
+}

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+<head>
+<!--Common Head-->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, maximum-scale=1.0, minimum-scale=1, user-scalable=yes,initial-scale=1.0"/>
+<title th:text="${title}"></title>
+
+<!--Common JS-->
+<script th:inline="javascript" type="text/javascript" th:src="@{/js/bootstrap.min.js}"></script>
+<script th:inline="javascript" type="text/javascript" th:src="@{/js/jquery-4.0.0.js}"></script>
+<script th:inline="javascript" type="text/javascript" th:src="@{/js/jquery-ui.min.js}"></script>
+
+<!--Common CSS -->
+<link th:inline="css" th:href="@{/css/bootstrap.css}" rel="stylesheet"/>
+<link th:inline="css" th:href="@{/css/jquery-ui.min.css}" rel="stylesheet"/>
+
+<style th:inline="css">
+    input[type="file"] {
+        display: none;
+    }
+    
+</style>
+
+</head>
+<body class="bg-body-tertiary">
+<div class="container mb-5 mt-5">
+    <article class="my-3">
+        <div class="row">
+            <div class="col">
+                <div class="card">
+                    <form method="POST" th:action="@{test/upload-file}" enctype="multipart/form-data">
+	                    <div class="card-body text-center" ondragover="f_over()" ondrop="f_drop()">
+	                        <label for="input-upload" class="card-text">이곳에 파일을 올려놓으세요.</label>
+	                        <input type="file" name="files[]" id="input-upload" onchange="addFile(this);" multiple>
+	                    </div>
+	                    <ul class="list-group list-group-flush" id="list-group">
+	                    </ul>
+                     
+                        <input type="text" name="subject" id="subject" class="form-control form-control-md" placeholder="제목을 입력해주세요."/>
+                        <div class="input-group">
+                            <span class="input-group-text">내용</span>
+                            <textarea name="detail" id="detail" class="form-control" rows="5"></textarea>
+                        </div>
+	                    <div class="card-footer text-end">
+	                       <button type="button" class="btn btn-primary" onclick="upload();">업로드</button>
+	                    </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </article>
+</div>
+</body>
+<!-- inline JS 영역-->
+<script th:inline="javascript" type="text/javascript">
+var fileNo = 0;
+var files = new Array();
+
+function addFile(obj){
+	for(const file of obj.files){
+        displayFileInfo(file);
+    }
+}
+
+function f_over(){
+    event.preventDefault();
+    event.stopPropagation();
+}
+
+function f_drop(){
+    event.preventDefault();
+    event.stopPropagation();
+    
+    //  마우스로 끌어온 파일
+    let v_files = event.dataTransfer.files;
+    
+    for(const file of v_files){
+        displayFileInfo(file);
+        fileNo++;
+    }
+}
+
+function displayFileInfo(file){
+    if(validation(file)){
+        let reader = new FileReader();
+
+        reader.readAsDataURL(file);
+
+        reader.onload = function(){
+            let tempFile = {
+            	file: file,
+            	is_delete: false
+            }
+            files.push(tempFile);
+
+            let html = '';
+            html += '<li class="list-group-item" id="list-' + fileNo + '">';
+            html += '   <div class="row">';
+            html += '       <div class="col-md-1"><a href="javascript:remove(' + fileNo +');" class="btn-close"></a></div>';
+            if(file.type == "application/pdf"){
+            	html += '       <div class="col-md-1"><img src="/images/pdf.png" width="20px" height="20px" /></div>';
+            }
+            else{
+            	html += '       <div class="col-md-1"><img src="' + reader.result + '" width="20px" height="20px" /></div>';
+            }
+            
+            html += '       <div class="col-md-10 text-start">' + file.name + '</div>';
+            html += '   </div>';
+            html += '</li>';
+
+            $(".list-group").append(html);
+            fileNo++;
+        }
+    }
+}
+
+function validation(file){
+    const fileTypes = ["application/pdf", "image/gif", "image/jpeg", "image/png", "image/bmp"];
+    
+    if(file.name.lastIndexOf(".") == -1){
+        alert("확장자가 없는 파일은 제외됩니다.");
+        return false;
+    }
+    else if(!fileTypes.includes(file.type)){
+        alert("허가된 파일만 첨부됩니다.");
+        return false;
+    }
+    
+    return true;
+}
+
+window.addEventListener("dragover", function(){
+    event.preventDefault();
+});
+
+window.addEventListener("drop", function(){
+    event.perventDefault();
+});
+
+function remove(num){
+    document.querySelector("#list-" + num).remove();
+    files[num].is_delete = true;
+}
+
+function upload(){
+    var form = $("#form")[0];
+    var formData = new FormData(form);
+    
+    for(let i=0 ; i<files.length ; i++){
+        if(!files[i].is_delete){
+            formData.append("attach_file", files[i].file);
+        }
+    }
+    
+    formData.append("subject", $("#subject").val());
+    formData.append("detail", $("#detail").val());
+    
+    console.log(formData);
+    
+    fetch('/api/v1/test/upload-file', {
+        method: "POST",
+        body: formData
+    })
+    .then(response => response.json())
+    .then(res => {
+        if(res.status == 200) {
+            console.log('업로드 성공', res.data);
+            location.href = "/test"
+    	}
+        else{
+        	alert(res.message + "[" + res.status + "]");
+        }
+    })
+    .catch(error => {
+        console.error('업로드 실패', error);
+        alert("업로드중 오류가 발생했습니다.")
+    });
+}
+</script>
+
+</html>

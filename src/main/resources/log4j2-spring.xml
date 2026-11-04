@@ -1,85 +1,98 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Configuration status="INFO">
     <Properties>
-        <Property name="LOG_PATH">logs</Property>
-        <Property name="DEFAULT_PATTERN">[%d{yyyy-MM-dd HH:mm:ss.SSS}] %5p ${sys:PID} --- [%15.15t] %-40.40c{1.} : %m%n%xwEx</Property>
-        <Property name="COLOR_PATTERN">[%clr{%d{yyyy-MM-dd HH:mm:ss.SSS}}{faint}] %clr{%5p} %clr{${sys:PID}}{magenta} %clr{---}{faint} %clr{[%15.15t]}{faint} %clr{%-40.40c}{cyan} %clr{:}{faint} %m%n%xwEx</Property>
-        <Property name="TEST_PATTERN">%d %5p [%c] %m%n</Property>
+        <SpringProfile name="local">
+            <Property name="log-level">${env:AIOCR_LOG_LEVEL:-debug}</Property>
+            <!-- 두 모듈이 같은 개인 개발 데이터 루트 아래에 로그를 남긴다. -->
+            <Property name="log-path">${env:AIOCR_DATA_DIR:-${sys:user.home}/.aiocr}/logs</Property>
+            <Property name="pattern">[%clr{%d{yyyy-MM-dd HH:mm:ss.SSS}}{faint}] %clr{%5p} %clr{${sys:PID}}{magenta} %clr{---}{faint} %clr{[%15.15t]}{faint} [%X{reqId}] %clr{%-40.40c}{cyan} %clr{:}{faint} %m%n%xwEx</Property>
+        </SpringProfile>
+        <SpringProfile name="dev">
+            <Property name="log-level">${env:AIOCR_LOG_LEVEL:-debug}</Property>
+            <Property name="log-path">/Log/aiocr/portal</Property>
+            <Property name="pattern">[%d{yyyy-MM-dd HH:mm:ss.SSS}] %5p ${sys:PID} --- [%15.15t] [%X{reqId}] %-40.40c{1.} : %m%n%xwEx</Property>
+        </SpringProfile>
+        <SpringProfile name="prod">
+            <Property name="log-level">${env:AIOCR_LOG_LEVEL:-info}</Property>
+            <Property name="log-path">/Log/aiocr/portal</Property>
+            <Property name="pattern">[%d{yyyy-MM-dd HH:mm:ss.SSS}] %5p ${sys:PID} --- [%15.15t] [%X{reqId}] %-40.40c{1.} : %m%n%xwEx</Property>
+        </SpringProfile>
     </Properties>
 
     <Appenders>
-        <Console name="ConsoleAppender" target="SYSTEM_OUT" follow="true">
-            <PatternLayout pattern="${COLOR_PATTERN}"/>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="${pattern}"/>
         </Console>
+        
+        <File name="error_file" fileName="${log-path}/portal-error.log" append="true">
+            <PatternLayout charset="UTF-8" pattern="%d %5p [%X{reqId}] [%c:%M] %m%n" />
+        </File>
 
-        <RollingFile name ="RollingFileAppender">
-            <FileName>${LOG_PATH}/log4j2.log</FileName>
-            <FilePattern>${LOG_PATH}/log4j2.%d{yyyy-MM-dd-hh-mm}.%i.log</FilePattern>
-            <PatternLayout>
-                <Pattern>${DEFAULT_PATTERN}</Pattern>
-            </PatternLayout>
+        <RollingFile name="RollingFileAppender" 
+                    fileName="${log-path}/portal.log" 
+                    filePattern="${log-path}/${date:yyyy-MM-dd}/portal_%d{yyyy-MM-dd-HH}.log">
+            <PatternLayout charset="UTF-8" pattern="%d %5p [%X{reqId}] [%c:%M] %m%n" />
             <Policies>
-                <SizeBasedTriggeringPolicy size="100MB"/>
+                <SizeBasedTriggeringPolicy size="10MB"/>
                 <TimeBasedTriggeringPolicy interval = "1" modulate = "true"/>
             </Policies>
-        </RollingFile>
-
-        <RollingFile name ="RollingFileErrorAppender">
-            <FileName>${LOG_PATH}/log4j2_error.log</FileName>
-            <FilePattern>${LOG_PATH}/log4j2_error.%d{yyyy-MM-dd-hh-mm}.%i.log</FilePattern>
-            <PatternLayout>
-                <Pattern>${DEFAULT_PATTERN}</Pattern>
-            </PatternLayout>
-            <Policies>
-                <SizeBasedTriggeringPolicy size="100MB"/>
-                <TimeBasedTriggeringPolicy interval = "1" modulate = "true"/>
-            </Policies>
+            <DefaultRolloverStrategy max="10" />
         </RollingFile>
     </Appenders>
 
-
     <Loggers>
         <!-- Root : 일반적인 로그 정책, 반드시 하나 정의해야함 -->
-        <Root level="INFO" additivity="false">
-            <AppenderRef ref="ConsoleAppender"/>
+        <Root level="info" additivity="false">
+            <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFileAppender"/>
-            <AppenderRef ref="RollingFileErrorAppender" level="ERROR" />
+            <AppenderRef ref="error_file" level="ERROR" />
         </Root>
 
         <!-- springframework logger -->
+        <Logger name="com.agilesoda" level="${log-level}" additivity="false">
+            <AppenderRef ref="Console" />
+            <AppenderRef ref="RollingFileAppender"/>
+        </Logger>
+
+        <!-- springframework logger -->
         <Logger name="org.springframework" level="INFO" additivity="false">
-            <AppenderRef ref="ConsoleAppender" />
+            <AppenderRef ref="Console" />
             <AppenderRef ref="RollingFileAppender"/>
         </Logger>
 
         <!-- jdbc logger -->
         <Logger name="jdbc.sqlonly" level="OFF" additivity="false">
-            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Logger>
 
         <Logger name="jdbc.sqltiming" level="INFO" additivity="false">
-            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Logger>
 
         <Logger name="jdbc.resultsettable" level="INFO" additivity="false">
-            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Logger>
 
         <Logger name="jdbc.audit" level="OFF" additivity="false">
-            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Logger>
 
         <Logger name="jdbc.resultset" level="OFF" additivity="false">
-            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Logger>
 
         <Logger name="jdbc.connection" level="OFF" additivity="false">
-            <AppenderRef ref="ConsoleAppender"/>
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="RollingFileAppender"/>
+        </Logger>
+        
+        <Logger name="log4jdbc.log4j2" level="OFF" additivity="false">
+            <AppenderRef ref="Console"/>
             <AppenderRef ref="RollingFileAppender"/>
         </Logger>
     </Loggers>

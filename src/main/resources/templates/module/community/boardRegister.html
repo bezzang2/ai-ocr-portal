@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+  <meta charset="UTF-8">
+  <title>공지사항 등록 | AI OCR 서류판독시스템</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+
+
+
+  <!-- inline JS 영역-->
+  <script th:inline="javascript" type="text/javascript">
+    let uploadFiles = [];
+
+    document.addEventListener('DOMContentLoaded',function (){
+      const params = new URLSearchParams(window.location.search);
+      const mode = params.get("mode");
+      const menuId = params.get("menuId");
+      // 신규 등록 화면 초기화
+      if(mode === "insert"){
+        initNoticeForm();
+      }
+
+
+      /**********************************************************************
+       *  화면내 모든 버튼 클릭 이벤트
+       ***********************************************************************/
+      document.addEventListener("click",function (e) {
+        const btn = e.target.closest("[data-action-cd]");
+
+        if(!btn){ return;}
+
+        const actionCd = btn.dataset.actionCd;
+        const areaCd = btn.dataset.areaCd;
+        //console.log("actionCd===>>>",actionCd)
+        //console.log("areaCd===>>>",areaCd)
+
+        switch (actionCd){
+          case "SAVE":
+            saveNotice();
+            break;
+          case "LIST":
+            location.href = contextPath+"module/community/board"+"?menuId="+encodeURIComponent(menuId||"");
+            break;
+        }
+      })
+    });
+
+    /**********************************************************************
+     *  내용초기화 이벤트
+     ***********************************************************************/
+    function initNoticeForm() {
+      // 1. 제목 초기화
+      const  title = document.querySelector('.search-area__item input[type="text"]:not(readonly)');
+      if(title){
+        title.value = "";
+      }
+
+
+      // 5. 내용 초기화
+      const textarea = document.querySelector('.notice-register__textarea');
+      if(textarea){
+        textarea.value = "";
+      }
+
+    }
+
+    /**********************************************************************
+     *  계시판/공지사항/FAQ 저장 필수값 체크 함수
+     ***********************************************************************/
+    function saveNotice() {
+
+      const noticeTtlObj = document.getElementById("noticeTtl");
+      const noticeCnObj = document.getElementById("noticeCn");
+
+      // 필수값 체크
+      const title = noticeTtlObj.value.trim();
+      if(title === ""){
+        openInformationModal("제목을 입력하세요.");
+        noticeTtlObj.focus();
+        return;
+      }
+      const noticeCn = noticeCnObj.value.trim();
+      if(noticeCn === ""){
+        openInformationModal("내용을 입력하세요.");
+        noticeCnObj.focus();
+        return;
+      }
+
+      insertNotice();
+
+    }
+
+    /**********************************************************************
+     *  계시판/공지사항/FAQ 저장 함수
+     ***********************************************************************/
+    function insertNotice() {
+      const formData = new FormData();
+      // 3. 날짜 세팅
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth()+1).padStart(2,"0");
+      const dd = String(today.getDate()).padStart(2,"0");
+
+      const todayStr = `${yyyy}${mm}${dd}`;
+      // 공지사항 데이터
+      formData.append("noticeTtl",document.getElementById("noticeTtl").value.trim());
+      formData.append("noticeCn",document.getElementById("noticeCn").value.trim());
+      formData.append("faqAnsmer","");
+      formData.append("noticeMsgDvcd","Y");
+      formData.append("useYn","Y");
+      formData.append("stdd",todayStr);
+      formData.append("endt","99991231");
+      formData.append("noticeTypeCd","BOARD");
+
+      // 첨부파일
+      if(uploadFiles && uploadFiles.length > 0){
+        uploadFiles.forEach(file => {formData.append("files",file)});
+      }
+
+      openConfirmModal("등록 하시겠습니까?",function (){
+
+        fetch(contextPath+"module/community/insertNotice", {
+          method: "POST",
+          body:formData
+        })
+                .then(response => {
+                  if (!response.ok) {
+                    openErrorModal("등록 실패");
+                    return;
+                  }
+                  return response.json();
+                })
+                .then(data => {
+                  if(data.result === "SUCCESS"){
+                    openSuccessModal("등록되었습니다.");
+                    const params = new URLSearchParams(window.location.search);
+                    const menuId = params.get("menuId");
+                    location.href = contextPath+"module/community/board"+"?menuId="+encodeURIComponent(menuId||"");
+                  }else{
+                    openErrorModal("등록 실패 :"+data.message);
+                    return;
+                  }
+                })
+                .catch(error => {
+                  console.error(error);
+                  openErrorModal("등록 중 오류가 발행했습니다.");
+                  return;
+                });
+      });
+    }
+
+    /**********************************************************************
+     *  계시판/공지사항/FAQ 파일업로드 클릭 이벤트
+     ***********************************************************************/
+    function upload() {
+      document.getElementById("fileInput").click();
+    }
+
+    /**********************************************************************
+     *  계시판/공지사항/FAQ 파일선택 클릭 이벤트
+     ***********************************************************************/
+    function changeFile(input) {
+      const  filse = input.files;
+      if(!filse || filse.length === 0){
+        return;
+      }
+      for(let i=0; i<filse.length; i++){
+        const file = filse[i];
+        // 중복 파일 체크
+        const duplicate = uploadFiles.some(item => item.name === file.name && item.size === file.size);
+        if(duplicate){
+          openErrorModal(file.name + "파일은 이미 추가되어 있습니다.");
+          continue;
+        }
+        uploadFiles.push(file);
+      }
+      drawFileList();
+
+      // 같은 파일 다시 선택 가능하도록 초기화
+      input.value = "";
+    }
+
+    /**********************************************************************
+     *  계시판/공지사항/FAQ 파일선택 후 데이터 매핑 함수
+     ***********************************************************************/
+    function drawFileList() {
+      const tbody = document.getElementById("fileList");
+      tbody.innerHTML = "";
+      uploadFiles.forEach((file, index) => {
+        const tr= document.createElement("tr");
+        tr.innerHTML = `<td>${file.name}</td>
+                        <td>${formatFileSize(file.size)}</td>
+                        <td><button type="button" class="table-icon-delete" aria-label="첨부파일 삭제" onclick="deleteFile(${index})">
+                        <span class="btn-icon-slot"><svg viewBox="0 0 7.725 7.725" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+                        </button></td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    /**********************************************************************
+     *  계시판/공지사항/FAQ 파일사이즈 변환 함수
+     ***********************************************************************/
+    function formatFileSize(size) {
+      if(size < 1024){
+        return size + " B";
+      }
+      if(size < 1024 * 1024){
+        return (size / 1024).toFixed(1)+" KB";
+      }
+      return (size / (1024* 1024)).toFixed(1) + " MB";
+    }
+
+    /**********************************************************************
+     *  계시판/공지사항/FAQ 파일삭제 함수
+     ***********************************************************************/
+    function deleteFile(index) {
+      openConfirmModal("첨부파일을 삭제하시겠습니까?",function (){
+        uploadFiles.splice(index, 1);
+        drawFileList();
+      });
+    }
+
+  </script>
+</head>
+<body th:classappend="${param.popup != null and param.popup[0] == 'Y'} ? 'popup-mode' : ''">
+
+    <main class="content content--narrow">
+
+      <div class="page-header">
+        <h1 class="page-header__title">게시판 등록</h1>
+        <div class="page-header__actions">
+          <button th:each="btn : ${session.buttonList}"
+                  th:if="${btn.menuId == param.menuId[0] and btn.areaCd == 'DETAIL_1'}"
+                  type="button"
+                  th:class="${btn.actionCd == 'SAVE'} ? 'btn btn-primary' : 'btn-outline-primary'"
+                  style="width:80px"
+                  th:id="${btn.btnCd}"
+                  data-audit="Y"
+                  th:data-area-cd="${btn.areaCd}"
+                  th:data-menu-id="${btn.menuId}"
+                  th:data-btn-cd="${btn.btnCd}"
+                  th:data-action-cd="${btn.actionCd}"
+                  th:data-action-nm="${btn.btnNm}">
+            <span th:text="${btn.btnNm}"></span></button>
+        </div>
+      </div>
+
+      <div class="notice-register">
+
+        <!-- 기본정보 — get_design_context(775:2816) 실측 -->
+        <div class="notice-register__section">
+          <h2 class="section-title">기본정보</h2>
+          <div class="detail-panel detail-panel--column">
+            <div class="search-area__row search-area__row--detail">
+              <div class="search-area__item" style="flex:1; min-width:0">
+                <span class="search-area__label search-area__label--required" style="width:80px; flex-shrink:0">제목</span>
+                <input class="input" type="text" style="flex:1" placeholder="제목을 입력해주세요" id="noticeTtl">
+              </div>
+            </div>
+            <div class="search-area__row search-area__row--detail">
+              <div class="search-area__item">
+                <span class="search-area__label" style="width:80px; flex-shrink:0">작성자</span>
+                <input class="input input--w200" type="text" th:value="${session.ssoLoginUser != null ? session.ssoLoginUser.userName + ' (' + session.ssoLoginUser.userId + ')' : ''}" readonly>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 내용 — get_design_context(775:2816) 실측 -->
+        <div class="notice-register__section">
+          <h2 class="section-title search-area__label--required">내용</h2>
+          <textarea class="notice-register__textarea" placeholder="Text" id="noticeCn"></textarea>
+        </div>
+
+        <!-- 첨부 — get_design_context(775:2816) 실측(OCR서식신청 추출설명의 첨부파일 표와 동일 패턴) -->
+        <div class="notice-register__section">
+          <div class="section-title section-title--row">
+            첨부
+            <button type="button" class="btn-neutral" style="width:80px" onclick="upload();">
+              <img th:src="@{/images/icons/buttons/ic-16-upload.svg}" alt="">
+              업로드
+            </button>
+            <input type="file" id="fileInput" name="files" multiple style="display:none;" onchange="changeFile(this);">
+          </div>
+          <table class="table">
+            <thead>
+            <tr>
+              <th>이름</th>
+              <th style="width:200px">크기</th>
+              <th style="width:60px"></th>
+            </tr>
+            </thead>
+            <tbody id="fileList">
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+    </main>
+
+
+<div th:replace="~{common/commonModals :: commonModals}"></div>
+<script th:src="@{/js/modal.js}"></script>
+<script th:src="@{/js/common.js}"></script>
+</body>
+</html>

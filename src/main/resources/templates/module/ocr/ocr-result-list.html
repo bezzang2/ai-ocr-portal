@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}">
+<head>
+  <meta charset="UTF-8">
+  <title>판독결과 검토 | AI OCR 서류판독시스템</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+</head>
+<body>
+<th:block layout:fragment="Content">
+  <!-- defaultLayout의 head는 config fragment로 교체되므로 화면 전용 CSS도 내용 영역에서 불러온다. -->
+  <link rel="stylesheet" th:href="@{/css/pages/review-transactions.css}">
+  <main class="content review-list" data-review-list data-navigation-context="server"
+        th:attr="data-navigation-current=${menuId}, data-view=${view}, data-reviewer-id=${reviewer?.userId}">
+    <div class="page-header review-list__heading">
+      <h1 class="page-header__title">판독결과 검토</h1>
+    </div>
+    <form class="review-list__search" method="get" th:action="@{/module/ocr/result}">
+      <input type="hidden" name="menuId" th:value="${menuId}">
+      <input type="hidden" name="page" value="1">
+      <input type="hidden" name="pageSize" th:value="${pageSize}">
+      <input type="hidden" name="view" th:value="${view}">
+      <div class="review-list__field review-list__field--workflow">
+        <label for="review-wk">업무명</label>
+        <select id="review-wk" name="wkId" class="input">
+          <option value="">전체 업무</option>
+          <option th:each="wk : ${workflowList}" th:value="${wk.wkId}" th:text="${wk.wkNm ?: wk.wkId}" th:selected="${wk.wkId == wkId}">업무명</option>
+        </select>
+      </div>
+      <div class="review-list__field">
+        <label for="review-status">검토상태</label>
+        <select id="review-status" name="reviewStatus" class="input">
+          <option value="">전체 상태</option>
+          <option th:each="status : ${reviewStatusLabels}" th:value="${status.key}" th:text="${status.value}" th:selected="${status.key == reviewStatus}">상태</option>
+        </select>
+      </div>
+      <div class="review-list__field review-list__field--period">
+        <label for="review-from">스캔기간</label>
+        <div class="review-list__dates">
+          <input id="review-from" name="from" class="input" type="date" th:value="${from}" aria-label="스캔 시작일" required>
+          <span aria-hidden="true">–</span>
+          <input id="review-to" name="to" class="input" type="date" th:value="${to}" aria-label="스캔 종료일" required>
+        </div>
+      </div>
+      <label class="review-list__mine"><input name="mine" type="checkbox" value="true" th:checked="${mine}"> 내 담당만</label>
+      <button type="submit" class="review-button btn-outline-primary">조회</button>
+    </form>
+
+    <section class="review-list__results" aria-label="판독작업 조회 결과">
+      <div class="review-list__toolbar">
+        <p class="review-list__count" th:unless="${loadError}">총 <strong th:text="${#lists.size(reviewTransactions)}">0</strong>건 <span>· 최근 스캔 순, 최대 500건</span></p>
+        <p class="review-list__count" th:if="${loadError}">조회 결과</p>
+        <nav class="review-list__views" aria-label="목록 보기 방식">
+          <a data-review-view="trans" th:attr="aria-current=${view == 'trans' ? 'true' : 'false'}"
+             th:href="@{/module/ocr/result(menuId=${menuId},wkId=${wkId},reviewStatus=${reviewStatus},mine=${mine},from=${from},to=${to},view='trans',page=1,pageSize=${pageSize})}">판독작업별</a>
+          <a data-review-view="wk" th:attr="aria-current=${view == 'wk' ? 'true' : 'false'}"
+             th:href="@{/module/ocr/result(menuId=${menuId},wkId=${wkId},reviewStatus=${reviewStatus},mine=${mine},from=${from},to=${to},view='wk',page=1,pageSize=${pageSize})}">업무별</a>
+        </nav>
+      </div>
+      <p class="review-list__feedback" data-review-list-feedback role="status" aria-live="polite" hidden></p>
+      <div class="review-list__notice review-list__notice--error" th:if="${loadError}" role="alert">
+        <strong>판독작업을 불러오지 못했습니다.</strong>
+        <span th:text="${loadError}">잠시 후 다시 조회해 주세요.</span>
+        <button type="button" class="review-button" data-review-retry>다시 조회</button>
+      </div>
+      <div class="review-list__empty" th:if="${loadError == null and #lists.isEmpty(reviewTransactions)}">
+        <svg aria-hidden="true" width="36" height="36" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 4h11l6 6v18H8zM18 4v7h7M12 17h9M12 22h6"/></svg>
+        <strong>조건에 맞는 판독작업이 없습니다.</strong>
+        <span>조회 기간이나 검토상태를 바꿔 다시 조회해 주세요.</span>
+      </div>
+      <div class="review-list__table-wrap" th:if="${loadError == null and !#lists.isEmpty(reviewTransactions)}" tabindex="0" role="region" aria-label="판독작업 목록. 좁은 화면에서는 좌우로 스크롤할 수 있습니다.">
+        <table class="review-table">
+          <caption class="review-sr-only">판독작업별 업무명, 검증 진행, 결과없음·실패, 서식간 경고, 담당자, 스캔일시와 검토상태</caption>
+          <colgroup><col class="review-table__col-no"><col class="review-table__col-id"><col class="review-table__col-workflow"><col class="review-table__col-progress"><col class="review-table__col-issue"><col class="review-table__col-warning"><col class="review-table__col-assignee"><col class="review-table__col-date"><col class="review-table__col-status"></colgroup>
+          <thead><tr>
+            <th scope="col">No</th><th scope="col">판독작업</th><th scope="col">업무명</th>
+            <th scope="col">검증완료 / 서식</th><th scope="col">결과없음 · 실패</th>
+            <th scope="col"><abbr title="불일치 / 검증불가">서식간 경고</abbr></th><th scope="col">담당자</th><th scope="col">스캔일시</th><th scope="col">검토상태</th>
+          </tr></thead>
+          <tbody>
+            <tr th:each="row, stat : ${reviewTransactions}" data-review-row
+                th:attr="data-wk-id=${row.wkId}, data-wk-name=${row.wkNm ?: row.wkId}, data-trans-id=${row.transId}, data-verified-count=${row.verifiedCount}, data-form-count=${row.formCount}">
+              <td class="review-table__number" th:text="${stat.count}">1</td>
+              <td><a class="review-table__link" data-review-detail
+                    th:href="@{/module/ocr/result(wkId=${row.wkId},transId=${row.transId},menuId=${menuId},list=${listQuery})}"
+                    th:text="${row.transId}" th:title="${row.transId}">판독작업 ID</a></td>
+              <td><span class="review-table__ellipsis" th:text="${row.wkNm ?: row.wkId}" th:title="${row.wkNm ?: row.wkId}">업무명</span></td>
+              <td><div class="review-progress" th:attr="aria-label=${'전체 서식 ' + row.formCount + '건 중 검증완료 ' + row.verifiedCount + '건'}">
+                <span class="review-progress__track" aria-hidden="true"><i th:style="'width:' + ${row.formCount > 0 ? T(java.lang.Math).min(100, row.verifiedCount * 100 / row.formCount) : 0} + '%'"></i></span>
+                <span th:text="${row.verifiedCount + ' / ' + row.formCount}">0 / 0</span>
+              </div></td>
+              <td><span th:classappend="${row.emptyCount + row.failedCount > 0} ? 'review-count--warning'"
+                        th:text="${row.emptyCount + row.failedCount}" th:title="${'결과없음 ' + row.emptyCount + '건 · 실패 ' + row.failedCount + '건'}">0</span></td>
+              <td th:attr="aria-label=${'불일치 ' + row.mismatchCount + '건, 검증불가 ' + row.unverifiableCount + '건'}">
+                <span class="review-warning-counts"><span th:classappend="${row.mismatchCount > 0} ? 'review-count--warning'" th:text="${row.mismatchCount}">0</span>
+                <span class="review-table__separator" aria-hidden="true">/</span>
+                <span th:classappend="${row.unverifiableCount > 0} ? 'review-count--caution'" th:text="${row.unverifiableCount}">0</span></span>
+              </td>
+              <td>
+                <span th:if="${row.asgnUserId != null}" class="review-table__ellipsis" th:text="${row.asgnUserNm ?: row.asgnUserId}" th:title="${row.asgnUserNm ?: row.asgnUserId}">담당자</span>
+                <button th:if="${row.asgnUserId == null and reviewer != null and reviewer.userId != null and !#strings.isEmpty(reviewer.userId)}"
+                        type="button" class="review-button review-button--small" data-review-self-assign
+                        th:attr="data-assign-url=@{/module/ocr/result/wk/{wk}/trans/{t}/assignee(wk=${row.wkId},t=${row.transId})}">내가 맡기</button>
+                <span th:if="${row.asgnUserId == null and (reviewer == null or reviewer.userId == null or #strings.isEmpty(reviewer.userId))}" class="review-table__muted">미지정</span>
+              </td>
+              <td class="review-table__date" th:text="${row.scanDtLabel ?: '-'}">스캔일시</td>
+              <td><span class="review-status" th:attr="data-status=${row.reviewStatus}" th:text="${row.reviewStatusLabel}">미지정</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="list-footer" data-review-pagination th:unless="${loadError}"></div>
+    </section>
+  </main>
+  <script th:src="@{/js/list-pagination.js}"></script>
+  <script th:src="@{/js/review-transactions.js}"></script>
+</th:block>
+</body>
+</html>

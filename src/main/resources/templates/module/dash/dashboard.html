@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{common/layouts/defaultLayout}"
+      layout:fragment="Content"
+>
+<head>
+  <meta charset="UTF-8">
+  <title>모니터링 | AI OCR 서류판독시스템</title>
+  <link rel="stylesheet" th:href="@{/css/main.css}">
+<body>
+
+
+
+
+    <main class="content">
+
+      <div class="page-header">
+        <h1 class="page-header__title">모니터링</h1>
+        <div class="page-header__actions">
+          <select class="input input--w160">
+            <option>본점</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="layout-list layout-list--gap-16">
+
+          <div class="monitoring-summary">
+            <div class="monitoring-summary__bg" aria-hidden="true">
+              <img th:src="@{/images/illustrations/monitoring-summary-bg.png}" alt="">
+            </div>
+            <div class="monitoring-summary__row">
+              <div class="monitoring-summary__card">
+                <div class="monitoring-summary__title">
+                  <p class="monitoring-summary__label">금일 처리량</p>
+                  <p class="monitoring-summary__delta monitoring-summary__delta--up">▲ 전일대비 6.2%</p>
+                </div>
+                <p class="monitoring-summary__value">48,239</p>
+              </div>
+              <div class="monitoring-summary__divider"></div>
+              <div class="monitoring-summary__card">
+                <div class="monitoring-summary__title">
+                  <p class="monitoring-summary__label">오류 건수</p>
+                  <p class="monitoring-summary__delta monitoring-summary__delta--down">▲ 전일대비 1.4%</p>
+                </div>
+                <p class="monitoring-summary__value monitoring-summary__value--error">312</p>
+              </div>
+              <div class="monitoring-summary__divider"></div>
+              <div class="monitoring-summary__card">
+                <div class="monitoring-summary__title">
+                  <p class="monitoring-summary__label">평균 처리시간</p>
+                  <p class="monitoring-summary__delta monitoring-summary__delta--up">▼ 전일대비 0.3초 개선</p>
+                </div>
+                <p class="monitoring-summary__value">1.8초</p>
+              </div>
+            </div>
+          </div>
+
+        <div class="monitoring-alert">
+          <div class="monitoring-alert__desc">
+            <img class="monitoring-alert__icon" th:src="@{/images/icons/dashboard/ic-16-error.svg}" alt="">
+            <p class="monitoring-alert__text">장애 알림[부동산등기부등본] 오류 발생 2026-07-03 11:30</p>
+          </div>
+          <a class="monitoring-alert__link" href="incident-management.html">
+            바로가기
+            <img class="monitoring-alert__link-icon" th:src="@{/images/icons/dashboard/ic-16-arrow-right.svg}" alt="">
+          </a>
+        </div>
+
+        <div class="card monitoring-card">
+          <div class="list-section list-section--gap-24">
+            <div class="list-section__header">
+              <p class="list-section__title">서식별 처리 비중 (Top 10)</p>
+              <div class="monitoring-card__legend-dots">
+                <span class="monitoring-card__legend-dot monitoring-card__legend-dot--active"></span>
+                <span class="monitoring-card__legend-dot"></span>
+              </div>
+            </div>
+
+            <div class="monitoring-chart">
+              <div class="monitoring-chart__plot">
+                <div class="monitoring-chart__yaxis">
+                  <span>15000</span>
+                  <span>10000</span>
+                  <span>50000</span>
+                  <span>0</span>
+                </div>
+                <div class="monitoring-chart__area">
+                  <div class="monitoring-chart__gridlines" aria-hidden="true">
+                    <span></span><span></span><span></span><span></span><span></span>
+                  </div>
+                  <div class="monitoring-chart__bars">
+                    <div class="monitoring-chart__group">
+                      <span class="monitoring-chart__bar monitoring-chart__bar--count" style="height:114px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--time" style="height:1px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--error" style="height:1px"></span>
+                    </div>
+                    <div class="monitoring-chart__group">
+                      <span class="monitoring-chart__bar monitoring-chart__bar--count" style="height:98px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--time" style="height:1px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--error" style="height:1px"></span>
+                    </div>
+                    <div class="monitoring-chart__group">
+                      <span class="monitoring-chart__bar monitoring-chart__bar--count" style="height:80px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--time" style="height:1px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--error" style="height:1px"></span>
+                    </div>
+                    <div class="monitoring-chart__group">
+                      <span class="monitoring-chart__bar monitoring-chart__bar--count" style="height:71px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--time" style="height:1px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--error" style="height:1px"></span>
+                    </div>
+                    <div class="monitoring-chart__group">
+                      <span class="monitoring-chart__bar monitoring-chart__bar--count" style="height:64px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--time" style="height:1px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--error" style="height:1px"></span>
+                    </div>
+                    <div class="monitoring-chart__group">
+                      <span class="monitoring-chart__bar monitoring-chart__bar--count" style="height:60px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--time" style="height:1px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--error" style="height:1px"></span>
+                    </div>
+                    <div class="monitoring-chart__group">
+                      <span class="monitoring-chart__bar monitoring-chart__bar--count" style="height:58px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--time" style="height:1px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--error" style="height:1px"></span>
+                    </div>
+                    <div class="monitoring-chart__group">
+                      <span class="monitoring-chart__bar monitoring-chart__bar--count" style="height:57px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--time" style="height:1px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--error" style="height:1px"></span>
+                    </div>
+                    <div class="monitoring-chart__group">
+                      <span class="monitoring-chart__bar monitoring-chart__bar--count" style="height:54px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--time" style="height:1px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--error" style="height:1px"></span>
+                    </div>
+                    <div class="monitoring-chart__group">
+                      <span class="monitoring-chart__bar monitoring-chart__bar--count" style="height:46px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--time" style="height:1px"></span>
+                      <span class="monitoring-chart__bar monitoring-chart__bar--error" style="height:1px"></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="monitoring-chart__xaxis">
+                <span class="monitoring-chart__xlabel">부동산등기부등본</span>
+                <span class="monitoring-chart__xlabel">가족관계증명서</span>
+                <span class="monitoring-chart__xlabel">주민등록등본</span>
+                <span class="monitoring-chart__xlabel">주민등록초본</span>
+                <span class="monitoring-chart__xlabel">임대차계약서</span>
+                <span class="monitoring-chart__xlabel">매매계약서</span>
+                <span class="monitoring-chart__xlabel">부동산신고서</span>
+                <span class="monitoring-chart__xlabel">외국인등록증</span>
+                <span class="monitoring-chart__xlabel">여권</span>
+                <span class="monitoring-chart__xlabel">근로계약서</span>
+              </div>
+              <div class="monitoring-chart__legends">
+                <div class="monitoring-chart__legend">
+                  <span class="monitoring-chart__legend-swatch monitoring-chart__legend-swatch--count"></span>
+                  <span class="monitoring-chart__legend-label">처리 건수</span>
+                </div>
+                <div class="monitoring-chart__legend">
+                  <span class="monitoring-chart__legend-swatch monitoring-chart__legend-swatch--time"></span>
+                  <span class="monitoring-chart__legend-label">평균 처리시간</span>
+                </div>
+                <div class="monitoring-chart__legend">
+                  <span class="monitoring-chart__legend-swatch monitoring-chart__legend-swatch--error"></span>
+                  <span class="monitoring-chart__legend-label">오류 건수</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card monitoring-card">
+          <div class="list-section">
+            <div class="list-section__header">
+              <p class="list-section__title">서식별 처리 현황</p>
+            </div>
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="width:160px">서식코드</th>
+                  <th>서식명</th>
+                  <th style="width:200px">처리 건수</th>
+                  <th style="width:200px">평균 처리시간</th>
+                  <th style="width:200px">오류 건수</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>D101</td>
+                  <td style="text-align:left">부동산등기부등본</td>
+                  <td>12,402</td>
+                  <td>10.6초</td>
+                  <td>1.1</td>
+                </tr>
+                <tr>
+                  <td>D102</td>
+                  <td style="text-align:left">가족관계증명서</td>
+                  <td>14,228</td>
+                  <td>10.2초</td>
+                  <td>1.8</td>
+                </tr>
+                <tr>
+                  <td>D103</td>
+                  <td style="text-align:left">주민등록등본</td>
+                  <td>12,609</td>
+                  <td>9.4초</td>
+                  <td>3.9</td>
+                </tr>
+                <tr>
+                  <td>D104</td>
+                  <td style="text-align:left">주민등록초본</td>
+                  <td>10,609</td>
+                  <td>12.0초</td>
+                  <td>1.7</td>
+                </tr>
+                <tr>
+                  <td>D105</td>
+                  <td style="text-align:left">임대차계약서</td>
+                  <td>10,000</td>
+                  <td>11.0초</td>
+                  <td>2.7</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+<script th:src="@{/js/lnb.js}"></script>
+</body>
+</html>

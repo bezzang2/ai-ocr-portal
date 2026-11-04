@@ -1,0 +1,413 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.agilesoda.module.admin.mapper.AuditLogMapper">
+
+	<select id="selectLogLsit"  resultType="com.agilesoda.module.admin.vo.AuditLogResVO">
+		/*  로그 조회 쿼리 (selectLogLsit) */
+		SELECT A.AUDIT_ID 		as auditId
+			 , A.USER_ID 		as userId
+		     , C.EMP_KOR_FLNM 	as userNm
+			 , A.MENU_ID 		as menuId
+		     , B.MENU_NM 		AS menuNm
+			 , A.BTN_ID 		as btnId
+			 , A.ACTION_CD 		as actionCd
+			 , A.ACTION_NM 		as actionNm
+			 , A.REQ_URL 		as reqUrl
+			 , A.REQ_IP 		as reqIp
+		     , D.BR_NM			as brNm
+			 , TO_CHAR(TO_DATE(A.FRST_REG_DTTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD HH24:MI:SS') as frstRegDttm
+		FROM OCUOC_AUDIT_M A
+		   , ocuoc_menun_m B
+		   , OCUOC_USERI_M C
+		   , OCUOC_DPRMI_M D
+		WHERE A.MENU_ID = B.MENU_ID
+		  AND A.USER_ID = C.EMPNO
+		  AND C.BLNG_BRCD = D.BR_CD
+		<if test="fromDate != null and fromDate != ''">
+			and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+		</if>
+		<if test="toDate != null and toDate != ''">
+			and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+		</if>
+		<if test="userId != null and userId != ''">
+			and (A.USER_ID LIKE '%'||#{userId}||'%' or C.EMP_KOR_FLNM LIKE '%'||#{userId}||'%')
+		</if>
+		<if test="logBrCd != null and logBrCd != ''">
+			and (D.BR_CD LIKE '%'||#{logBrCd}||'%' or D.BR_NM LIKE '%'||#{logBrCd}||'%')
+		</if>
+		ORDER BY A.FRST_REG_DTTM
+		OFFSET #{offset} ROWS
+		FETCH NEXT #{pageSize} ROWS ONLY
+	</select>
+
+	<select id="selectLogCount"  resultType="int">
+		/*  로그 조회 페이징 총카운터 (selectLogCount) */
+		SELECT count(*)
+		FROM OCUOC_AUDIT_M A
+		   , OCUOC_USERI_M C
+		   , OCUOC_DPRMI_M D
+		WHERE 1=1
+		  AND A.USER_ID = C.EMPNO
+		  AND C.BLNG_BRCD = D.BR_CD
+		<if test="fromDate != null and fromDate != ''">
+			and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+		</if>
+		<if test="toDate != null and toDate != ''">
+			and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+		</if>
+		<if test="userId != null and userId != ''">
+			and (A.USER_ID = #{userId} or C.EMP_KOR_FLNM LIKE '%'||#{userId}||'%')
+		</if>
+		<if test="logBrCd != null and logBrCd != ''">
+			and (D.BR_CD LIKE '%'||#{logBrCd}||'%' or D.BR_NM LIKE '%'||#{logBrCd}||'%')
+		</if>
+	</select>
+
+	<select id="selectMenuTop5"  parameterType="map" resultType="map">
+		/*  메뉴화면통계텝 메뉴별 접근 빈도 TOP5 (selectMenuTop5) */
+		SELECT MENU_NM as "menuNm"
+		     , CNT as "cnt"
+		FROM (
+			SELECT M.MENU_NM,COUNT(*) AS CNT
+			FROM OCUOC_AUDIT_M A
+			INNER JOIN OCUOC_MENUN_M M
+			ON A.MENU_ID = M.MENU_ID
+			WHERE 1=1
+			AND A.MENU_ID IS NOT NULL
+			<if test="menuId != null and menuId != ''">
+				and (M.MENU_ID = #{menuId} OR M.UPRN_MENU_ID = #{menuId} )
+			</if>
+			<if test="fromDate != null and fromDate != ''">
+				and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+			</if>
+			<if test="toDate != null and toDate != ''">
+				and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+			</if>
+			GROUP BY A.MENU_ID, M.MENU_NM
+			ORDER BY COUNT(*) DESC
+		)
+		WHERE ROWNUM <![CDATA[ <= ]]> 5
+	</select>
+
+
+	<select id="selectButtonTop5"  parameterType="map" resultType="map">
+		/*  메뉴화면통계텝 화면별 버튼 클릭 분포 TOP5 (selectButtonTop5) */
+		SELECT *
+		FROM (
+			SELECT M.MENU_NM AS "menuNm" ,
+				   SUM(CASE WHEN A.ACTION_CD IN ('SEARCH','LIST') THEN 1 ELSE 0 END) AS "searchCnt",
+				   SUM(CASE WHEN A.ACTION_CD IN ('SAVE','UPDATE') THEN 1 ELSE 0 END) AS "saveCnt",
+				   SUM(CASE WHEN A.ACTION_CD = 'DELETE' THEN 1 ELSE 0 END) AS "deleteCnt",
+				   SUM(CASE WHEN A.ACTION_CD = 'EXCEL' THEN 1 ELSE 0 END) AS "excelCnt"
+			  FROM OCUOC_AUDIT_M A
+			 INNER JOIN OCUOC_MENUN_M M
+			         ON A.MENU_ID = M.MENU_ID
+			 WHERE A.BTN_ID IS NOT NULL
+			<if test="menuId != null and menuId != ''">
+				and (M.MENU_ID = #{menuId} OR M.UPRN_MENU_ID = #{menuId} )
+			</if>
+			<if test="fromDate != null and fromDate != ''">
+				and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+			</if>
+			<if test="toDate != null and toDate != ''">
+				and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+			</if>
+			GROUP BY A.MENU_ID, M.MENU_NM
+			ORDER BY COUNT(*) DESC
+		)
+		WHERE ROWNUM <![CDATA[ <= ]]> 5
+	</select>
+
+	<select id="selectAuditSummary"  parameterType="map" resultType="map">
+		/*  메뉴화면통계텝 최다접근/최다사용/전체접근/버튼클릭 (selectAuditSummary) */
+		SELECT ( SELECT MENU_NM /*최다 접근 메뉴*/
+				 FROM (SELECT M.MENU_NM, COUNT(*) CNT
+					   FROM OCUOC_AUDIT_M A
+								JOIN OCUOC_MENUN_M M
+									 ON A.MENU_ID = M.MENU_ID
+					   WHERE A.MENU_ID IS NOT NULL
+						<if test="fromDate != null and fromDate != ''">
+							and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+						</if>
+						<if test="toDate != null and toDate != ''">
+							and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+						</if>
+					   GROUP BY  A.MENU_ID, M.MENU_NM
+					   ORDER BY COUNT(*) DESC
+					  )
+				 WHERE ROWNUM = 1
+			   ) AS "topMenu",
+			   (SELECT CNT /*최다 접근 메뉴 건수*/
+				FROM ( SELECT COUNT(*) CNT
+					   FROM OCUOC_AUDIT_M A
+					   WHERE A.MENU_ID IS NOT NULL
+						<if test="fromDate != null and fromDate != ''">
+							and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+						</if>
+						<if test="toDate != null and toDate != ''">
+							and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+						</if>
+					   GROUP BY A.MENU_ID
+					   ORDER BY COUNT(*) DESC
+					 )
+				WHERE ROWNUM = 1
+			   ) AS "topMenuCount",
+			   (SELECT MENU_NM  /* 최다 사용 화면*/
+				FROM ( SELECT M.MENU_NM, COUNT(*) CNT
+					     FROM OCUOC_AUDIT_M A
+						 JOIN OCUOC_MENUN_M M
+						   ON A.MENU_ID = M.MENU_ID
+					    WHERE 1=1
+						<if test="fromDate != null and fromDate != ''">
+							and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+						</if>
+						<if test="toDate != null and toDate != ''">
+							and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+						</if>
+					   GROUP BY A.MENU_ID, M.MENU_NM
+					   ORDER BY COUNT(*) DESC
+					 )
+				WHERE ROWNUM = 1
+			   ) AS "topScreen",
+			   (SELECT CNT  /* 최다 사용 화면 건수*/
+				FROM ( SELECT COUNT(*) CNT
+					   FROM OCUOC_AUDIT_M
+					   WHERE 1=1
+						<if test="fromDate != null and fromDate != ''">
+							and FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+						</if>
+						<if test="toDate != null and toDate != ''">
+							and FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+						</if>
+					   GROUP BY MENU_ID
+					   ORDER BY COUNT(*) DESC
+					 )
+				WHERE ROWNUM = 1
+			   ) AS "topScreenCount",
+			   (SELECT COUNT(*) /* 전체 화면 접근 건수*/
+				FROM OCUOC_AUDIT_M
+				WHERE MENU_ID IS NOT NULL
+			   ) AS "totalAccessCount",
+			   (SELECT MENU_NM /* 버큰 클릭 최다 화면*/
+				FROM (SELECT M.MENU_NM, COUNT(*) CNT
+					    FROM OCUOC_AUDIT_M A
+					    JOIN OCUOC_MENUN_M M
+						  ON A.MENU_ID = M.MENU_ID
+					  WHERE A.BTN_ID IS NOT NULL
+					<if test="fromDate != null and fromDate != ''">
+						and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+					</if>
+					<if test="toDate != null and toDate != ''">
+						and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+					</if>
+					  GROUP BY A.MENU_ID, M.MENU_NM
+					  ORDER BY COUNT(*) DESC
+					 )
+				WHERE ROWNUM = 1
+			   ) AS "topButtonScreen",
+			   (SELECT CNT /* 버큰 클릭 최다 건수*/
+				FROM (SELECT COUNT(*) CNT
+					  FROM OCUOC_AUDIT_M A
+					  WHERE A.BTN_ID IS NOT NULL
+					<if test="fromDate != null and fromDate != ''">
+						and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+					</if>
+					<if test="toDate != null and toDate != ''">
+						and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+					</if>
+					  GROUP BY A.MENU_ID
+					  ORDER BY COUNT(*) DESC
+					 )
+				WHERE ROWNUM = 1
+			   ) AS "topButtonCount"
+		FROM DUAL
+	</select>
+
+	<select id="selectAuditDetail"  parameterType="map" resultType="map">
+		/*  메뉴화면통계텝 상세 통계 (selectAuditDetail) */
+		SELECT ROW_NUMBER() OVER ( ORDER BY A.FRST_REG_DTTM DESC) AS "no",
+			   NVL(P.MENU_NM,M.MENU_NM) AS "menuNm",
+			   M.MENU_NM AS "screenNm",
+			   A.BTN_ID AS "btnId",
+			   CASE WHEN A.BTN_ID IS NULL THEN '화면접근' ELSE '버튼접근' END AS "accessType",
+			   TO_CHAR(TO_DATE(A.FRST_REG_DTTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD HH24:MI:SS') AS "lastAccessDt"
+		FROM OCUOC_AUDIT_M A
+			JOIN OCUOC_MENUN_M M
+		ON A.MENU_ID = M.MENU_ID
+			LEFT JOIN OCUOC_MENUN_M P
+			ON A.MENU_ID = P.MENU_ID
+		WHERE A.MENU_ID IS NOT NULL
+		<if test="menuId != null and menuId != ''">
+			and (M.MENU_ID = #{menuId} OR M.UPRN_MENU_ID = #{menuId} )
+		</if>
+		<if test="fromDate != null and fromDate != ''">
+			and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+		</if>
+		<if test="toDate != null and toDate != ''">
+			and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+		</if>
+		ORDER BY A.FRST_REG_DTTM DESC
+		OFFSET #{offset} ROWS
+		FETCH NEXT #{pageSize} ROWS ONLY
+	</select>
+
+	<select id="selectMenuCount"  resultType="int">
+		/*  메뉴화면통계텝 상세 통계 페이징 총카운터 (selectMenuCount) */
+		SELECT COUNT(*)
+		FROM OCUOC_AUDIT_M A
+		JOIN OCUOC_MENUN_M M
+		ON A.MENU_ID = M.MENU_ID
+		LEFT JOIN OCUOC_MENUN_M P
+		ON A.MENU_ID = P.MENU_ID
+		WHERE A.MENU_ID IS NOT NULL
+		<if test="menuId != null and menuId != ''">
+			and (M.MENU_ID = #{menuId} OR M.UPRN_MENU_ID = #{menuId} )
+		</if>
+		<if test="fromDate != null and fromDate != ''">
+			and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+		</if>
+		<if test="toDate != null and toDate != ''">
+			and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+		</if>
+	</select>
+
+	<select id="selectTopMenuList"  resultType="map">
+		/*  메뉴화면통계텝 최상위 메뉴 콤보 (selectTopMenuList) */
+		SELECT MENU_ID AS "menuId"
+		      ,MENU_NM AS "menuNm"
+		FROM OCUOC_MENUN_M
+		WHERE MENU_LEVEL = 1
+		ORDER BY MENU_ID
+	</select>
+
+    <select id="selectAuditMenuExcel"  parameterType="map" resultType="map">
+		/*  메뉴화면통계텝 엑셀다운 조회 (selectAuditMenuExcel) */
+        SELECT ROW_NUMBER() OVER ( ORDER BY A.FRST_REG_DTTM DESC) AS "no",
+        NVL(P.MENU_NM,M.MENU_NM) AS "menuNm",
+        M.MENU_NM AS "screenNm",
+        A.BTN_ID AS "btnId",
+        CASE WHEN A.BTN_ID IS NULL THEN '화면접근' ELSE '버튼접근' END AS "accessType",
+        TO_CHAR(TO_DATE(A.FRST_REG_DTTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD HH24:MI:SS') AS "lastAccessDt"
+        FROM OCUOC_AUDIT_M A
+        JOIN OCUOC_MENUN_M M
+        ON A.MENU_ID = M.MENU_ID
+        LEFT JOIN OCUOC_MENUN_M P
+        ON A.MENU_ID = P.MENU_ID
+        WHERE A.MENU_ID IS NOT NULL
+		<if test="menuId != null and menuId != ''">
+			and (M.MENU_ID = #{menuId} OR M.UPRN_MENU_ID = #{menuId} )
+		</if>
+        <if test="fromDate != null and fromDate != ''">
+            and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+        </if>
+        <if test="toDate != null and toDate != ''">
+            and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+        </if>
+        ORDER BY A.FRST_REG_DTTM DESC
+    </select>
+
+	<select id="selectAuditDeptExcel"  parameterType="map" resultType="map">
+		/*  부서사용자통계텝 엑셀다운 조회 (selectAuditDeptExcel) */
+		SELECT ROW_NUMBER() OVER ( ORDER BY A.FRST_REG_DTTM DESC) AS "no",
+		C.EMP_KOR_FLNM 	as userNm,
+		B.BR_NM AS "deptNm",
+		A.BTN_ID AS "btnId",
+		TO_CHAR(TO_DATE(A.FRST_REG_DTTM,'YYYYMMDDHH24MISS'),'YYYY-MM-DD HH24:MI:SS') AS "lastAccessDt"
+		FROM OCUOC_AUDIT_M A
+		JOIN OCUOC_MENUN_M M ON A.MENU_ID = M.MENU_ID
+		LEFT JOIN OCUOC_MENUN_M P ON A.MENU_ID = P.MENU_ID
+		JOIN OCUOC_USERI_M C ON A.USER_ID = C.EMPNO
+		JOIN OCUOC_DPRMI_M B ON C.BLNG_BRCD = B.BR_CD
+		WHERE A.MENU_ID IS NOT NULL
+		<if test="menuId != null and menuId != ''">
+			and (M.MENU_ID = #{menuId} OR M.UPRN_MENU_ID = #{menuId} )
+		</if>
+		<if test="fromDate != null and fromDate != ''">
+			and A.FRST_REG_DTTM <![CDATA[ >= ]]> replace(#{fromDate},'-','')||'000000'
+		</if>
+		<if test="toDate != null and toDate != ''">
+			and A.FRST_REG_DTTM <![CDATA[ < ]]> replace(#{toDate},'-','')||'235959'
+		</if>
+		ORDER BY A.FRST_REG_DTTM DESC
+	</select>
+
+	<insert id="insertExcelDownloadHistory" parameterType="com.agilesoda.module.admin.vo.ExcelDownloadVO">
+		/*  메뉴화면통계텝 엑셀다운 사유 저장 (insertExcelDownloadHistory) */
+		INSERT INTO OCUOC_EXDWN_H
+		( EXDWN_ID
+		, USER_ID
+		, MENU_ID
+		, DOWN_REASON
+		, FRST_REG_EMPNO
+		, FRST_REG_DTTM)
+		VALUES ( SQ_OCUOC_EXDWN_H_01.NEXTVAL
+			   , #{userId}
+			   , #{menuId}
+			   , #{downloadReason}
+			   , #{frstRegEmpno}
+			   , TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			   )
+	</insert>
+
+	<insert id="insertAuditLog" parameterType="java.util.Map">
+		/*  화면별 버튼 감사로그 저장 (insertAuditLog) */
+		INSERT INTO ocuoc_AUDIT_M
+		( AUDIT_ID
+		, USER_ID
+		, MENU_ID
+		, BTN_ID
+		, ACTION_CD
+		, ACTION_NM
+		, REQ_IP
+		, REQ_URL
+		, FRST_REG_DTTM)
+		VALUES ( SQ_OCUOC_AUDIT_M_01.NEXTVAL
+			   , #{userId}
+			   , #{menuId}
+			   , #{btnCd}
+			   , #{actionCd}
+			   , #{actionNm}
+			   , #{reqIp}
+			   , #{reqUrl}
+			   , TO_CHAR(SYSTIMESTAMP,'YYYYMMDDHH24MISS')
+			   )
+	</insert>
+
+
+	<select id="searchDeptList"  parameterType="map" resultType="map">
+		/*  부서정보 조회 (searchDeptList) */
+		SELECT A.BR_CD AS "brCd"
+		, A.BR_NM AS "brNm"
+		, CASE WHEN SUBSTR(A.TEL_NO,1,2) = '02' AND LENGTH(A.TEL_NO) = 9
+			   THEN SUBSTR(A.TEL_NO,1,2) ||'-'|| SUBSTR(A.TEL_NO,3,3) ||'-'|| SUBSTR(A.TEL_NO,6,4)
+			   WHEN SUBSTR(A.TEL_NO,1,2) = '02' AND LENGTH(A.TEL_NO) = 10
+			   THEN SUBSTR(A.TEL_NO,1,2) ||'-'|| SUBSTR(A.TEL_NO,3,4) ||'-'|| SUBSTR(A.TEL_NO,7,4)
+			   WHEN LENGTH(A.TEL_NO) = 10
+			   THEN SUBSTR(A.TEL_NO,1,3) ||'-'|| SUBSTR(A.TEL_NO,4,3) ||'-'|| SUBSTR(A.TEL_NO,7,4)
+		       WHEN LENGTH(A.TEL_NO) = 11
+			   THEN SUBSTR(A.TEL_NO,1,3) ||'-'|| SUBSTR(A.TEL_NO,4,4) ||'-'|| SUBSTR(A.TEL_NO,8,4)
+			   ELSE A.TEL_NO END  AS "telNo"
+		, CASE WHEN SUBSTR(A.FAX_NO,1,2) = '02' AND LENGTH(A.FAX_NO) = 9
+			   THEN SUBSTR(A.FAX_NO,1,2) ||'-'|| SUBSTR(A.FAX_NO,3,3) ||'-'|| SUBSTR(A.FAX_NO,6,4)
+			   WHEN SUBSTR(A.FAX_NO,1,2) = '02' AND LENGTH(A.FAX_NO) = 10
+			   THEN SUBSTR(A.FAX_NO,1,2) ||'-'|| SUBSTR(A.FAX_NO,3,4) ||'-'|| SUBSTR(A.FAX_NO,7,4)
+			   WHEN LENGTH(A.FAX_NO) = 10
+			   THEN SUBSTR(A.FAX_NO,1,3) ||'-'|| SUBSTR(A.FAX_NO,4,3) ||'-'|| SUBSTR(A.FAX_NO,7,4)
+			   WHEN LENGTH(A.FAX_NO) = 11
+			   THEN SUBSTR(A.FAX_NO,1,3) ||'-'|| SUBSTR(A.FAX_NO,4,4) ||'-'|| SUBSTR(A.FAX_NO,8,4)
+			   ELSE A.FAX_NO END  AS "faxNo"
+		, A.BR_AD  AS "brAd"
+		FROM OCUOC_DPRMI_M A
+		WHERE 1=1
+		<if test="brCd != null and brCd != ''">
+			AND A.BR_CD like '%'|| #{brCd} || '%'
+		</if>
+		<if test="brNm != null and brNm != ''">
+			AND A.BR_NM like '%'|| #{brNm} || '%'
+		</if>
+	</select>
+
+
+
+</mapper>

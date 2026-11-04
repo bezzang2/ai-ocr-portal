@@ -1,0 +1,209 @@
+/* 관리자 > 감사로그 > "메뉴·화면 통계" 탭 — get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl,
+   nodeId 617:8546) 실측. 검색바(.search-area), 탭(.tabs), 표(.table), 페이지네이션
+   (.list-footer/.pagination)은 전부 기존 컴포넌트 재사용 — 이 화면에서만 쓰는 KPI 카드·
+   수평 막대그래프·카드 뼈대만 담당한다.
+   카드 제목+본문 레이아웃(flex-column+gap)은 .audit-card가 직접 갖지 않는다 — 그 역할은
+   이미 patterns/list-section.css의 .list-section(액션 버튼 없는 카드: 메뉴별 접근 빈도/
+   화면별 버튼 클릭 분포)과 patterns/task-section.css의 .task-section(액션 버튼 있는 카드:
+   서식별 처리 현황)이 그대로 제공한다 — .audit-card를 그 안에 또 flex-column+gap을
+   갖게 만들면 같은 역할이 이중으로 겹친다. .audit-card는 순수하게 테두리·배경·패딩만
+   담당하는 카드 "박스"이고, 그 안에 .list-section 또는 .task-section을 통째로 넣어
+   실제 레이아웃(제목 행 + 본문 사이 gap)을 맡긴다 — 두 컴포넌트의 기본 gap(12px/6px)이
+   이 화면 실측값(24px/12px)과 달라 그 부분만 화면단에서 인라인으로 보정한다.
+   "로그 조회"/"부서·사용자 통계" 탭은 이 화면에서 실측되지 않아(Figma에 프레임 없음)
+   OCR서식조회 탭과 동일하게 정적 탭만 두고 데이터 연동은 하지 않았다. */
+
+/* ---- 카드 공통 뼈대(순수 박스) — patterns/card.css의 .card(+.card--flex)로 승격됐다
+   (2026-08-24, 대시보드>모니터링의 .monitoring-card와 완전히 같은 값이라 중복이었다).
+   HTML에는 class="card card--flex"로 적용돼 있다. ---- */
+
+/* ---- KPI 카드 4개 — get_design_context(617:9069) 실측. 앱 기본 팔레트가 아니라
+   Chart(Light) 팔레트(tokens/semantic.css의 --text-chart-*)를 쓴다. ---- */
+.audit-kpi { display: flex; gap: 16px; width: 100%; }
+.audit-kpi-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  min-width: 0;
+  background: var(--surface-white);
+  border: 1px solid var(--border-chart-card);
+  border-radius: 8px;
+  padding: 13px 23px;
+  box-shadow: var(--shadow-card);
+}
+.audit-kpi-card__title {
+  font-size: var(--font-size-13);
+  font-weight: var(--font-weight-semibold);
+  line-height: 20px;
+  color: var(--text-chart-label);
+  white-space: nowrap;
+}
+.audit-kpi-card__value-group { display: flex; flex-direction: column; align-items: flex-end; }
+.audit-kpi-card__value { font-size: 26px; font-weight: var(--font-weight-bold); line-height: 36px; white-space: nowrap; }
+.audit-kpi-card__value--blue { color: var(--text-chart-blue); }
+.audit-kpi-card__value--red { color: var(--text-chart-red); }
+.audit-kpi-card__meta { display: flex; align-items: center; gap: 4px; }
+.audit-kpi-card__meta-muted { font-size: var(--font-size-12); line-height: 18px; color: var(--text-chart-muted); }
+.audit-kpi-card__meta-accent { font-size: var(--font-size-13); font-weight: var(--font-weight-semibold); line-height: 20px; color: var(--text-chart-green); }
+/* "전체 화면 접근 건수" 카드(617:9958) — 퍼센트/건수 보조줄 없이 값+단위만 한 줄(베이스라인 정렬) */
+.audit-kpi-card__value-inline { display: flex; align-items: baseline; gap: 5px; }
+.audit-kpi-card__value-unit { font-size: var(--font-size-16); font-weight: var(--font-weight-semibold); line-height: 24px; color: var(--text-chart-muted); }
+
+/* ---- 좁은 폭 대응(2026-08-20, 사용자 요청) — .audit-kpi 자신의 렌더링 폭이 1200px 밑으로
+   내려가면(뷰포트가 아니라 이 스택 자신의 폭 기준, layout.css의 .layout-list에 건
+   container-type:inline-size 사용) 카드 안에서 제목(왼쪽)-값(오른쪽) 가로 배치가 비좁아져서
+   제목이 값과 겹치거나 줄바꿈되던 문제를 해결한다: 제목/값 묶음을 세로로 쌓고, 값 묶음
+   내부(값+보조줄)는 반대로 세로 대신 가로 한 줄로 바꿔 세로 공간을 아낀다. gap은 토큰
+   스케일 중 가장 작은 --gap-sm(6px). ---- */
+@container (max-width: 1200px) {
+  .audit-kpi-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--gap-sm);
+  }
+  .audit-kpi-card__value-group {
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--gap-sm);
+  }
+}
+/* 1200px 구간에서 값 묶음을 가로 한 줄로 바꿔놨지만, 더 좁아지면(1140px 밑) 그 한 줄
+   자체가 다시 비좁아진다 — 값 묶음만 다시 세로로 되돌린다. 카드 자체(제목-값 묶음)는
+   이미 위 규칙에서 세로 배치라 그대로 유지, align-items도 카드와 통일되게 flex-start로
+   왼쪽 정렬(기본 상태의 flex-end는 값 묶음이 카드 오른쪽에 있던 가로 레이아웃 전용). */
+@container (max-width: 1140px) {
+  .audit-kpi-card__value-group {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ---- 차트 카드 2장 나란히 배치 ---- */
+.audit-chart-row { display: flex; gap: 16px; width: 100%; align-items: stretch; }
+
+/* ---- 수평 막대그래프(메뉴별 접근 빈도) — get_design_context(617:9358) 실측을 그대로
+   재현하지 않고(회전된 라인 이미지로 격자를 그리는 Figma 특유의 트릭) CSS로 단순화했다:
+   격자는 반복 그라디언트로, 막대는 %폭으로 그린다. 값 자체는 Figma에 텍스트로 없고
+   막대 실측 폭(px)만 있어, 0~3000 축 대비 비율로 환산한 %를 그대로 썼다
+   (장애관리 120px, 감사로그 202px, 권한관리 344px, 대시보드 467px, 통합검색 599px
+   ÷ 축 전체 658px). ---- */
+.h-bar-chart {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  grid-template-rows: 1fr auto;
+  column-gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+.h-bar-chart__labels {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 8px;
+  font-size: var(--font-size-12);
+  color: var(--text-neutral-secondary);
+}
+.h-bar-chart__bars {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--border-neutral-subtle) 0,
+    var(--border-neutral-subtle) 1px,
+    transparent 1px,
+    transparent calc(100% / 6)
+  );
+}
+.h-bar-chart__bar { position: relative; height: 14px; border-radius: 4px; background: var(--surface-primary-default); }
+/* 막대 끝에서 12px 띄운 값 라벨 — position:absolute로 두는 이유는, 막대 폭(%)이 이미
+   0~3000 축 스케일에 맞춰 계산된 값이라 그 옆에 라벨을 형제 flex item으로 나란히 두면
+   라벨 폭+gap만큼 막대가 쓸 수 있는 공간이 줄어서 막대 길이가 축과 안 맞게 된다 —
+   막대의 실제 렌더링 끝(left:100%)을 기준으로 라벨만 겹치지 않게 얹는다. */
+.h-bar-chart__bar-value {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 12px;
+  font-size: var(--font-size-12);
+  color: var(--text-neutral-secondary);
+  white-space: nowrap;
+}
+.h-bar-chart__axis {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-neutral-subtle);
+  font-size: var(--font-size-12);
+  color: var(--text-neutral-secondary);
+}
+
+.dept-bar-chart {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  grid-template-rows: 1fr auto;
+  column-gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+.dept-bar-chart__labels {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding-bottom: 8px;
+  font-size: var(--font-size-12);
+  color: var(--text-neutral-secondary);
+}
+.dept-bar-chart__bars {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  background-image: repeating-linear-gradient(
+          to right,
+          var(--border-neutral-subtle) 0,
+          var(--border-neutral-subtle) 1px,
+          transparent 1px,
+          transparent calc(100% / 6)
+  );
+}
+.dept-bar-chart__bar { position: relative; height: 14px; border-radius: 4px; background: var(--surface-primary-default); }
+/* 막대 끝에서 12px 띄운 값 라벨 — position:absolute로 두는 이유는, 막대 폭(%)이 이미
+   0~3000 축 스케일에 맞춰 계산된 값이라 그 옆에 라벨을 형제 flex item으로 나란히 두면
+   라벨 폭+gap만큼 막대가 쓸 수 있는 공간이 줄어서 막대 길이가 축과 안 맞게 된다 —
+   막대의 실제 렌더링 끝(left:100%)을 기준으로 라벨만 겹치지 않게 얹는다. */
+.dept-bar-chart__bar-value {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 12px;
+  font-size: var(--font-size-12);
+  color: var(--text-neutral-secondary);
+  white-space: nowrap;
+}
+.dept-bar-chart__axis {
+  grid-column: 2;
+  grid-row: 2;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-neutral-subtle);
+  font-size: var(--font-size-12);
+  color: var(--text-neutral-secondary);
+}

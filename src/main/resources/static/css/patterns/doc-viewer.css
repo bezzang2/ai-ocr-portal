@@ -1,0 +1,125 @@
+/* 문서 뷰어(이미지 + 확대율 컨트롤) — OCR서식신청 추출화면과 서식판독결과 화면이 완전히
+   동일한 뷰어를 쓴다("같은 뷰어를 사용해야 해", 2026-09-01 사용자 요청)라 patterns/로
+   승격했다. 이전엔 pages/extract.css의 .doc-viewer*(단일 원형 확대 버튼 + object-fit:cover)와
+   pages/search-result.css의 .result-viewer*(축소/퍼센트/확대 3버튼 + object-fit:contain,
+   휠 확대축소)가 서로 다른 화면 전용 구현으로 따로 있었다 — 후자가 더 최근에 Figma로 재실측된
+   버전이라 이 쪽으로 통일하고, 클래스명은 원래 두 화면 모두에서 쓰던 .doc-viewer*로 맞췄다.
+   출처: get_design_context(fileKey BPDT1QEnlvJirJPbFo0qLl, nodeId 843:4111, 492:9612) 실측.
+   확대/축소 동작은 js/doc-viewer-zoom.js가 담당한다(버튼 클릭 + 뷰어 위 마우스 휠, 50~200%를
+   25%p 단위로). 바깥 폭/비율(고정폭 vs flex 유동폭)은 화면마다 달라 각 페이지 CSS가
+   .doc-viewer에 width/flex만 얹어 쓴다(패턴 임포트 뒤에 페이지 CSS가 로드되므로 그대로
+   덮어써진다) — pages/extract.css(고정 37.5%), pages/search-result.css(유동 flex:1) 참고. */
+.doc-viewer {
+  position: relative; /* 확대율 컨트롤(.doc-viewer__zoom)의 absolute 기준점 */
+  display: flex;
+  padding: 12px;
+  background: var(--surface-neutral-faint);
+  border-right: 1px solid var(--border-neutral-subtle);
+}
+/* ---- 뷰어 본문 — 이미지를 가운데 두고 상자를 넘는 부분은 자른다(확대 시 레터박스 없이
+   상자를 꽉 채운 채로 커지도록). 이미지 자체는 object-fit:contain으로 원본 비율을 유지한 채
+   상자 배경(neutral-faint)이 레터박스처럼 채우고, 확대(scale > 1)만 넘치는 부분을 body의
+   overflow:hidden으로 자른다(object-fit:cover였을 때는 뷰어가 줄어들 때마다 이미지가 다시
+   잘려서 문서가 작아지는 게 아니라 보이는 부분만 바뀌는 것처럼 느껴졌다 — 2026-08-25 사용자
+   피드백). ---- */
+.doc-viewer__body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.doc-viewer__image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 4px;
+  transform-origin: center center;
+  transition: transform 0.15s ease;
+}
+
+.doc-viewer__pdf {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 4px;
+  transform-origin: center center;
+  transition: transform 0.15s ease;
+}
+
+/* ---- 확대율 컨트롤(축소/퍼센트/확대) — get_design_context(843:3464) 실측. 버튼 3개를 -1px씩
+   겹쳐 이어붙이는 방식은 OCR서식신청 추출화면의 .extract-card__seg-btn과 동일한 규칙. 기존
+   .btn-neutral/.btn-neutral--square(components/button.css)를 그대로 재사용하고, 이
+   컴포넌트에서만 쓰는 이어붙임(모서리/겹침)만 새로 정의한다. ---- */
+.doc-viewer__zoom {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+}
+.doc-viewer__zoom > * { margin-right: -1px; border-radius: 0; }
+.doc-viewer__zoom > *:first-child { border-radius: var(--radius-control) 0 0 var(--radius-control); }
+.doc-viewer__zoom > *:last-child { margin-right: 0; border-radius: 0 var(--radius-control) var(--radius-control) 0; }
+.doc-viewer__zoom > button:hover { position: relative; z-index: 1; }
+.doc-viewer__zoom-value { cursor: default; } /* 버튼이 아니라 값 표시용 span — 나머지는 .btn-neutral 그대로 */
+
+/* 판독결과의 페이지 뷰어. 기존 추출화면의 data-zoom 레이아웃에는 적용하지 않는다. */
+.doc-viewer--document {
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 12px;
+  overflow: hidden;
+}
+.doc-viewer__toolbar, .doc-viewer__controls, .doc-viewer__control-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.doc-viewer__toolbar { flex-shrink: 0; }
+.doc-viewer__toolbar [aria-pressed="true"] {
+  background: var(--surface-primary-subtle, #e8f1fb);
+  border-color: var(--border-primary-default, #1868b7);
+  color: var(--text-primary-default, #155a9f);
+  font-weight: 600;
+}
+.doc-viewer__viewport {
+  position: relative;
+  flex: 1;
+  min-height: 240px;
+  min-width: 0;
+  /* Keep scrollbar space constant while screen-fit changes the document dimensions. */
+  overflow: scroll;
+  overscroll-behavior: contain;
+  background: var(--surface-neutral-subtle, #e9edf2);
+  border: 1px solid var(--border-neutral-subtle);
+  border-radius: 4px;
+  cursor: grab;
+  touch-action: none;
+}
+.doc-viewer__viewport.is-dragging { cursor: grabbing; user-select: none; }
+.doc-viewer__space { position: relative; min-width: 100%; min-height: 100%; }
+.doc-viewer__stage { position: absolute; transform-origin: top left; background: white; box-shadow: 0 2px 10px #182c451a; }
+.doc-viewer__stage > img, .doc-viewer__stage > canvas, .doc-viewer__stage > svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+}
+.doc-viewer__stage > svg { pointer-events: none; overflow: hidden; }
+.doc-viewer__stage > svg rect { fill: #f59e0b30; stroke: #b86a00; stroke-width: 2; }
+.doc-viewer__controls { justify-content: space-between; flex-shrink: 0; row-gap: 8px; }
+.doc-viewer__controls .btn-neutral, .doc-viewer__toolbar .btn-neutral { min-height: 30px; padding: 4px 8px; white-space: nowrap; }
+.doc-viewer__controls output { min-width: 45px; text-align: center; font-size: 12px; font-variant-numeric: tabular-nums; }
+.doc-viewer__controls input { width: 48px; min-height: 30px; padding: 4px; border: 1px solid var(--border-neutral-subtle); border-radius: 4px; background: white; text-align: center; }
+.doc-viewer__controls [data-viewer-pages] { font-size: 12px; white-space: nowrap; }
+.doc-viewer__status { padding: 10px; color: var(--text-neutral-secondary); font-size: 13px; line-height: 1.5; }
+.doc-viewer__note { min-height: 2.8em; margin: 0; font-size: 12px; line-height: 1.4; color: var(--text-neutral-secondary); }
+.doc-viewer--document [hidden] { display: none !important; }
+.doc-viewer--document :focus-visible { outline: 2px solid #1868b7; outline-offset: 2px; }

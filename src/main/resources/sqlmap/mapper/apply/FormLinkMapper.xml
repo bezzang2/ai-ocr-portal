@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!-- 관리자 > 업무·서식 연결 관리. -->
+<mapper namespace="com.agilesoda.module.apply.mapper.FormLinkMapper">
+
+    <!-- 분류 클래스와 서식의 연결 규칙. 클래스 영문코드가 서식 DOC_ID 와 같을 때만 맞춘다. 엔진 접두어 KJB_ 는 있어도 없어도 된다(KJB_50621004 ↔ 50621004).
+         정합성 확인을 위해 서식명으로는 맞추지 않는다. 코드가 없는 클래스는 미연결이다. 여러 서식이 맞으면 LEFRM_ID 가 가장 작은 서식이다.
+         동기화·Portal 판독결과(OcrReqService.sameFormCode)·Agent 서식간 검증(CrossVerifyJudge.matches)과 같은 규칙이다.
+         form: 서식 별칭, code: 클래스의 영문코드 컬럼 -->
+    <sql id="lefrmMatchesClass">
+		(${form}.DOC_ID = ${code} OR 'KJB_' || ${form}.DOC_ID = ${code})
+    </sql>
+
+    <!-- 분류 클래스마다 연결 규칙에 맞는 서식(MATCH_ID)과 실제 연결 여부(LINK_YN) -->
+    <sql id="classStatus">
+		SELECT C.WK_ID, C.CLASS_SEQ, C.CLASS_NM, C.DOC_TYP_CD, C.MATCH_ID,
+		       CASE WHEN C.MATCH_ID IS NOT NULL AND EXISTS (SELECT 1 FROM ocuoc_ocrwl_l WL
+		                                                   WHERE WL.WK_ID = C.WK_ID AND WL.LEFRM_ID = C.MATCH_ID)
+		            THEN 'Y' ELSE 'N' END AS LINK_YN
+		  FROM (SELECT WC.WK_ID, WC.CLASS_SEQ, WC.CLASS_NM, WC.DOC_TYP_CD,
+		               (SELECT MIN(F.LEFRM_ID) FROM ocuoc_lefrm_m F
+		                 WHERE <include refid="lefrmMatchesClass">
+		                           <property name="form" value="F"/>
+		                           <property name="code" value="WC.DOC_TYP_CD"/>
+		                       </include>) AS MATCH_ID
+		          FROM ocuoc_ocrwc_l WC) C
+    </sql>
+
+    <select id="selectWorkflowList" resultType="com.agilesoda.module.apply.vo.FormLinkWorkflowVO">
+		/* [업무·서식 연결] 업무별 연결 현황 - selectWorkflowList */
+		SELECT W.WK_ID      AS wkId,
+		       W.WK_NM      AS wkNm,
+		       W.WK_STAT_CD AS wkStatCd,
+		       TO_CHAR(W.SYNC_DT, 'YYYY-MM-DD HH24:MI:SS') AS syncDt,
+		       COUNT(S.CLASS_SEQ) AS classCnt,
+		       COUNT(CASE WHEN S.MATCH_ID IS NOT NULL AND S.LINK_YN = 'Y' THEN 1 END) AS linkedCnt,
+		       COUNT(CASE WHEN S.MATCH_ID IS NOT NULL AND S.LINK_YN = 'N' THEN 1 END) AS pendingCnt,
+		       COUNT(CASE WHEN S.CLASS_SEQ IS NOT NULL AND S.MATCH_ID IS NULL THEN 1 END) AS unlinkedCnt,
+		       (SELECT COUNT(*) FROM ocuoc_ocrwl_l WL WHERE WL.WK_ID = W.WK_ID) AS formCnt
+		  FROM ocuoc_ocrwf_m W
+		  LEFT JOIN (<include refid="classStatus"/>) S
+		    ON S.WK_ID = W.WK_ID
+		 GROUP BY W.WK_ID, W.WK_NM, W.WK_STAT_CD, W.SYNC_DT
+		 ORDER BY W.WK_NM, W.WK_ID
+    </select>
+
+    <select id="selectClassList" resultType="com.agilesoda.module.apply.vo.FormLinkClassVO">
+		/* [업무·서식 연결] 분류 클래스와 연결 상태 - selectClassList */
+		SELECT S.WK_ID      AS wkId,
+		       W.WK_NM      AS wkNm,
+		       S.CLASS_SEQ  AS classSeq,
+		       S.CLASS_NM   AS classNm,
+		       S.DOC_TYP_CD AS docTypCd,
+		       L.LEFRM_ID   AS lefrmId,
+		       L.LEFRM_NM   AS lefrmNm,
+		       L.DOC_ID     AS docId,
+		       S.LINK_YN    AS linkYn
+		  FROM (<include refid="classStatus"/>) S
+		  JOIN ocuoc_ocrwf_m W
+		    ON W.WK_ID = S.WK_ID
+		  LEFT JOIN ocuoc_lefrm_m L
+		    ON L.LEFRM_ID = S.MATCH_ID
+		<where>
+			<if test="wkId != null and wkId != ''">S.WK_ID = #{wkId}</if>
+			<if test="unlinkedOnly">AND S.MATCH_ID IS NULL</if>
+		</where>
+		 ORDER BY W.WK_NM, S.WK_ID, S.CLASS_SEQ
+    </select>
+
+    <select id="selectFormList" resultType="com.agilesoda.module.apply.vo.FormMasterVO">
+		/* [업무·서식 연결] 서식 목록 - selectFormList */
+		SELECT L.LEFRM_ID   AS lefrmId,
+		       L.LEFRM_NM   AS lefrmNm,
+		       L.DOC_ID     AS docId,
+		       L.REG_STA_CD AS regStaCd,
+		       (SELECT COUNT(*) FROM ocuoc_ocrwl_l WL WHERE WL.LEFRM_ID = L.LEFRM_ID) AS linkCnt,
+		       TO_CHAR(NVL(L.CHNG_DT, L.REG_DT), 'YYYY-MM-DD HH24:MI:SS') AS chngDt
+		  FROM ocuoc_lefrm_m L
+		 ORDER BY L.LEFRM_ID
+    </select>
+
+    <select id="selectForm" resultType="com.agilesoda.module.apply.vo.FormMasterVO">
+		/* [업무·서식 연결] 서식 1건 - selectForm */
+		SELECT L.LEFRM_ID   AS lefrmId,
+		       L.LEFRM_NM   AS lefrmNm,
+		       L.DOC_ID     AS docId,
+		       L.REG_STA_CD AS regStaCd
+		  FROM ocuoc_lefrm_m L
+		 WHERE L.LEFRM_ID = #{lefrmId}
+    </select>
+
+    <select id="countDocId" resultType="int">
+		/* [업무·서식 연결] 문서 종류 코드 중복(KJB_ 유무만 달라도 같은 클래스에 맞으므로 중복) - countDocId */
+		SELECT COUNT(*)
+		  FROM ocuoc_lefrm_m
+		 WHERE (DOC_ID = #{docId} OR DOC_ID = 'KJB_' || #{docId} OR 'KJB_' || DOC_ID = #{docId})
+		<if test="exceptLefrmId != null">AND LEFRM_ID != #{exceptLefrmId}</if>
+    </select>
+
+    <!-- 서식 ID 시퀀스가 없어 최댓값 + 1 을 쓴다. 동시에 등록해 PK 가 겹치면 저장이 실패하고 다시 시도하면 된다. -->
+    <insert id="insertForm">
+		<selectKey keyProperty="form.lefrmId" resultType="long" order="BEFORE">
+			SELECT NVL(MAX(LEFRM_ID), 0) + 1 FROM ocuoc_lefrm_m
+		</selectKey>
+		/* [업무·서식 연결] 서식 등록 - insertForm */
+		INSERT INTO ocuoc_lefrm_m (LEFRM_ID, LEFRM_NM, DOC_ID, REG_STA_CD, RGSR_ID, REG_DT)
+		VALUES (#{form.lefrmId}, #{form.lefrmNm}, #{form.docId}, 'Y', #{userId}, SYSTIMESTAMP)
+    </insert>
+
+    <update id="updateForm">
+		/* [업무·서식 연결] 서식 수정 - updateForm */
+		UPDATE ocuoc_lefrm_m
+		   SET LEFRM_NM = #{form.lefrmNm},
+		       DOC_ID   = #{form.docId},
+		       EDTR_ID  = #{userId},
+		       CHNG_DT  = SYSTIMESTAMP
+		 WHERE LEFRM_ID = #{form.lefrmId}
+    </update>
+
+    <!-- 클래스를 아는 업무의 연결만 다시 만든다. 클래스를 저장하지 못한 업무의 연결은 다음 동기화가 정한다. -->
+    <delete id="deleteLinksOfForm">
+		/* [업무·서식 연결] 서식의 연결 삭제 - deleteLinksOfForm */
+		DELETE FROM ocuoc_ocrwl_l
+		 WHERE LEFRM_ID = #{lefrmId}
+		   AND WK_ID IN (SELECT WK_ID FROM ocuoc_ocrwc_l)
+    </delete>
+
+    <insert id="insertLinksOfForm">
+		/* [업무·서식 연결] 서식의 연결 다시 만들기 - insertLinksOfForm */
+		INSERT INTO ocuoc_ocrwl_l (WK_ID, LEFRM_ID, RGSR_ID, REG_DT)
+		SELECT DISTINCT S.WK_ID, L.LEFRM_ID, #{userId}, SYSTIMESTAMP
+		  FROM (<include refid="classStatus"/>) S
+		  JOIN ocuoc_lefrm_m L
+		    ON L.LEFRM_ID = S.MATCH_ID
+		 WHERE S.MATCH_ID = #{lefrmId}
+		   AND S.LINK_YN = 'N'
+    </insert>
+
+    <!-- 사용자가 역할로 이 메뉴 권한을 가졌는지(LNB 메뉴 조회와 같은 조건) -->
+    <select id="countMenuPermission" resultType="int">
+		/* [업무·서식 연결] 메뉴 권한 확인 - countMenuPermission */
+		SELECT COUNT(*)
+		  FROM ocuoc_usrol_r R
+		  JOIN ocuoc_rolem_m RM ON RM.ROLE_ID = R.ROLE_ID
+		  JOIN ocuoc_usmua_r U ON U.ROLE_ID = R.ROLE_ID
+		  JOIN ocuoc_menun_m M ON M.MENU_ID = U.MENU_ID
+		 WHERE R.USER_ID = #{userId}
+		   AND R.USE_YN = 'Y'
+		   AND RM.USE_YN = 'Y'
+		   AND U.USE_YN = 'Y'
+		   AND M.USE_YN = 'Y'
+		   AND LTRIM(M.MENU_URL, '/') = #{menuUrl}
+    </select>
+</mapper>
