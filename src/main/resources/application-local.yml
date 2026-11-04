@@ -10,9 +10,15 @@ spring:
     bpr:
       hikari:
         driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
-        jdbc-url: jdbc:log4jdbc:oracle:thin:@//${DB_HOST:127.0.0.1}:${ORACLE_PORT:1521}/${ORACLE_SERVICE:FREEPDB1}
-        username: ${APP_DB_USERNAME:UOCAPP}
-        password: "${APP_DB_PASSWORD}"
+        jdbc-url: jdbc:log4jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=WSS)(HOST=kjbank.agilesoda.ai)(PORT=443)(WEBSOCK_URI=/kjbank/oracle-ws))(CONNECT_DATA=(SERVICE_NAME=devpdb)))
+        username: UOCDEV
+        password: DevE1cTRvfeLCYWMz7
+        # 필수. 이 값이 없으면 Hikari가 Connection.isValid()로 연결을 검사한다. ojdbc는 WSS에서 isValid()의
+        # 대역 내 알림(inband notification) 읽기가 끝나지 않아 기동이 멈춘다(CPU 100%). 쿼리로 검사하게 한다.
+        connection-test-query: SELECT 1 FROM DUAL
+        data-source-properties:
+          # 필수. TLS 1.3이면 WebSocket 핸드셰이크에서 NullPointerException이 난다.
+          oracle.net.ssl_version: "1.2"
         maximum-pool-size: 5
         minimum-idle: 1
         connection-timeout: 10000
@@ -23,9 +29,16 @@ spring:
     phrms:
       hikari:
         driver-class-name: net.sf.log4jdbc.sql.jdbcapi.DriverSpy
-        jdbc-url: jdbc:log4jdbc:oracle:thin:@//${DB_HOST:127.0.0.1}:${ORACLE_PORT:1521}/${ORACLE_SERVICE:FREEPDB1}
-        username: ${HR_DB_USERNAME:PHRMS_MOCK}
-        password: "${HR_DB_PASSWORD}"
+        jdbc-url: jdbc:log4jdbc:oracle:thin:@(DESCRIPTION=(ADDRESS=(PROTOCOL=WSS)(HOST=kjbank.agilesoda.ai)(PORT=443)(WEBSOCK_URI=/kjbank/oracle-ws))(CONNECT_DATA=(SERVICE_NAME=devpdb)))
+        username: UOCDEV
+        password: "${DEV_DB_PASSWORD:DevE1cTRvfeLCYWMz7}"
+        connection-init-sql: ALTER SESSION SET CURRENT_SCHEMA=PHRMS_MOCK
+        # 필수. 이 값이 없으면 Hikari가 Connection.isValid()로 연결을 검사한다. ojdbc는 WSS에서 isValid()의
+        # 대역 내 알림(inband notification) 읽기가 끝나지 않아 기동이 멈춘다(CPU 100%). 쿼리로 검사하게 한다.
+        connection-test-query: SELECT 1 FROM DUAL
+        data-source-properties:
+          # 필수. TLS 1.3이면 WebSocket 핸드셰이크에서 NullPointerException이 난다.
+          oracle.net.ssl_version: "1.2"
         maximum-pool-size: 2
         minimum-idle: 1
         connection-timeout: 10000

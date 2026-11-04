@@ -36,4 +36,16 @@ public class CommonRestController {
         log.info("[getListEmpInfo] 종료");
         return BaseResponse.ok("성공", empList);
     }
+    
+    @Operation(summary = "공통 코드 reload API",
+            description = "공통 코드를 다시 적재한.")
+    @GetMapping("/code-reload")
+    public ResponseEntity<?> reloadComCode() throws Exception{
+        log.info("[reloadComCode] 시작");
+
+        commonService.initialComCode();
+
+        log.info("[reloadComCode] 종료");
+        return BaseResponse.ok("성공", "성공");
+    }
 }

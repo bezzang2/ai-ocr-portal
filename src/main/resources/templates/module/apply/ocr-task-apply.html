@@ -108,7 +108,7 @@
                     <div class="split-view__search-item split-view__search-item--tight">
                         <span class="split-view__search-label">업무분류</span>
                         <select class="input" id="bzwk_cd" name="bzwk_cd" style="width:120px">
-                            <option th:each="item: ${data.bzwkCds}" th:value="${item.CD_VAL}" th:text="${item.CD_NM}"></option>
+                            <option th:each="item: ${data.bzwkCds}" th:value="${item.value}" th:text="${item.name}"></option>
                         </select>
                     </div>
                     <div class="split-view__search-item">

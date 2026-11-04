@@ -1,17 +1,22 @@
 package com.agilesoda.module.common;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.agilesoda.common.ComCodeManager;
+import com.agilesoda.common.GroupCode;
 import com.agilesoda.module.admin.vo.SsoLoginUserVO;
 import com.agilesoda.module.common.entity.CommonExcelEntity;
 import com.agilesoda.module.common.entity.CommonMenuEntity;
 import com.agilesoda.module.common.entity.OcuocAprvlEntity;
+
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -19,7 +24,22 @@ import java.util.Map;
 public class CommonService {
 
     private final CommonMapper commonMapper;
-
+    
+    @PostConstruct
+    public void init() {
+    	initialComCode();
+    }
+    
+    public void initialComCode() {
+    	try {
+    		List<GroupCode> groups = commonMapper.selectAllComCode();
+    		ComCodeManager.getInstance().setGroups(groups);
+    	}
+    	catch(Exception e) {
+    		log.warn("[공통코드] 조회중 오류발생 => {}", e.getMessage());
+    	}
+    }
+    
     public List<Map<String, Object>> getListComCode(String groupCd) throws Exception{
         return commonMapper.selectListComCode(groupCd);
     }

@@ -46,7 +46,7 @@ public class SsoController {
         //  step1 : SSO ID 수신
         SsoConfig ssoConfig = new SsoConfig(serverUrl, nlsUrl, nlsPort);
         //  step1 : SSO ID 수신
-        String ssoId = StringUtil.nvl(ssoConfig.getSsoId(request)); //"26W0068";
+        String ssoId = "26W0068"; // StringUtil.nvl(ssoConfig.getSsoId(request)); //"26W0068";
         log.debug("step1: SSO ID => {}", ssoId);
 
         //  step2 : UURL 수신

@@ -1,5 +1,17 @@
 package com.agilesoda.module.apply.service;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Semaphore;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.agilesoda.common.response.entity.RestResponseEntity;
 import com.agilesoda.common.rest.RestAgentProvider;
 import com.agilesoda.module.apply.vo.WkflowListVO;
@@ -8,19 +20,10 @@ import com.agilesoda.module.apply.vo.WorkflowSyncResultVO;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.json.JSONObject;
-import org.springframework.http.HttpStatus;
-import org.springframework.scheduling.annotation.Scheduled;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Semaphore;
 
 /**
  * 엔진 워크플로(업무) 동기화. Agent 에서 활성 워크플로 목록과 상세(분류 클래스)를 받아 AgentApiService 로 DB에 반영한다.
@@ -32,7 +35,9 @@ import java.util.concurrent.Semaphore;
 @Service
 @RequiredArgsConstructor
 public class WorkflowSyncService {
-
+	@Value("${spring.profiles.active}")
+	private String active;
+	
     /** 엔진 워크플로우 목록 조회 페이지 크기. 전체 건수(total)까지 페이지를 넘기며 모두 동기화한다. */
     private static final int WORKFLOW_SYNC_PAGE_SIZE = 100;
     /** 엔진 응답 이상으로 끝없이 돌지 않게 하는 상한 */
@@ -54,7 +59,12 @@ public class WorkflowSyncService {
     @Scheduled(cron = "${aiocr.workflow-sync.cron:0 */5 * * * *}")
     public void scheduledSync() {
         try {
-            sync(TRIGGER_SCHEDULE);
+        	if("local".equals(active)) {
+        		log.warn("[워크플로우 동기화] 정기 실행 건너뜀 active={}", active);
+        	}
+        	else {
+        		sync(TRIGGER_SCHEDULE);
+        	}
         } catch (ResponseStatusException e) {
             log.warn("[워크플로우 동기화] 정기 실행 건너뜀 status={} reason={}", e.getStatusCode().value(), e.getReason());
         } catch (Exception e) {

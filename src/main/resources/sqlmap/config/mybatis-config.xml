@@ -24,6 +24,9 @@
         <typeAlias alias="boardEntity" type="com.agilesoda.sample.entity.BoardEntity" />
         <typeAlias alias="boardAttachEntity" type="com.agilesoda.sample.entity.BoardAttachEntity" />
         
+        <typeAlias alias="groupCode" type="com.agilesoda.common.GroupCode" />
+        <typeAlias alias="comCode" type="com.agilesoda.common.ComCode" />
+        
         <!-- request entity -->
         <typeAlias alias="userInqDto" type="com.agilesoda.sample.dto.UserInqDto" />
         <typeAlias alias="boardInqDto" type="com.agilesoda.sample.dto.BoardInqDto" />

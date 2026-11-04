@@ -2,6 +2,29 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.agilesoda.module.common.CommonMapper">
 
+	<resultMap id="groupCodeMap" type="groupCode">
+        <id property="groupCd" column="CD_GROUP" />
+        <result property="groupNm" column="CD_GROUP_NM" />
+        <collection property="codes" javaType="java.util.ArrayList" ofType="comCode">
+            <id property="value" column="CD_VAL" />
+            <result property="name" column="CD_NM" />
+            <result property="description" column="CD_DESC" />
+            <result property="seq" column="LNUP_SER" />
+        </collection>
+    </resultMap>
+	
+	<select id="selectAllComCode" resultMap="groupCodeMap">
+		SELECT T1.CD_GROUP 
+			, T1.CD_GROUP_NM 
+			, T2.CD_VAL 
+			, T2.CD_NM 
+			, T2.CD_DESC 
+			, T2.LNUP_SER 
+		FROM OCUOC_CCGRP_M T1
+			LEFT OUTER JOIN OCUOC_CCDTL_L T2 ON T1.CD_GROUP = T2.CD_GROUP AND T2.UZ_YN = 'Y'  
+		WHERE 1=1
+		ORDER BY CD_GROUP, LNUP_SER 
+	</select>
     <select id="selectListComCode" parameterType="string" resultType="map">
 		SELECT CD_VAL
 			 , CD_NM

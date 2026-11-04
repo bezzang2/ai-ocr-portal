@@ -12,7 +12,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.agilesoda.module.common.CommonService;
+import com.agilesoda.common.ComCode;
+import com.agilesoda.common.ComCodeManager;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -30,8 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class OcrTaskApplyController {
 	
-    private final CommonService commonService;
-    
     /****************************************************
      *   OCR업무조회 화면 연결
      *****************************************************/
@@ -43,10 +42,10 @@ public class OcrTaskApplyController {
         log.info("######################## ocrTaskSearch START ####################");
 
         //  업무분류 공통 코드 추가
-        List<Map<String, Object>> bzwkCdCodes = commonService.getListComCode("BZWK_CD");
+        List<ComCode> bzwkCdCodes = ComCodeManager.getInstance().getCodes("BZWK_CD");
 
         //  진행상태 공통 코드 추가
-        List<Map<String, Object>> prgsStCdCodes = commonService.getListComCode("PRGS_ST_CD");
+        List<ComCode> prgsStCdCodes = ComCodeManager.getInstance().getCodes("PRGS_ST_CD");
 
         model.addAttribute("bzwkCds", bzwkCdCodes);
         model.addAttribute("prgsStCds", prgsStCdCodes);
@@ -68,7 +67,7 @@ public class OcrTaskApplyController {
     public String ocrTaskApply(HttpServletRequest request, HttpServletResponse response, Model model) throws Exception {
         log.debug("[업무신청] 화면 요청");
         Map<String, Object> resData = new HashMap<>();
-        resData.put("bzwkCds", commonService.getListComCode("BZWK_CD"));
+        resData.put("bzwkCds", ComCodeManager.getInstance().getCodes("BZWK_CD"));
         model.addAttribute("data", new JSONObject(resData));
         return "module/apply/ocr-task-apply";
     }

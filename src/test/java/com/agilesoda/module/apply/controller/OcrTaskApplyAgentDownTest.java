@@ -1,22 +1,29 @@
 package com.agilesoda.module.apply.controller;
 
-import com.agilesoda.common.response.BaseResponseBody;
-import com.agilesoda.module.apply.service.OcrTaskApplyService;
-import com.agilesoda.module.common.CommonService;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.util.List;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.web.client.ResourceAccessException;
 
-import java.util.List;
-import java.util.Map;
+import com.agilesoda.common.response.BaseResponseBody;
+import com.agilesoda.module.apply.service.OcrTaskApplyService;
+import com.agilesoda.module.common.CommonService;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import lombok.RequiredArgsConstructor;
 
 /** Agent가 꺼져 있어도 업무신청 화면은 열리고, 목록 API는 내부 원인 없이 안내 문구만 돌려준다 */
+@RequiredArgsConstructor
 class OcrTaskApplyAgentDownTest {
     private final OcrTaskApplyService service = mock(OcrTaskApplyService.class);
     private final CommonService commonService = mock(CommonService.class);
@@ -25,7 +32,7 @@ class OcrTaskApplyAgentDownTest {
         when(commonService.getListComCode("BZWK_CD")).thenReturn(List.of(Map.of("CD_VAL", "01", "CD_NM", "가짜분류")));
         ExtendedModelMap model = new ExtendedModelMap();
 
-        String view = new OcrTaskApplyController(commonService).ocrTaskApply(null, null, model);
+        String view = new OcrTaskApplyController().ocrTaskApply(null, null, model);
 
         assertEquals("module/apply/ocr-task-apply", view);
         assertEquals(1, ((List<?>) ((Map<?, ?>) model.get("data")).get("bzwkCds")).size());
