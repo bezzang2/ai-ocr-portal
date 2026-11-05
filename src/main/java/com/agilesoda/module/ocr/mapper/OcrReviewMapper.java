@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 /** 판독결과 검토의 사용자·역할(Portal 데이터). 검토 상태·확인값은 Agent 가 소유한다. */
 @Mapper
@@ -18,4 +19,13 @@ public interface OcrReviewMapper {
     /** 관리자 역할(roles) 또는 팀장 직위(positionCodes)면 1 이상 */
     int countAssignAuthority(@Param("userId") String userId, @Param("roles") Collection<String> roles,
                              @Param("positionCodes") Collection<String> positionCodes);
+
+
+    /** [검증완료 JSON] 헤더 정보 */
+    Map<String, Object> selectVerifyJsonHeader(@Param("wkId") String wkId, @Param("lefrmId") long lefrmId,
+                                               @Param("transId") String transId, @Param("docId") String docId);
+
+    /** [검증완료 JSON] 항목 목록 */
+    List<Map<String, Object>> selectVerifyJsonItems(@Param("transId") String transId, @Param("docId") String docId);
+
 }

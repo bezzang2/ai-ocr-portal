@@ -98,6 +98,9 @@
 .crb-help:hover, .crb-help:focus-visible { border-color: var(--border-primary-medium); color: var(--text-primary-default); }
 .crb-tip { position: fixed; z-index: 1001; width: max-content; max-width: 320px; padding: 8px 12px; border: 1px solid var(--border-neutral-subtle); border-radius: 4px; background: var(--surface-white); box-shadow: 0 4px 12px rgba(0, 0, 0, .12); font-size: 12px; line-height: 1.6; color: var(--text-neutral-secondary); white-space: pre-line; }
 .crb-tip[hidden] { display: none; }
+/* 도움말의 「자세히」: 작성 가이드의 기능 설명 해당 위치로 이동한다 */
+.crb-tip-more { margin-top: 6px; padding: 2px 0; border: 0; background: none; color: var(--text-primary-default); font: inherit; font-size: 12px; font-weight: 500; text-decoration: underline; cursor: pointer; }
+.crb-tip-more:focus-visible { outline: 2px solid var(--border-primary-medium); outline-offset: 2px; }
 .crb-result__actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
 .crb-result__actions .crb-add { margin-top: 0; }
 .crb-compare { position: fixed; inset: 0; z-index: 900; display: flex; padding: 24px; background: rgba(0, 0, 0, .5); }
@@ -155,6 +158,11 @@
 .crb-subtype-row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-bottom: 12px; font-size: 12px; color: var(--text-neutral-secondary); }
 .crb-subtype-row > label, .crb-criterion > label, .crb-match-row > label { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .crb-subtype-row .input { width: auto; max-width: 100%; }
+/* 비교 형식은 항목 비교 내부에만 둔다. 기존 값·날짜·숫자 상위 탭을 대체한다. */
+.crb-format-row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin: 16px 0; color: var(--text-neutral-secondary); font-size: 12px; }
+.crb-format-row .crb-kind-picker button { min-height: 36px; padding: 6px 18px; }
+.crb-operand-label { display: flex; flex-direction: column; gap: 6px; min-width: 0; color: var(--text-neutral-tertiary); font-size: 11px; font-weight: 400; }
+.crb-operand-label > .input { width: 100%; }
 .crb-operand-grid { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); align-items: start; gap: 8px; }
 .crb-operand { min-width: 0; padding: 12px; border: 1px solid var(--border-neutral-subtle); border-radius: 5px; background: color-mix(in srgb, var(--surface-neutral-faint) 48%, var(--surface-white)); }
 .crb-operand__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; min-height: 27px; margin-bottom: 8px; font-size: 12px; font-weight: 500; color: var(--text-neutral-secondary); }
@@ -253,8 +261,11 @@
 .crb-learning-head button, .crb-learning-foot button { min-height: 36px; white-space: nowrap; }
 .crb-learning-foot { justify-content: flex-end; border-top: 1px solid var(--border-neutral-subtle); }
 .crb-learning-body { min-height: 0; padding: 24px; overflow-y: auto; overscroll-behavior: contain; }
-.crb-template-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-.crb-template-card { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 7px 8px; padding: 16px; border: 1px solid var(--border-neutral-subtle); border-radius: 6px; background: var(--surface-white); color: var(--text-neutral-default); text-align: left; cursor: pointer; }
+/* 예제가 15개라 목적별 묶음 제목을 달고 넓은 창에서는 3열로 놓는다 */
+.crb-template-group + .crb-template-group { margin-top: 18px; }
+.crb-template-group h3 { margin: 0 0 8px; color: var(--text-neutral-secondary); font-size: 12px; font-weight: 500; }
+.crb-template-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; }
+.crb-template-card { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 5px 8px; padding: 12px 14px; border: 1px solid var(--border-neutral-subtle); border-radius: 6px; background: var(--surface-white); color: var(--text-neutral-default); text-align: left; cursor: pointer; }
 .crb-template-card:hover { border-color: var(--border-primary-medium); }
 .crb-template-card[aria-pressed="true"] { border-color: var(--border-primary-medium); background: var(--surface-primary-faint); box-shadow: inset 0 0 0 1px var(--border-primary-medium); }
 .crb-template-index { grid-row: span 3; color: var(--text-primary-strong); font-size: 12px; line-height: 22px; }

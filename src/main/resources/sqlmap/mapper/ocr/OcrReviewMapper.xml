@@ -45,4 +45,96 @@
 		       </if>
 		   )
 	</select>
+
+
+	<select id="selectVerifyJsonHeader" resultType="java.util.LinkedHashMap">
+		/* [판독결과 검토] 검증완료 JSON 헤더(업무 단위) - selectVerifyJsonHeader */
+		SELECT W.WK_ID      AS "wkId"
+		     , WM.WK_NM     AS "wkNm"
+		     , W.TRANS_ID   AS "transId"
+		     , TO_CHAR(TO_DATE(W.SCAN_DT, 'YYYYMMDDHH24MISS'), 'YYYY-MM-DD HH24:MI:SS') AS "scanDt"
+		  FROM OCUOC_OCRWF_L W
+		  JOIN ocuoc_ocrwf_m WM
+		    ON WM.WK_ID = W.WK_ID
+		 WHERE W.TRANS_ID = #{transId}
+		 ORDER BY W.SCAN_DT DESC
+		 FETCH FIRST 1 ROWS ONLY
+	</select>
+
+
+	<select id="selectVerifyJsonItems" resultType="java.util.LinkedHashMap">
+		/* [판독결과 검토] 검증완료 JSON 항목(A 서식목록 + D 확인값) - selectVerifyJsonItems */
+		WITH W AS (
+		        SELECT *
+		          FROM (SELECT L.*, ROW_NUMBER() OVER (ORDER BY L.SCAN_DT DESC) AS RN
+		                  FROM OCUOC_OCRWF_L L
+		                 WHERE L.TRANS_ID != 'no transaction id'
+		                   AND L.TRANS_ID = #{transId})
+		         WHERE RN = 1
+		), A AS (
+		        SELECT W.WK_ID, WM.WK_NM, W.TRANS_ID, W.SCAN_DT,
+		               L.LEFRM_ID, L.LEFRM_NM, O.DOC_ID, O.DOC_TYP_CD, O.DOC_STAT_CD,
+		               F.ORG_FILE_NM, F.FILE_EXT,
+		               ROW_NUMBER() OVER (PARTITION BY L.LEFRM_ID ORDER BY O.ORDINAL, O.DOC_ID) AS DOC_SEQ,
+		               COUNT(*)     OVER (PARTITION BY L.LEFRM_ID)                              AS DOC_TOTAL
+		          FROM W
+		          JOIN ocuoc_ocrwf_m WM
+		            ON WM.WK_ID = W.WK_ID
+		          JOIN ocuoc_ocrwl_l M
+		            ON M.WK_ID = W.WK_ID
+		          JOIN ocuoc_lefrm_m L
+		            ON L.LEFRM_ID = M.LEFRM_ID
+		          JOIN OCUOC_OCRDO_L O
+		            ON O.TRANS_ID = W.TRANS_ID
+		           AND (O.DOC_TYP_CD = L.DOC_ID OR O.DOC_TYP_CD = 'KJB_' || L.DOC_ID)
+		          LEFT JOIN OCUOC_OCRIF_L F
+		            ON F.REQ_SYS_CD = W.REQ_SYS_CD
+		           AND F.SCAN_USER_ID = W.SCAN_USER_ID
+		           AND F.SCAN_DPRM_CD = W.SCAN_DPRM_CD
+		           AND F.SCAN_DT = W.SCAN_DT
+		           AND (F.FILE_NM = O.DOC_NM OR F.ORG_FILE_NM || '.' || F.FILE_EXT = O.DOC_NM)
+		         WHERE NVL(LOWER(O.DOC_STAT_CD), ' ') NOT IN ('failed', 'canceled')
+		)
+		SELECT A.WK_ID        AS "wkId",
+		       A.WK_NM        AS "wkNm",
+		       A.TRANS_ID     AS "transId",
+		       A.LEFRM_ID     AS "lefrmId",
+		       A.LEFRM_NM     AS "lefrmNm",
+		       A.DOC_SEQ      AS "docSeq",
+		       A.DOC_TOTAL    AS "docTotal",
+		       A.DOC_ID       AS "docId",
+		       A.ORG_FILE_NM || NVL2(A.FILE_EXT, '.' || A.FILE_EXT, '') AS "fileNm",
+		       V.VRFY_STAT_CD AS "vrfyStatCd",
+		       X."itemType", X."tblKey", X."rowSeq", X."colNm",
+		       X."fildKey", X."recogVal", X."cnfmVal", X."finalVal", X."modYn"
+		  FROM A
+		  LEFT JOIN OCUOC_OCRVR_L V
+		    ON V.TRANS_ID = A.TRANS_ID
+		   AND V.DOC_ID = A.DOC_ID
+		  JOIN (
+		        SELECT F.DOC_ID, 'F' AS "itemType", NULL AS "tblKey", NULL AS "rowSeq", NULL AS "colNm",
+		               F.FILD_KEY AS "fildKey", F.FILD_VAL AS "recogVal", C.CNFM_VAL AS "cnfmVal",
+		               CASE WHEN C.ITEM_ID IS NULL THEN F.FILD_VAL ELSE C.CNFM_VAL END AS "finalVal",
+		               CASE WHEN C.ITEM_ID IS NULL THEN 'N' ELSE 'Y' END AS "modYn",
+		               1 AS S1, F.GRP_ID AS S2, 0 AS S3, F.FILD_ID AS S4
+		          FROM OCUOC_OCRDF_L F
+		          LEFT JOIN OCUOC_OCRCV_L C
+		            ON C.ITEM_TYP_CD = 'F' AND C.ITEM_ID = F.FILD_ID
+		        UNION ALL
+		        SELECT T.DOC_ID, 'C', T.TBL_KEY, R.ROW_SEQ, TC.COL_NM,
+		               R.FILD_KEY, R.FILD_VAL, C.CNFM_VAL,
+		               CASE WHEN C.ITEM_ID IS NULL THEN R.FILD_VAL ELSE C.CNFM_VAL END,
+		               CASE WHEN C.ITEM_ID IS NULL THEN 'N' ELSE 'Y' END,
+		               2, R.TBL_ID, R.ROW_SEQ, NVL(TC.COL_SEQ, 0)
+		          FROM OCUOC_OCRDT_L T
+		          JOIN OCUOC_OCRTR_L R
+		            ON R.TBL_ID = T.TBL_ID
+		          LEFT JOIN OCUOC_OCRTC_L TC
+		            ON TC.TBL_ID = R.TBL_ID AND TC.COL_ID = R.COL_ID
+		          LEFT JOIN OCUOC_OCRCV_L C
+		            ON C.ITEM_TYP_CD = 'C' AND C.ITEM_ID = R.CELL_ID
+		       ) X
+		    ON X.DOC_ID = A.DOC_ID
+		 ORDER BY A.LEFRM_ID, A.DOC_SEQ, X.S1, X.S2, X.S3, X.S4
+	</select>
 </mapper>

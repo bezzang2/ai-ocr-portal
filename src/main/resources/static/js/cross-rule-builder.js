@@ -9,64 +9,82 @@
   var practice = page.getAttribute('data-practice') === 'true';
   var starters = window.CrossRuleStarters;
 
-  /* 비교 유형은 값의 형식으로 세 묶음으로 나눈다. 묶음을 누르면 첫 종류가 선택된다.
-     types 의 코드는 저장 형식의 uiType 이다. 묶음은 화면 구분일 뿐 저장하지 않으므로 기존 규칙은 그대로 열린다. */
-  var TYPE_GROUPS = [
-    { id: 'value', name: '값', label: '어떻게 확인할까요', types: [['compare', '다른 서류 항목'], ['fixed', '정해진 값'], ['list', '목록에 있는지'], ['presence', '값 있음·없음'], ['pattern', '형식·자릿수']] },
-    { id: 'date', name: '날짜', label: '어떤 날짜와 비교할까요', types: [['dateCompare', '다른 서류 날짜'], ['baseDate', '접수일'], ['date', '접수일부터 기간 이내']] },
-    { id: 'number', name: '숫자·건수', label: '무엇을 비교할까요', types: [['number', '값 그대로'], ['aggregate', '표 값 합치기'], ['count', '서류 건수']] }
-  ];
-  function groupOfType(type) {
-    return TYPE_GROUPS.filter(function (g) { return g.types.some(function (t) { return t[0] === type; }); })[0];
+  // 화면은 검사 목적을 먼저 고르고, 항목 비교 안에서 값의 해석 형식을 정한다.
+  // 저장 uiType은 기존 코드를 유지해 이전 규칙과 같은 판정기를 사용한다.
+  var CHECK_TYPES = [['compare', '항목 비교'], ['presence', '값 있음·없음'], ['pattern', '형식·자릿수'], ['aggregate', '표 값 합치기'], ['count', '서류 건수']];
+  var COMPARE_TYPES = ['compare', 'fixed', 'list', 'dateCompare', 'number', 'baseDate', 'date'];
+  var FORMATS = [['TEXT', '문자'], ['DATE', '날짜'], ['NUMBER', '숫자']];
+  function isComparison(type) { return COMPARE_TYPES.indexOf(type) >= 0; }
+  function comparisonFormat(type) {
+    return ['dateCompare', 'baseDate', 'date'].indexOf(type) >= 0 ? 'DATE' : type === 'number' ? 'NUMBER' : 'TEXT';
   }
-  /* 각 비교의 종류를 같은 위치에서 고른다. 묶음 이동은 입력을 버리는 동작이 아니다. */
-  function typePicker(type, i) {
-    var active = groupOfType(type);
-    return '<div class="crb-kind-picker" role="group" aria-label="비교 ' + (i + 1) + ' 값의 종류">' + TYPE_GROUPS.map(function (g) {
-      return '<button type="button" class="' + (g === active ? 'is-active' : '') + '" aria-pressed="' + (g === active) + '" data-i="' + i + '" data-type-group="' + g.id + '">' + g.name + '</button>';
-    }).join('') + '</div>';
+  function numericFixed(c) { return c.type === 'number' && c.rightKind === 'fixed'; }
+  function literalFixed(c) { return (c.type === 'number' || c.type === 'dateCompare') && c.rightKind === 'fixed'; }
+  function usesRightItem(c) { return RIGHT_ITEM_TYPES.indexOf(c.type) >= 0 && !literalFixed(c); }
+  /* 형식별로 마지막 비교 대상 출처를 기억한다. 저장 정의에는 화면 선택 상태를 추가하지 않는다. */
+  function formatPicker(type, i) {
+    var current = comparisonFormat(type);
+    return '<div class="crb-format-row"><span>비교 형식</span><div class="crb-kind-picker" role="group" aria-label="비교 ' + (i + 1) + ' 형식">' + FORMATS.map(function (format) {
+      return '<button type="button" aria-pressed="' + (current === format[0]) + '" data-i="' + i + '" data-format="' + format[0] + '">' + format[1] + '</button>';
+    }).join('') + '</div></div>';
+  }
+  function comparisonSources(c) {
+    var format = comparisonFormat(c.type);
+    if (format === 'DATE') return [['dateCompare', '서류 항목'], ['dateFixed', '직접 입력'], ['baseDate', '접수일 기준']];
+    if (format === 'NUMBER') return [['number', '서류 항목'], ['numberFixed', '직접 입력']];
+    return [['compare', '서류 항목'], ['fixed', '직접 입력']];
+  }
+  /* 목록 규칙도 같은 출처·같은 문구로 보여 준다. 예전 연산자 코드는 저장 호환을 위해 유지한다. */
+  function comparisonSource(c) {
+    if (c.type === 'baseDate' || c.type === 'date') return 'baseDate';
+    if (literalFixed(c)) return c.type === 'number' ? 'numberFixed' : 'dateFixed';
+    return c.type === 'list' ? 'compare' : c.type;
+  }
+  function comparisonOps(c) {
+    return c.type === 'list' ? [['IN_LIST', '같다'], ['NOT_IN_LIST', '다르다'], ['CONTAINS', '포함한다']] : OPS[c.type];
   }
   var ROUNDS = [['NONE', '그대로'], ['ROUND', '반올림'], ['FLOOR', '버림']];
   var CALC_MAX_STEPS = 3;
   /* 통과 방법 상한. Portal·Agent 검사의 MAX_METHODS 와 같다 */
   var MAX_METHODS = 5;
-  var MATCHES = [['ALL', '모든 값'], ['ANY', '하나 이상'], ['ONE', '정확히 하나'], ['NONE', '일치하는 값 없음']];
+  /* 화면 이름은 결과 기준을 그대로 말한다. 저장 코드(ALL·ANY·ONE·NONE)는 바꾸지 않는다 */
+  var MATCHES = [['ALL', '모두 맞아야 함'], ['ANY', '하나만 맞아도 됨'], ['ONE', '딱 하나만 맞아야 함'], ['NONE', '하나도 맞으면 안 됨']];
   var NORMALIZE = [['IGNORE_SPACE', '공백 무시'], ['IGNORE_HYPHEN', '하이픈 무시'], ['IGNORE_CORP', '(주)·주식회사 같게 보기'], ['IGNORE_CASE', '대소문자 무시']];
   var STATUS = { PASS: '일치', FAIL: '불일치', UNKNOWN: '검증불가', NOT_APPLICABLE: '해당없음' };
   var ORDER = ['FAIL', 'UNKNOWN', 'PASS', 'NOT_APPLICABLE'];
 
   /* 도움말 문구. 예시 값은 모두 가짜다 */
   var HELP = {
-    compare: '두 서류의 값이 같은지 봅니다.\n예: 신분증의 성명이 등기부의 대표자와 같다.',
-    list: '비교할 값이 대조할 값 목록에 있는지 봅니다.\n예: 등본의 세대원이 모두 가족관계증명서의 성명 목록에 있다.',
+    compare: '서류 항목의 값을 비교합니다. 비교 대상 값이 여러 개면 그중 하나와 같아도 해당 값은 일치입니다. 비교할 값이 여러 개일 때의 기준은 아래에서 정합니다.\n예: 신청인 성명이 세대원 성명 중 하나와 같다.',
+    list: '비교할 값이 비교 대상 목록에 있는지 봅니다.\n예: 등본의 세대원이 모두 가족관계증명서의 성명 목록에 있다.',
     fixed: '값을 직접 입력한 값과 비교합니다.\n예: 위임장의 날인 여부가 "있음"과 같다.',
     date: '날짜가 접수일로부터 정한 기간 안인지 봅니다. 접수일보다 미래면 불일치입니다.\n예: 등기부 발급일이 접수일 기준 3개월 이내이다.',
-    dateCompare: '두 서류의 날짜 순서를 봅니다. 표기가 달라도 날짜로 비교합니다.\n예: 위임장 작성일이 인감증명서 발급일 이후이다.',
+    dateCompare: '서류의 날짜를 다른 서류 날짜 또는 직접 입력한 날짜와 비교합니다. 표기가 달라도 날짜로 비교합니다.\n예: 위임장 작성일이 인감증명서 발급일 이후이다.',
     count: '서류가 몇 건 제출됐는지 봅니다.\n예: 신분증이 1건 이상 2건 이하이다.',
     number: '숫자나 금액을 비교합니다. 계산 후 비교할 수도 있습니다.\n예: 신고 소득이 소득금액증명의 금액 × 1.1 이하이다.',
     presence: '항목에 값이 적혀 있는지 봅니다. 서류가 없으면 검증불가입니다.\n예: 위임장의 수임자 성명에 값이 있다.',
     pattern: '값의 형식이나 일부 자리를 확인합니다. 자리는 공백과 하이픈을 빼고 셉니다.\n예: 주민등록번호 7번째 자리가 5, 6, 7, 8 중 하나이다.',
     regex: '정규식으로 형식을 적습니다. 값 전체를 보려면 ^ 로 시작하고 $ 로 끝냅니다.\n예: ^\\d{3}-\\d{2}-\\d{5}$ 는 000-00-00000 형식입니다.',
-    baseDate: '날짜를 접수일(스캔일) 기준 날짜와 비교합니다.\n예: 체류 만료일이 기준일과 같거나 이후이다. 생년월일이 기준일 14년 전과 같거나 이전이다(만 14세 이상).',
+    baseDate: '날짜를 접수일(스캔일) 기준으로 비교합니다. 비교 방법에서 이전·이후·같은 날 또는 최근 기간 이내를 고릅니다.\n예: 체류 만료일이 접수일과 같거나 이후이다. 생년월일이 접수일 14년 전과 같거나 이전이다(만 14세 이상).',
     aggregate: '표의 여러 값을 합계·개수·최댓값·최솟값으로 줄여 비교합니다. 값을 하나라도 못 읽으면 검증불가입니다.\n예: 주주명부 지분율의 합계가 100과 같다.',
     scope: '같은 서식이 여러 건일 때 서류마다 따로 계산할지 전체를 한 번에 계산할지 정합니다.\n예: 주주명부 2건의 합계를 각각 구한다.',
     sort: '기준 항목의 순위로 값을 좁힙니다. 서류마다 따로 정렬합니다. 기준 값을 못 읽거나 상위 건수 경계에서 값이 같으면 검증불가입니다.\n예: 소유주식수가 큰 순으로 상위 1건의 주주명.',
     condition: '이 서류의 표에서 조건에 맞는 행만 사용합니다. 같은 행의 값끼리 봅니다.\n예: 가족사항 중 구분이 "배우자"인 행의 성명만 비교.',
-    calc: '대조할 값을 계산한 뒤 비교합니다. 위에서부터 차례로 계산합니다.\n예: 소득금액 × 12 ÷ 100',
+    calc: '비교 대상 값을 계산한 뒤 비교합니다. 위에서부터 차례로 계산합니다.\n예: 소득금액 × 12 ÷ 100',
     calcResult: '소수점 처리 방법입니다.\n예: 1,234.5 → 반올림 1,235, 버림 1,234',
     tolerance: '이만큼 차이는 같다고 봅니다. 값과 % 중 더 큰 쪽을 씁니다.\n예: 기준 100,000원, 오차 500원 또는 1%면 1,000원 차이까지 일치.',
-    match: '비교할 값 각각의 판정을 합치는 기준입니다.\n모든 값: 전부 맞아야 일치\n하나 이상: 하나만 맞아도 일치\n정확히 하나: 딱 하나만 맞아야 일치\n일치하는 값 없음: 맞는 값이 없어야 일치',
+    match: '비교할 값이 여러 개(표의 여러 행 등)일 때 결과를 정하는 기준입니다. 비교 대상 값이 여러 개인 것과는 상관없습니다.\n모두 맞아야 함: 전부 맞아야 일치\n하나만 맞아도 됨: 하나만 맞아도 일치\n딱 하나만 맞아야 함: 둘 이상 맞으면 불일치\n하나도 맞으면 안 됨: 맞는 값이 있으면 불일치',
     IGNORE_SPACE: '"김 가명"과 "김가명"을 같게 봅니다.',
     IGNORE_HYPHEN: '"000-00-12345"와 "0000012345"를 같게 봅니다.',
     IGNORE_CORP: '"주식회사 한빛"과 "(주)한빛"을 같게 봅니다.',
     IGNORE_CASE: '"ABC"와 "abc"를 같게 봅니다.',
     pairs: '여러 항목을 묶어서 같은 행의 값끼리 비교합니다. 다른 사람의 값이 섞여 맞는 것을 막습니다.\n예: 신분증의 성명·생년월일이 임원 표에서 대표자 한 사람의 성명·생년월일과 같다.',
     pick: '같은 서류가 여러 건 제출됐을 때, 조건에 맞는 서류의 값만 씁니다.\n예: 신분증이 2건일 때, 성명이 위임장의 대리인과 같은 신분증만 사용.',
-    union: '다른 항목의 값을 합쳐 하나의 목록으로 비교합니다. 그중 하나와 맞으면 됩니다.\n예: 등본의 세대원이 가족관계증명서의 "본인 성명 + 가족 성명" 목록에 있다.',
+    union: '다른 항목의 값을 비교 대상에 더합니다. 더한 값 중 하나와 맞으면 됩니다.\n예: 등본의 세대원이 가족관계증명서의 본인·배우자·가족 성명 중에 있다.',
     when: '조건에 맞을 때만 비교합니다. 맞지 않으면 해당없음으로 처리하고 경고로 세지 않습니다. 조건을 판단할 수 없으면 검증불가입니다.\n예: 위임장이 있을 때만 대리인 성명을 비교.',
     branch: '조건에 따라 다른 비교를 합니다. 위에서부터 보고 처음 맞는 경우만 판정합니다.\n예: 혼인 여부가 "기혼"이면 배우자 성명 비교, 그 외에는 해당없음.',
-    docCount: '값마다 오른쪽 서류 몇 건에서 찾았는지 셉니다. 범위를 벗어나면 불일치입니다.\n예: 본인 성명은 등본 1건에서만 나와야 한다(1~1건). 자녀가 두 등본에 중복되면 안 된다(0~1건).',
-    unionLeft: '다른 항목의 값을 합쳐 비교할 값으로 씁니다.\n예: 가족관계증명서의 "본인 성명 + 가족 성명"이 모두 등본 세대원에 있다.',
+    docCount: '값마다 비교 대상 서류 몇 건에서 찾았는지 셉니다. 범위를 벗어나면 불일치입니다.\n예: 본인 성명은 등본 1건에서만 나와야 한다(1~1건). 자녀가 두 등본에 중복되면 안 된다(0~1건).',
+    unionLeft: '다른 항목의 값을 비교할 값에 더합니다.\n예: 가족관계증명서의 본인 성명과 가족 성명이 모두 등본 세대원에 있다.',
     method: '여러 방법 중 하나만 맞으면 일치입니다. 한 방법 안의 비교는 모두 맞아야 합니다.\n예: 신분증 성명이 부 성명과 같거나(방법 1), 모 성명과 같다(방법 2).',
     use: '끄면 규칙은 남지만 판정하지 않습니다.',
     PASS: '규칙을 만족합니다.',
@@ -74,8 +92,21 @@
     UNKNOWN: '값이 없거나 마스킹됐거나 날짜·숫자로 읽을 수 없어 판단하지 못했습니다.',
     NOT_APPLICABLE: '적용 조건에 맞는 서류가 없어 이 건에는 적용하지 않았습니다.'
   };
+  /** ? 도움말 버튼. data-help-key는 작성 가이드 「기능 설명」의 해당 위치를 여는 키다(tutorial-options.json helpKeys). */
   function help(key) {
-    return '<button type="button" class="crb-help" aria-label="' + esc((HELP[key] || '').split('.')[0]) + ' 도움말" data-help="' + esc(HELP[key]) + '">?</button>';
+    return '<button type="button" class="crb-help" aria-label="' + esc((HELP[key] || '').split('.')[0]) + ' 도움말" data-help="' + esc(HELP[key]) + '" data-help-key="' + esc(key) + '">?</button>';
+  }
+  /* 「자세히」로 기능 설명을 열 수 있는 화면인지. 연습 화면은 같은 페이지의 기능 설명 탭으로, 포털은 작성 가이드 창으로 연다. */
+  var explainAvailable = practice || !!starters;
+  /**
+   * 기능 설명의 해당 위치를 연다.
+   * @param {string} key 도움말 키(예: match). 기능 설명이 키를 모르면 맨 위를 연다.
+   */
+  function openExplain(key) {
+    console.debug('[cross-rule] 기능 설명 열기', key);
+    // 연습 화면(작성 가이드 iframe 안)에서는 같은 페이지의 튜토리얼 안내가 이 신호를 받아 탭을 바꾼다.
+    if (practice) window.dispatchEvent(new CustomEvent('crb-explain', { detail: key }));
+    else openGuide(key);
   }
   /* 도움말의 '예:' 줄을 화면에 항상 보여 준다 */
   function example(key) {
@@ -90,6 +121,15 @@
     document.body.append(tip);
     function show(el) {
       tip.textContent = el.getAttribute('data-help');
+      var key = el.getAttribute('data-help-key');
+      // ? 버튼에만 「자세히」를 단다. 결과 배지 등 다른 data-help는 짧은 설명만 보여 준다.
+      if (key && explainAvailable && el.classList.contains('crb-help')) {
+        var more = document.createElement('button');
+        more.type = 'button'; more.className = 'crb-tip-more'; more.textContent = '자세히';
+        more.setAttribute('data-explain', key);
+        more.setAttribute('aria-label', '기능 설명에서 자세히 보기');
+        tip.append(document.createElement('br'), more);
+      }
       tip.hidden = false;
       var box = el.getBoundingClientRect(), width = tip.offsetWidth, height = tip.offsetHeight;
       tip.style.left = Math.max(8, Math.min(box.left, window.innerWidth - width - 8)) + 'px';
@@ -97,10 +137,21 @@
     }
     function hide() { tip.hidden = true; pinned = null; }
     page.addEventListener('mouseover', function (e) { var el = e.target.closest('[data-help]'); if (el) show(el); });
-    page.addEventListener('mouseout', function (e) { if (!pinned && e.target.closest('[data-help]')) tip.hidden = true; });
+    // 마우스로 「자세히」까지 옮겨 갈 수 있게, 도움말 말풍선 안으로 들어가면 닫지 않는다.
+    page.addEventListener('mouseout', function (e) { if (!pinned && e.target.closest('[data-help]') && !tip.contains(e.relatedTarget)) tip.hidden = true; });
+    tip.addEventListener('mouseleave', function (e) { if (!pinned && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('[data-help]'))) tip.hidden = true; });
     page.addEventListener('focusin', function (e) { var el = e.target.closest('[data-help]'); if (el) show(el); });
-    page.addEventListener('focusout', function (e) { if (e.target.closest('[data-help]')) hide(); });
+    page.addEventListener('focusout', function (e) { if (e.target.closest('[data-help]') && !tip.contains(e.relatedTarget)) hide(); });
+    tip.addEventListener('focusout', function (e) { if (!tip.contains(e.relatedTarget)) hide(); });
+    page.addEventListener('keydown', function (e) {
+      // 키보드: ? 에서 Tab을 누르면 말풍선의 「자세히」로 이동한다.
+      var more = tip.hidden ? null : tip.querySelector('.crb-tip-more');
+      if (e.key === 'Tab' && !e.shiftKey && more && e.target.closest('.crb-help')) { e.preventDefault(); more.focus(); }
+    });
     document.addEventListener('click', function (e) {
+      var more = e.target.closest('.crb-tip-more');
+      if (more) { e.preventDefault(); var key = more.getAttribute('data-explain'); hide(); openExplain(key); return; }
+      if (tip.contains(e.target)) return;
       var el = e.target.closest('.crb-help');
       if (!el) { hide(); return; }
       e.preventDefault();
@@ -424,19 +475,36 @@
     dialog.showModal();
     return dialog;
   }
-  /** 실제 작성 내용은 부모 화면에 두고, 별도의 합성 데이터 연습 화면만 연다. */
-  function openGuide() {
-    learningDialog('crb-guide-dialog', '작성 가이드 · 연습', 'crb-guide-dialog',
-      '<iframe title="규칙 등록 연습" src="' + esc(contextPath + 'guide/cross-rule-tutorial.html') + '" sandbox="allow-scripts"></iframe>');
+  /**
+   * 작성 가이드(따라 하기·기능 설명 탭)를 연다. 실제 작성 내용은 부모 화면에 두고, 가짜 데이터 연습 화면만 iframe으로 연다.
+   * @param {string|Event=} key 문자열이면 기능 설명 탭의 해당 위치(#explain=키)로 연다. 버튼 클릭 이벤트면 따라 하기로 연다.
+   */
+  function openGuide(key) {
+    var hash = typeof key === 'string' ? '#explain=' + encodeURIComponent(key) : '';
+    learningDialog('crb-guide-dialog', '작성 가이드', 'crb-guide-dialog',
+      '<iframe title="작성 가이드: 따라 하기와 기능 설명" src="' + esc(contextPath + 'guide/cross-rule-tutorial.html' + hash) + '" sandbox="allow-scripts"></iframe>');
+  }
+  /**
+   * 예제 카드를 group 묶음별 제목과 함께 그린다. 번호는 전체에서 이어서 매긴다(01~15).
+   * @returns {string} 이스케이프된 HTML
+   */
+  function templateCards() {
+    var html = '', group = null;
+    starters.templates.forEach(function (template, i) {
+      if (template.group !== group) {
+        if (group !== null) html += '</div></section>';
+        group = template.group;
+        html += '<section class="crb-template-group"><h3>' + esc(group || '예시') + '</h3><div class="crb-template-cards" role="group" aria-label="' + esc(group || '예시') + ' 예시 규칙">';
+      }
+      html += '<button type="button" class="crb-template-card" data-template="' + template.id + '" aria-pressed="false"><span class="crb-template-index">' + (i < 9 ? '0' : '') + (i + 1) + '</span><strong>' + esc(template.title) + '</strong><span>' + esc(template.description) + '</span><small>예: ' + esc(template.example) + '</small></button>';
+    });
+    return html + (group !== null ? '</div></section>' : '');
   }
   /** 현재 업무의 항목을 연결한 뒤, 저장 전 새 규칙 초안으로 여는 시작 메뉴다. */
   function openTemplates() {
     var selected = null, mappings = {}, custom = {};
     var dialog = learningDialog('crb-template-dialog', '예제로 시작', 'crb-template-dialog',
-      '<div class="crb-learning-body"><div class="crb-template-cards" role="group" aria-label="예시 규칙">'
-      + starters.templates.map(function (template, i) {
-        return '<button type="button" class="crb-template-card" data-template="' + template.id + '" aria-pressed="false"><span class="crb-template-index">0' + (i + 1) + '</span><strong>' + esc(template.title) + '</strong><span>' + esc(template.description) + '</span><small>예: ' + esc(template.example) + '</small></button>';
-      }).join('') + '</div><form id="crb-template-form" novalidate><div id="crb-template-fields"></div></form></div>'
+      '<div class="crb-learning-body">' + templateCards() + '<form id="crb-template-form" novalidate><div id="crb-template-fields"></div></form></div>'
       + '<footer class="crb-learning-foot"><button type="button" class="btn-outline-primary" id="crb-template-cancel">취소</button><button type="submit" form="crb-template-form" class="btn btn-primary" id="crb-template-open" disabled>규칙 초안 열기</button></footer>');
     var fields = dialog.querySelector('#crb-template-fields'), submit = dialog.querySelector('#crb-template-open');
     dialog.querySelector('#crb-template-cancel').addEventListener('click', function () { dialog.close(); });
@@ -494,6 +562,8 @@
         if (!custom[selected.id]) custom[selected.id] = {};
         dialog.querySelectorAll('[data-template]').forEach(function (card) { card.setAttribute('aria-pressed', String(card === button)); });
         renderFields();
+        // 카드가 많아 연결 칸이 아래로 밀리므로, 고른 뒤 다음에 할 연결 칸이 보이게 옮긴다.
+        fields.scrollIntoView({ block: 'nearest', behavior: 'instant' });
       });
     });
     dialog.querySelector('#crb-template-form').addEventListener('submit', function (event) {
@@ -504,7 +574,8 @@
         var control = fields.querySelector('[data-template-field="' + invalid.name + '"]');
         control.setAttribute('aria-invalid', 'true');
         var error = fields.querySelector('#' + control.id + '-error');
-        error.textContent = invalid.name === 'months' ? '기간은 1 이상의 정수로 입력해 주세요.' : invalid.label + '에 유효한 값을 입력해 주세요.';
+        // 정수 칸(기간·나이·건수)은 같은 문구로 최솟값을 알려 준다.
+        error.textContent = invalid.integer ? invalid.label + '은(는) ' + (invalid.min == null ? 0 : invalid.min) + ' 이상의 정수로 입력해 주세요.' : invalid.label + '에 유효한 값을 입력해 주세요.';
         error.hidden = false;
         control.focus();
         return;
@@ -544,9 +615,9 @@
   }
   function formField(c, i, side) {
     var prop = side + 'Form', keyProp = side + 'Key';
-    return '<select class="input" aria-label="' + (side === 'left' ? '비교할 서류' : '대조할 서류') + '" data-i="' + i + '" data-prop="' + prop + '">'
-      + formOptions(c[prop]) + '</select><span>의</span>'
-      + keyField(c[prop], c[keyProp], i, keyProp, side === 'left' ? '비교할 항목' : '대조할 항목');
+    return '<label class="crb-operand-label">서류<select class="input" aria-label="' + (side === 'left' ? '비교할 서류' : '비교 대상 서류') + '" data-i="' + i + '" data-prop="' + prop + '">'
+      + formOptions(c[prop]) + '</select></label><label class="crb-operand-label">항목'
+      + keyField(c[prop], c[keyProp], i, keyProp, side === 'left' ? '비교할 항목' : '비교 대상 항목') + '</label>';
   }
   /* 항목 칸. 판독 건이 없어 항목 목록을 모르는 서식은 직접 입력한다. attr 은 칸을 구분하는 data 속성이다 */
   function keyControl(formId, value, attr, label) {
@@ -556,24 +627,23 @@
     return '<select class="input" data-key-form="' + esc(formId) + '" aria-label="' + label + '"' + attr + '>' + options(keys.map(function (k) { return [k, k]; }).concat([[CUSTOM_KEY, '직접 입력…']]), value) + '</select>';
   }
   function keyField(formId, value, i, prop, label) { return keyControl(formId, value, ' data-i="' + i + '" data-prop="' + prop + '"', label); }
-  /* 저장 유형은 유지하고, 값 비교의 대조 출처는 비교 대상 카드에서 고른다. */
+  /* 저장 유형은 유지하고, 값 비교의 출처는 비교 대상 카드에서 고른다. */
   function checkEditor(c, i) {
-    var group = groupOfType(c.type), family = ['compare', 'fixed', 'list'].indexOf(c.type) >= 0;
-    var subtypes = group.id === 'value' ? [['compare', '값 비교'], ['presence', '값 있음·없음'], ['pattern', '형식·자릿수']] : group.types;
-    var subtype = family ? 'compare' : c.type;
+    var comparison = isComparison(c.type), receiptDate = c.type === 'baseDate' || c.type === 'date';
     var html = '<section class="crb-check" data-check-index="' + i + '"><div class="crb-check__head"><h2>비교 ' + (i + 1) + (i ? ' · 그리고' : '') + '</h2>'
-      + typePicker(c.type, i) + (i ? '<button type="button" class="crb-remove" aria-label="비교 ' + (i + 1) + ' 삭제" data-remove="' + i + '">✕</button>' : '') + '</div>'
-      + '<div class="crb-subtype-row"><label>확인할 내용 <select class="input" aria-label="비교 유형" data-i="' + i + '" data-retype="1">' + options(subtypes, subtype) + '</select></label>' + help(c.type) + '</div>';
+      + (i ? '<button type="button" class="crb-remove" aria-label="비교 ' + (i + 1) + ' 삭제" data-remove="' + i + '">✕</button>' : '') + '</div>'
+      + '<div class="crb-subtype-row"><label>확인할 내용 <select class="input" aria-label="비교 유형" data-i="' + i + '" data-retype="1">' + options(CHECK_TYPES, comparison ? 'compare' : c.type) + '</select></label>' + help(c.type === 'list' ? 'compare' : c.type) + '</div>';
+    if (comparison) html += formatPicker(c.type, i);
     if (c.type === 'count') {
       html += '<div class="crb-operand-grid"><section class="crb-operand"><h3 class="crb-operand__head">제출 서류</h3><select class="input" aria-label="건수를 확인할 서류" data-i="' + i + '" data-prop="leftForm">' + formOptions(c.leftForm) + '</select></section>'
         + '<span class="crb-operand-arrow" aria-hidden="true">↔</span><section class="crb-operand"><h3 class="crb-operand__head">제출 건수 범위</h3><div class="crb-row">'
         + '<input class="input input--num" type="number" min="0" aria-label="최소 건수" data-i="' + i + '" data-prop="min" value="' + c.min + '"><span>건 이상</span>'
         + '<input class="input input--num" type="number" min="0" aria-label="최대 건수" data-i="' + i + '" data-prop="max" value="' + c.max + '"><span>건 이하</span></div></section></div>';
     } else {
-      html += '<div class="crb-operand-grid"><section class="crb-operand"><h3 class="crb-operand__head">비교할 값</h3><div class="crb-operand__fields">' + formField(c, i, 'left') + '</div>';
+      html += '<div class="crb-operand-grid"><section class="crb-operand"><h3 class="crb-operand__head">비교할 항목</h3><div class="crb-operand__fields">' + formField(c, i, 'left') + '</div>';
       if (c.type === 'aggregate') html += aggregateSettings(c, i);
       html += targetSettings(c, i, 'left') + '</section><span class="crb-operand-arrow" aria-hidden="true">↔</span><section class="crb-operand"><div class="crb-operand__head"><h3>비교 대상</h3>';
-      if (family) html += '<select class="input" aria-label="비교 대상 종류" data-i="' + i + '" data-source-type>' + options([['compare', '서류 항목'], ['fixed', '직접 입력'], ['list', '서류의 값 목록']], c.type) + '</select>';
+      if (comparison) html += '<select class="input" aria-label="비교 대상 종류" data-i="' + i + '" data-source-type>' + options(comparisonSources(c), comparisonSource(c)) + '</select>';
       html += '</div><div class="crb-operand__fields">';
       if (c.type === 'date') html += '<span>접수일 이전</span><input class="input input--num" type="number" min="0" aria-label="기간" data-i="' + i + '" data-prop="months" value="' + c.months + '">'
         + '<select class="input input--num" aria-label="기간 단위" data-i="' + i + '" data-prop="dateUnit">' + options(DATE_UNITS, c.dateUnit) + '</select><span>이내</span>';
@@ -581,14 +651,17 @@
       else if (c.type === 'baseDate') html += offsetEditor(c, i);
       else if (c.type === 'pattern') html += patternEditor(c, i);
       else if (c.type === 'aggregate') html += aggregateEditor(c, i);
+      else if (c.type === 'dateCompare' && literalFixed(c)) html += '<input class="input" type="date" aria-label="비교할 날짜" data-i="' + i + '" data-prop="fixed" value="' + esc(c.fixed) + '">';
+      else if (numericFixed(c)) html += '<input class="input" type="number" step="any" aria-label="비교할 숫자" placeholder="비교할 숫자" data-i="' + i + '" data-prop="fixed" value="' + esc(c.fixed) + '">';
       else if (c.type === 'fixed') html += '<input class="input" aria-label="정해진 값" placeholder="비교할 값" data-i="' + i + '" data-prop="fixed" value="' + esc(c.fixed) + '">';
       else html += formField(c, i, 'right');
       html += '</div>';
-      if (RIGHT_ITEM_TYPES.indexOf(c.type) >= 0) html += targetSettings(c, i, 'right');
+      if (usesRightItem(c)) html += targetSettings(c, i, 'right');
       if (c.type === 'number') html += '<details class="crb-value-settings" data-detail="calc-' + i + '"><summary>계산·반올림<span class="crb-setting-summary">' + esc(c.calc.length + '단계 · ' + (ROUNDS.filter(function (r) { return r[0] === c.round; })[0] || ['', '그대로'])[1]) + '</span></summary>' + calcEditor(c, i) + '</details>';
       html += '</section></div>';
-      if (OPS[c.type]) html += '<div class="crb-criterion"><label>비교 방법 <select class="input" aria-label="비교 방법" data-i="' + i + '" data-prop="op">' + options(OPS[c.type], c.op) + '</select></label></div>';
-      html += '<div class="crb-match-row"><label>비교할 값 중 <select class="input" aria-label="여러 값의 통과 기준" data-i="' + i + '" data-prop="match">' + options(MATCHES, c.match) + '</select></label>' + help('match') + '</div>';
+      if (receiptDate) html += '<div class="crb-criterion"><label>비교 방법 <select class="input" aria-label="비교 방법" data-i="' + i + '" data-date-method data-prop="op">' + options(OPS.baseDate.concat([['BETWEEN', '최근 기간 이내']]), c.type === 'date' ? 'BETWEEN' : c.op) + '</select></label></div>';
+      else if (OPS[c.type]) html += '<div class="crb-criterion"><label>비교 방법 <select class="input" aria-label="비교 방법" data-i="' + i + '" data-prop="op">' + options(comparisonOps(c), c.op) + '</select></label></div>';
+      html += '<div class="crb-match-row"><label>비교할 값이 여러 개면 <select class="input" aria-label="비교할 값이 여러 개일 때 기준" data-i="' + i + '" data-prop="match">' + options(MATCHES, c.match) + '</select></label>' + help('match') + '</div>';
       html += valueSettings(c, i);
     }
     return html + '</section>';
@@ -602,8 +675,8 @@
   /* 서류·행·순위의 제한을 해당 서류 카드 안에서만 설정한다. 저장 의미와 지원 범위는 바꾸지 않는다. */
   function targetSettings(c, i, side) {
     var conditionSide = c.type === 'aggregate' ? 'left' : 'right';
-    var html = pickEditor(c, i, side, side === 'left' ? '비교할' : '대조할');
-    if (RIGHT_ITEM_TYPES.indexOf(c.type) >= 0 || (c.type === 'aggregate' && side === 'left')) html += sortEditor(c, i, side, side === 'left' ? '비교할' : '대조할');
+    var html = pickEditor(c, i, side, side === 'left' ? '비교할' : '비교 대상');
+    if (RIGHT_ITEM_TYPES.indexOf(c.type) >= 0 || (c.type === 'aggregate' && side === 'left')) html += sortEditor(c, i, side, side === 'left' ? '비교할' : '비교 대상');
     if (side === conditionSide && (RIGHT_ITEM_TYPES.indexOf(c.type) >= 0 || c.type === 'aggregate')) html = conditionEditor(c, i) + html;
     return '<details class="crb-target-settings" data-detail="target-' + side + '-' + i + '"><summary>대상 선택<span class="crb-setting-summary" data-setting-summary="' + side + '" data-i="' + i + '">' + esc(targetSummary(c, side)) + '</span></summary>' + html + '</details>';
   }
@@ -615,17 +688,20 @@
     if (sort) selected.push('상위 ' + sort.limit + '행');
     return selected.join(' · ') || '전체 값';
   }
-  /* 표기 차이와 여러 항목의 관계는 대상 선택에서 분리한다. 행 묶기와 목록 합치기의 의미를 구분한다. */
+  /* 표기 차이와 여러 항목의 관계는 대상 선택에서 분리한다. 행 묶기와 항목 더하기의 의미를 구분한다. */
   function valueSettings(c, i) {
     var canNormalize = ['compare', 'list', 'fixed'].indexOf(c.type) >= 0 || (c.type === 'pattern' && (c.sliceOn || c.patternMode === 'list'));
     var html = canNormalize ? '<div class="crb-advanced__body">' + NORMALIZE.map(function (n) {
       return '<span class="crb-help-group"><label class="crb-check-label"><input type="checkbox" data-i="' + i + '" data-normalize="' + n[0] + '"' + (c.normalize.indexOf(n[0]) >= 0 ? ' checked' : '') + '>' + n[1] + '</label>' + help(n[0]) + '</span>';
     }).join('') + '</div>' : '';
     if (c.type === 'aggregate') html += '<div class="crb-row"><label>허용 오차 <input class="input input--num" type="number" min="0" step="any" aria-label="허용 오차 값" data-i="' + i + '" data-prop="tolerance" value="' + c.tolerance + '"></label><label>또는 <input class="input input--num" type="number" min="0" step="any" aria-label="허용 오차 비율" data-i="' + i + '" data-prop="tolerancePct" value="' + c.tolerancePct + '">%</label>' + help('tolerance') + '</div>';
-    if (RIGHT_ITEM_TYPES.indexOf(c.type) >= 0) html += pairEditor(c, i) + extrasEditor(c, i, 'leftExtras', '비교할 목록에 값 추가', 'unionLeft', c.leftForm) + extrasEditor(c, i, 'extras', '대조할 목록에 값 추가', 'union', c.rightForm) + docCountEditor(c, i);
+    if (RIGHT_ITEM_TYPES.indexOf(c.type) >= 0) {
+      html += pairEditor(c, i) + extrasEditor(c, i, 'leftExtras', '비교할 값에 항목 더하기', 'unionLeft', c.leftForm);
+      if (usesRightItem(c)) html += extrasEditor(c, i, 'extras', '비교 대상에 항목 더하기', 'union', c.rightForm) + docCountEditor(c, i);
+    }
     if (!html) return '';
     var summary = canNormalize ? c.normalize.map(function (n) { return (NORMALIZE.filter(function (x) { return x[0] === n; })[0] || ['', n])[1]; }).join(' · ') : '';
-    return '<details class="crb-value-settings" data-detail="values-' + i + '"><summary>값 가공·추가 기준<span class="crb-setting-summary" data-normalize-summary="' + i + '">' + esc(summary) + '</span></summary>' + html + '</details>';
+    return '<details class="crb-value-settings" data-detail="values-' + i + '"><summary>세부 설정<span class="crb-setting-summary" data-normalize-summary="' + i + '">' + esc(summary) + '</span></summary>' + html + '</details>';
   }
   /* 연결이 풀린 서식도 지금 값으로 보이게 해 다른 서식으로 잘못 읽히지 않게 한다 */
   function formOptions(value) {
@@ -633,7 +709,7 @@
     if (value != null && !form(value)) list.unshift([value, '(연결 해제된 서식)']);
     return options(list, value);
   }
-  /* 표에서 조건에 맞는 행만 쓴다. 집계는 왼쪽(집계 대상) 서류, 그 밖의 유형은 오른쪽(대조할) 서류의 행이다 */
+  /* 표에서 조건에 맞는 행만 쓴다. 집계는 왼쪽(집계 대상) 서류, 그 밖의 유형은 오른쪽(비교 대상) 서류의 행이다 */
   function conditionEditor(c, i) {
     var formId = c.type === 'aggregate' ? c.leftForm : c.rightForm;
     return c.condition
@@ -646,8 +722,8 @@
   /* 화면은 양수 기간과 전·후로 받으며, 저장할 때는 기존 부호 있는 offset을 유지한다. */
   function offsetEditor(c, i) {
     return '<span>접수일</span><input class="input input--num" type="number" min="0" step="1" aria-label="접수일에서 이동할 기간" data-i="' + i + '" data-offset-amount value="' + Math.abs(c.offset) + '">'
-      + '<select class="input input--num" aria-label="기준일 단위" data-i="' + i + '" data-prop="dateUnit">' + options(DATE_UNITS, c.dateUnit) + '</select>'
-      + '<select class="input input--num" aria-label="기준일 이동 방향" data-i="' + i + '" data-offset-direction>' + options([['before', '전'], ['after', '후']], c.offset < 0 ? 'before' : c.offset > 0 ? 'after' : c.offsetDirection || 'before') + '</select>';
+      + '<select class="input input--num" aria-label="접수일 이동 단위" data-i="' + i + '" data-prop="dateUnit">' + options(DATE_UNITS, c.dateUnit) + '</select>'
+      + '<select class="input input--num" aria-label="접수일 이동 방향" data-i="' + i + '" data-offset-direction>' + options([['before', '전'], ['after', '후']], c.offset < 0 ? 'before' : c.offset > 0 ? 'after' : c.offsetDirection || 'before') + '</select>';
   }
   function patternEditor(c, i) {
     var html = '<label class="crb-check-label"><input type="checkbox" data-i="' + i + '" data-slice-toggle' + (c.sliceOn ? ' checked' : '') + '>일부 자리만 보기</label>';
@@ -666,7 +742,7 @@
     var kinds = [['number', '숫자 입력'], ['item', '서류 항목'], ['aggregate', '서류 항목 집계']].filter(function (k) { return !date || k[0] !== 'number'; }).concat(date ? [['baseDate', '접수일']] : []);
     var html = '<select class="input input--kind" aria-label="비교 대상" data-i="' + i + '" data-prop="targetKind">' + options(kinds, c.targetKind) + '</select>';
     if (c.targetKind === 'item' || c.targetKind === 'aggregate') {
-      if (c.targetKind === 'aggregate') html += '<select class="input input--num" aria-label="대조 집계 방법" data-i="' + i + '" data-prop="rightFn">' + options(AGGREGATE_FNS.filter(function (f) { return !date || f[0] === 'MAX' || f[0] === 'MIN'; }), c.rightFn) + '</select>';
+      if (c.targetKind === 'aggregate') html += '<select class="input input--num" aria-label="비교 대상 집계 방법" data-i="' + i + '" data-prop="rightFn">' + options(AGGREGATE_FNS.filter(function (f) { return !date || f[0] === 'MAX' || f[0] === 'MIN'; }), c.rightFn) + '</select>';
       html += formField(c, i, 'right');
     } else if (c.targetKind === 'baseDate') html += offsetEditor(c, i);
     else html += '<input class="input input--num" type="number" step="any" aria-label="비교 값" data-i="' + i + '" data-prop="targetValue" value="' + esc(c.targetValue) + '">';
@@ -675,7 +751,7 @@
   /* 기준 항목의 순위로 값을 좁힌다. 화면에서는 sort 라는 말을 쓰지 않는다 */
   function sortEditor(c, i, side, label) {
     var sort = c[side + 'Sort'], formId = c[side + 'Form'];
-    var html = '<div class="crb-extra"><label class="crb-check-label"><input type="checkbox" data-i="' + i + '" data-sort-toggle="' + side + '"' + (sort ? ' checked' : '') + '>' + label + ' 값을 순위로 좁히기</label>' + help('sort') ;
+    var html = '<div class="crb-extra"><label class="crb-check-label"><input type="checkbox" data-i="' + i + '" data-sort-toggle="' + side + '"' + (sort ? ' checked' : '') + '>순위로 행 고르기</label>' + help('sort') ;
     if (sort) {
       var attr = ' data-i="' + i + '" data-sort="' + side + '" data-sort-prop=';
       html += '<div class="crb-row crb-pick"><span>기준</span>' + keyControl(formId, sort.by, attr + '"by"', label + ' 정렬 기준 항목')
@@ -732,25 +808,25 @@
     if (PAIR_TYPES.indexOf(c.type) < 0) return '';
     function field(formId, value, n, side, label) { return keyControl(formId, value, ' data-i="' + i + '" data-pair="' + n + '" data-pair-side="' + side + '"', label); }
     return '<div class="crb-extra"><span class="crb-check-label">같은 행의 항목 묶기</span>' + help('pairs') + example('pairs') + c.pairs.map(function (p, n) {
-      return '<div class="crb-row crb-pick"><span>+</span>' + field(c.leftForm, p.left, n, 'left', '함께 비교할 항목') + '<span>↔</span>' + field(c.rightForm, p.right, n, 'right', '함께 대조할 항목')
+      return '<div class="crb-row crb-pick"><span>+</span>' + field(c.leftForm, p.left, n, 'left', '함께 비교할 항목') + '<span>↔</span>' + field(c.rightForm, p.right, n, 'right', '함께 비교할 대상 항목')
         + '<button type="button" class="crb-remove" aria-label="함께 비교 삭제" data-i="' + i + '" data-pair-remove="' + n + '">✕</button></div>';
     }).join('') + '<div><button type="button" class="crb-add" data-pair-add="' + i + '">+ 같은 행의 항목 묶기</button></div></div>';
   }
   function extrasEditor(c, i, prop, title, helpKey, formId) {
     var attr = ' data-i="' + i + '" data-extra-list="' + prop + '"';
     return '<div class="crb-extra"><span class="crb-check-label">' + title + '</span>' + help(helpKey) + example(helpKey) + c[prop].map(function (x, n) {
-      return '<div class="crb-row crb-pick"><span>+</span><select class="input" aria-label="합칠 서류"' + attr + ' data-extra="' + n + '" data-extra-prop="form">' + formOptions(x.form) + '</select><span>의</span>'
-        + keyControl(x.form, x.key, attr + ' data-extra="' + n + '" data-extra-prop="key"', '합칠 항목')
-        + '<button type="button" class="crb-remove" aria-label="합칠 항목 삭제"' + attr + ' data-extra-remove="' + n + '">✕</button></div>';
-    }).join('') + '<div><button type="button" class="crb-add"' + attr + ' data-extra-form="' + formId + '" data-extra-add="1">+ 항목 합치기</button></div></div>';
+      return '<div class="crb-row crb-pick"><span>+</span><select class="input" aria-label="더할 서류"' + attr + ' data-extra="' + n + '" data-extra-prop="form">' + formOptions(x.form) + '</select><span>의</span>'
+        + keyControl(x.form, x.key, attr + ' data-extra="' + n + '" data-extra-prop="key"', '더할 항목')
+        + '<button type="button" class="crb-remove" aria-label="더할 항목 삭제"' + attr + ' data-extra-remove="' + n + '">✕</button></div>';
+    }).join('') + '<div><button type="button" class="crb-add"' + attr + ' data-extra-form="' + formId + '" data-extra-add="1">+ 항목 더하기</button></div></div>';
   }
   function docCountEditor(c, i) {
     if (RIGHT_ITEM_TYPES.indexOf(c.type) < 0 || negativeOp(c)) return '';
-    return '<div class="crb-extra"><label class="crb-check-label"><input type="checkbox" data-i="' + i + '" data-doc-count' + (c.useDocCount ? ' checked' : '') + '>일치한 대조 서류 수 제한</label>' + help('docCount') + example('docCount')
+    return '<div class="crb-extra"><label class="crb-check-label"><input type="checkbox" data-i="' + i + '" data-doc-count' + (c.useDocCount ? ' checked' : '') + '>일치한 비교 대상 서류 수 제한</label>' + help('docCount') + example('docCount')
       + (c.useDocCount ? '<div class="crb-row crb-pick"><input class="input input--num" type="number" min="0" aria-label="찾은 서류 최소" data-i="' + i + '" data-prop="docMin" value="' + c.docMin + '"><span>~</span>'
         + '<input class="input input--num" type="number" min="0" aria-label="찾은 서류 최대" data-i="' + i + '" data-prop="docMax" value="' + c.docMax + '"><span>건의 서류에서 찾아야 함</span></div>' : '') + '</div>';
   }
-  /* 언제 확인할까요: 경우가 하나면 적용 조건이고, 둘 이상이면 경우 나누기다. 저장 형식은 같다 */
+  /* 규칙 적용 조건: 경우가 하나면 적용 조건이고, 둘 이상이면 경우 나누기다. 저장 형식은 같다 */
   function whenEditor(d) {
     var multi = d.branches.length > 1 || d.otherwise.on, isElse = d.activeBranch >= d.branches.length;
     var html = '<div class="crb-section"><h2>적용 조건' + help('branch') + '</h2>';
@@ -906,7 +982,7 @@
   /* 바뀐 컨트롤의 식별 속성을 보존해 다른 행이나 비교로 초점이 옮겨가지 않게 한다. */
   function controlIdentity(el) {
     if (!el || !root.contains(el)) return null;
-    var attrs = ['id', 'data-i', 'data-prop', 'data-retype', 'data-source-type', 'data-type-group', 'data-offset-amount', 'data-offset-direction', 'data-when', 'data-when-n', 'data-pick', 'data-pick-prop', 'data-pick-toggle', 'data-sort', 'data-sort-prop', 'data-sort-toggle', 'data-step', 'data-step-prop', 'data-normalize', 'data-role', 'data-pair', 'data-pair-side', 'data-extra-list', 'data-extra', 'data-extra-prop', 'data-doc-count', 'data-slice-toggle', 'data-branch', 'data-method'];
+    var attrs = ['id', 'data-i', 'data-prop', 'data-retype', 'data-source-type', 'data-date-method', 'data-format', 'data-offset-amount', 'data-offset-direction', 'data-when', 'data-when-n', 'data-pick', 'data-pick-prop', 'data-pick-toggle', 'data-sort', 'data-sort-prop', 'data-sort-toggle', 'data-step', 'data-step-prop', 'data-normalize', 'data-role', 'data-pair', 'data-pair-side', 'data-extra-list', 'data-extra', 'data-extra-prop', 'data-doc-count', 'data-slice-toggle', 'data-branch', 'data-method'];
     var identity = {};
     attrs.forEach(function (name) { if (el.hasAttribute(name)) identity[name] = el.getAttribute(name); });
     return Object.keys(identity).length ? { tag: el.tagName, attrs: identity } : null;
@@ -1049,26 +1125,65 @@
     });
     var tx = document.getElementById('crb-tx');
     if (tx) tx.addEventListener('change', function () { state.txIndex = Number(tx.value); refreshLive(); });
-    function retype(i, type) {
+    function retype(i, type, op, rightKind) {
       var previous = d.checks[i], remembered = editorGroups.get(previous) || {};
-      remembered[groupOfType(previous.type).id] = previous.type;
+      if (isComparison(previous.type)) {
+        remembered.comparison = previous.type;
+        remembered[comparisonFormat(previous.type)] = previous.type;
+        if (previous.type === 'compare' || previous.type === 'list') remembered.textItem = previous.type;
+        if (previous.type === 'date' || previous.type === 'baseDate') remembered.receiptDate = previous.type;
+      }
       d.checks[i] = def.retypeCheck(previous, type);
-      remembered[groupOfType(type).id] = type;
+      if (op != null) d.checks[i].op = op;
+      if (rightKind != null) d.checks[i].rightKind = rightKind;
+      if (isComparison(type)) {
+        remembered.comparison = type;
+        remembered[comparisonFormat(type)] = type;
+        if (type === 'compare' || type === 'list') remembered.textItem = type;
+        if (type === 'date' || type === 'baseDate') remembered.receiptDate = type;
+      }
       editorGroups.set(d.checks[i], remembered);
       renderEditor();
     }
-    root.querySelectorAll('[data-type-group]').forEach(function (button) {
-      button.addEventListener('click', function () {
-        var i = Number(button.getAttribute('data-i')), c = d.checks[i];
-        var group = TYPE_GROUPS.filter(function (g) { return g.id === button.getAttribute('data-type-group'); })[0];
-        if (group !== groupOfType(c.type)) {
-          var remembered = editorGroups.get(c) || {};
-          retype(i, remembered[group.id] || group.types[0][0]);
-        }
+    root.querySelectorAll('[data-retype]').forEach(function (select) {
+      select.addEventListener('change', function () {
+        var i = Number(select.getAttribute('data-i')), c = d.checks[i], remembered = editorGroups.get(c) || {};
+        var type = select.value === 'compare' ? isComparison(c.type) ? c.type : remembered.comparison || 'compare' : select.value;
+        retype(i, type);
       });
     });
-    root.querySelectorAll('[data-retype], [data-source-type]').forEach(function (select) {
-      select.addEventListener('change', function () { retype(Number(select.getAttribute('data-i')), select.value); });
+    root.querySelectorAll('[data-format]').forEach(function (button) {
+      button.addEventListener('click', function () {
+        var i = Number(button.getAttribute('data-i')), c = d.checks[i], format = button.getAttribute('data-format');
+        if (comparisonFormat(c.type) === format) return;
+        var remembered = editorGroups.get(c) || {};
+        retype(i, remembered[format] || { TEXT: 'compare', DATE: 'dateCompare', NUMBER: 'number' }[format]);
+      });
+    });
+    root.querySelectorAll('[data-source-type]').forEach(function (select) {
+      select.addEventListener('change', function () {
+        var i = Number(select.getAttribute('data-i')), c = d.checks[i], remembered = editorGroups.get(c) || {};
+        if (c.type === 'number') {
+          // 같은 숫자 비교에서 출처만 전환한다. 오른쪽 서류 설정은 복귀할 때까지 보존한다.
+          c.rightKind = select.value === 'numberFixed' ? 'fixed' : 'item';
+          renderEditor();
+          return;
+        }
+        if (select.value === 'dateFixed' || select.value === 'dateCompare') {
+          retype(i, 'dateCompare', null, select.value === 'dateFixed' ? 'fixed' : 'item');
+          return;
+        }
+        var type = select.value;
+        if (type === 'compare') type = remembered.textItem || (c.type === 'list' ? 'list' : 'compare');
+        if (type === 'baseDate') type = remembered.receiptDate || (c.type === 'date' ? 'date' : 'baseDate');
+        retype(i, type);
+      });
+    });
+    root.querySelectorAll('[data-date-method]').forEach(function (select) {
+      select.addEventListener('change', function () {
+        var i = Number(select.getAttribute('data-i')), type = select.value === 'BETWEEN' ? 'date' : 'baseDate';
+        retype(i, type, type === 'baseDate' ? select.value : null);
+      });
     });
     root.querySelectorAll('[data-offset-amount], [data-offset-direction]').forEach(function (el) {
       el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', function () {
@@ -1188,9 +1303,14 @@
         refreshLive();
       });
     });
-    root.querySelectorAll('[data-prop]').forEach(function (el) {
+    root.querySelectorAll('[data-prop]:not([data-date-method])').forEach(function (el) {
       el.addEventListener(el.tagName === 'SELECT' ? 'change' : 'input', function () {
         var c = d.checks[Number(el.getAttribute('data-i'))], prop = el.getAttribute('data-prop');
+        if (prop === 'op' && c.type === 'list' && el.value === 'CONTAINS') {
+          // 포함 비교를 새로 고르면 일반 문자 비교로 전환한다. 과거 목록 코드로 새 의미를 저장하지 않는다.
+          retype(Number(el.getAttribute('data-i')), 'compare', 'CONTAINS');
+          return;
+        }
         c[prop] = el.type === 'number' ? (el.value === '' ? NaN : Number(el.value)) : el.value;
         if (prop === 'leftForm' || prop === 'rightForm') {
           c[prop] = Number(el.value);
@@ -1207,7 +1327,7 @@
         // 조건 예시에 쓰는 항목이나 찾은 서류 수를 보여 줄지가 바뀌면 다시 그린다.
         // 입력 칸 구성이 바뀌는 선택도 다시 그린다.
         if (['rightKey', 'conditionKey', 'op', 'patternMode', 'fn', 'aggregateAs', 'targetKind'].indexOf(prop) >= 0) {
-          // 날짜 집계에는 숫자 대상이 없고, 숫자 집계에는 기준일 대상이 없다.
+          // 날짜 집계에는 숫자 대상이 없고, 숫자 집계에는 접수일 대상이 없다.
           if (c.type === 'aggregate') {
             var dateAggregate = (c.fn === 'MAX' || c.fn === 'MIN') && c.aggregateAs === 'DATE';
             if (dateAggregate && c.targetKind === 'number') c.targetKind = 'baseDate';
@@ -1236,6 +1356,12 @@
     });
     return found;
   }
+  /* 직접 입력 날짜는 실제 달력의 날짜여야 한다. 잘못된 옛 정의도 빈 날짜로 저장하지 않는다. */
+  function validFixedDate(value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(String(value))) return false;
+    var date = new Date(value + 'T00:00:00Z');
+    return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+  }
   function validateDraft(d, ignoreName) {
     if (!ignoreName && !d.name.trim()) return { message: '규칙 이름을 입력해 주세요.', selector: '#crb-name' };
     var multi = d.branches.length > 1 || d.otherwise.on;
@@ -1255,26 +1381,28 @@
       function problem(selector, message) { return checkIssue(d, c, selector, message); }
       function prop(name, message) { return problem('[data-prop="' + name + '"]', message); }
       if (c.type !== 'count' && !c.leftKey) return prop('leftKey', '항목을 선택해 주세요.');
-      if (RIGHT_ITEM_TYPES.indexOf(c.type) >= 0 && !c.rightKey) return prop('rightKey', '대조할 항목을 선택해 주세요.');
+      if (usesRightItem(c) && !c.rightKey) return prop('rightKey', '비교 대상 항목을 선택해 주세요.');
       if (c.type === 'fixed' && !String(c.fixed).trim()) return prop('fixed', '비교할 값을 입력해 주세요.');
-      if (c.condition && !String(c.conditionValue).trim()) return prop('conditionValue', '행 선택 조건 값을 입력해 주세요.');
+      if (c.condition && !literalFixed(c) && !String(c.conditionValue).trim()) return prop('conditionValue', '행 선택 조건 값을 입력해 주세요.');
       if (c.type === 'count' && (!Number.isInteger(c.min) || !Number.isInteger(c.max) || c.min < 0 || c.max < c.min)) return prop('min', '건수는 0 이상의 정수이고 최소가 최대 이하여야 합니다.');
+      if (c.type === 'dateCompare' && literalFixed(c) && !validFixedDate(c.fixed)) return prop('fixed', '비교할 날짜를 입력해 주세요.');
+      if (numericFixed(c) && (!String(c.fixed).trim() || !Number.isFinite(Number(c.fixed)))) return prop('fixed', '비교할 숫자를 입력해 주세요.');
       if (c.type === 'number') {
         var badStep = c.calc.findIndex(function (x) { return x.kind === 'item' ? !x.key : !Number.isFinite(x.value) || (x.op === 'DIV' && x.value === 0); });
         if (badStep >= 0) return problem('[data-step="' + badStep + '"][data-step-prop="' + (c.calc[badStep].kind === 'item' ? 'key' : 'value') + '"]', '계산 값을 확인해 주세요. 0으로 나눌 수 없습니다.');
       }
       if ((c.type === 'number' || c.type === 'aggregate') && (![c.tolerance, c.tolerancePct].every(Number.isFinite) || c.tolerance < 0 || c.tolerancePct < 0)) return prop('tolerance', '허용 오차는 0 이상이어야 합니다.');
-      if (c.useDocCount && RIGHT_ITEM_TYPES.indexOf(c.type) >= 0 && !negativeOp(c) && (!Number.isInteger(c.docMin) || !Number.isInteger(c.docMax) || c.docMin < 0 || c.docMax < c.docMin)) return prop('docMin', '일치한 서류 수는 0 이상의 정수이고 최소가 최대 이하여야 합니다.');
+      if (c.useDocCount && usesRightItem(c) && !negativeOp(c) && (!Number.isInteger(c.docMin) || !Number.isInteger(c.docMax) || c.docMin < 0 || c.docMax < c.docMin)) return prop('docMin', '일치한 서류 수는 0 이상의 정수이고 최소가 최대 이하여야 합니다.');
       if (PAIR_TYPES.indexOf(c.type) >= 0) {
         var badPair = c.pairs.findIndex(function (pair) { return !pair.left || !pair.right; });
         if (badPair >= 0) return problem('[data-pair="' + badPair + '"][data-pair-side="' + (!c.pairs[badPair].left ? 'left' : 'right') + '"]', '같은 행에 묶을 항목을 선택해 주세요.');
       }
-      var extraLists = ['leftExtras', 'extras'];
+      var extraLists = literalFixed(c) ? ['leftExtras'] : ['leftExtras', 'extras'];
       for (var ei = 0; ei < extraLists.length; ei++) {
         var badExtra = c[extraLists[ei]].findIndex(function (x) { return !x.key; });
         if (badExtra >= 0) return problem('[data-extra-list="' + extraLists[ei] + '"][data-extra="' + badExtra + '"][data-extra-prop="key"]', '목록에 추가할 항목을 선택해 주세요.');
       }
-      var sides = ['left', 'right'];
+      var sides = literalFixed(c) ? ['left'] : ['left', 'right'];
       for (var pi = 0; pi < sides.length; pi++) {
         var pick = c[sides[pi] + 'Pick'];
         if (pick && (!pick.key || (pick.kind === 'item' ? !pick.valueKey : !String(pick.value).trim()))) return problem('[data-pick="' + sides[pi] + '"][data-pick-prop="' + (pick.kind === 'item' ? 'valueKey' : 'value') + '"]', '서류 선택 조건을 입력해 주세요.');
@@ -1285,12 +1413,12 @@
       if (c.type === 'pattern' && c.patternMode === 'list' && !splitList(c.valueList).length) return prop('valueList', '값 목록을 입력해 주세요.');
       if (c.type === 'pattern' && c.sliceOn && (!Number.isInteger(c.sliceStart) || !Number.isInteger(c.sliceLength) || c.sliceStart < 1 || c.sliceLength < 1)) return prop('sliceStart', '자리는 1 이상의 정수여야 합니다.');
       if (c.type === 'aggregate' && c.targetKind === 'number' && !Number.isFinite(c.targetValue)) return prop('targetValue', '비교 값을 입력해 주세요.');
-      if (c.type === 'aggregate' && (c.targetKind === 'item' || c.targetKind === 'aggregate') && !c.rightKey) return prop('rightKey', '대조할 항목을 선택해 주세요.');
+      if (c.type === 'aggregate' && (c.targetKind === 'item' || c.targetKind === 'aggregate') && !c.rightKey) return prop('rightKey', '비교 대상 항목을 선택해 주세요.');
       for (var si = 0; si < sides.length; si++) {
         var sort = c[sides[si] + 'Sort'];
         if (sort && (!sort.by || !Number.isInteger(sort.limit) || sort.limit < 1)) return problem('[data-sort="' + sides[si] + '"][data-sort-prop="' + (!sort.by ? 'by' : 'limit') + '"]', '순위 기준 항목과 1 이상의 상위 행 수를 입력해 주세요.');
       }
-      if (c.condition && c.conditionOp === 'IN' && !splitList(c.conditionValue).length) return prop('conditionValue', '조건 값 목록을 입력해 주세요.');
+      if (c.condition && !literalFixed(c) && c.conditionOp === 'IN' && !splitList(c.conditionValue).length) return prop('conditionValue', '조건 값 목록을 입력해 주세요.');
     }
     return null;
   }

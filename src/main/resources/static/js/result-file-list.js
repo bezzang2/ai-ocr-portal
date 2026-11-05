@@ -82,19 +82,22 @@
       } else {
         button.disabled = !fieldsReady || verifying || saving || !!reason;
       }
-      button.textContent = verified ? '검증완료됨' : '이 서식 검증완료 ✓';
+      button.textContent = verified ? '검증완료됨' : '검증완료 ✓';
       if (reason) button.title = reason; else button.removeAttribute('title');
     }
+
     var cancel = document.querySelector('[data-verify-cancel-btn]');
     if (cancel) {
       cancel.hidden = !(fieldsReady && !activeFailed && window.resultReview && window.resultReview.canCancelVerify(activeItem()));
       cancel.disabled = verifying || saving;
     }
-    var save = document.querySelector('[data-result-save]');
-    if (save) {
-      save.disabled = !fieldsReady || verifying || saving || !!reason;
-      if (reason) save.title = reason; else save.removeAttribute('title');
-    }
+
+    // var save = document.querySelector('[data-result-save]');
+    // if (save) {
+    //   save.disabled = !fieldsReady || verifying || saving || !!reason;
+    //   if (reason) save.title = reason; else save.removeAttribute('title');
+    // }
+
     var reset = document.querySelector('[data-result-reset]');
     if (reset) reset.disabled = !fieldsReady || !!reason;
     // 담당자가 아니거나 검증완료한 서식은 확인값을 읽기 전용으로 둔다.
@@ -102,6 +105,7 @@
       if (control.tagName === 'SELECT') control.disabled = !!reason;
       else control.readOnly = !!reason;
     });
+
     var panel = document.querySelector('.result-panel--confirm');
     if (panel) panel.classList.toggle('is-locked', !!reason);
   }
@@ -551,12 +555,21 @@
     });
   }
 
+  // 메뉴(lnb) 없이 열린 화면(transId만 있는 URL)에는 전역 contextPath 가 없으므로 판독결과 URL에서 구한다.
+  function appRoot() {
+    if (typeof contextPath === 'string') return contextPath;
+    var el = document.querySelector('[data-image-src]');
+    var src = el ? el.getAttribute('data-image-src') : '';
+    return src.indexOf('module/ocr/result/') >= 0 ? src.split('module/ocr/result/')[0] : '/';
+  }
+
   /** 판독작업의 서식간 경고 수. 값을 저장하면 다시 판정되므로 그때 버린다. 못 읽어도 검토·검증완료는 막지 않는다 */
   var crossWarnings = new Map();
   function crossWarningOf(transId) {
     if (!transId) return Promise.resolve(null);
     if (crossWarnings.has(transId)) return crossWarnings.get(transId);
-    var loaded = fetch(contextPath + 'module/ocr/crossVerify/' + encodeURIComponent(transId) + '/detail', { cache: 'no-store' })
+    //var loaded = fetch(contextPath + 'module/ocr/crossVerify/' + encodeURIComponent(transId) + '/detail', { cache: 'no-store' })
+    var loaded = fetch(appRoot() + 'module/ocr/crossVerify/' + encodeURIComponent(transId) + '/detail', { cache: 'no-store' })
       .then(function (res) {
         if (!res.ok) throw new Error('status ' + res.status);
         return res.json();
@@ -724,6 +737,7 @@
     link.remove();
     setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 1000);
   }
+
   function sendVerify() {
     if (verifying) return;
     verifying = true;
@@ -854,12 +868,14 @@
     });
     updateVerifyButton();
     // 페이지가 로딩될 때 함수를 연결한다.
-    var verifyBtn = document.querySelector("[data-verify-btn]");
+    // 2026.11.03 임시저정 및 검증완료 기능 통합으로 변경
+    var verifyBtn = document.querySelector("[data-verify-btn]"); // 이 서식 검증완료
     if (verifyBtn) verifyBtn.addEventListener("click", verifyResult);
-    var cancelBtn = document.querySelector("[data-verify-cancel-btn]");
+    var cancelBtn = document.querySelector("[data-verify-cancel-btn]"); // 검증완료 취소
     if (cancelBtn) cancelBtn.addEventListener("click", cancelVerify);
-    var saveBtn = document.querySelector("[data-result-save]");
-    if (saveBtn) saveBtn.addEventListener("click", saveValues);
+    // 임시저장 버튼 제거
+    //var saveBtn = document.querySelector("[data-result-save]"); // 임시저장
+    //if (saveBtn) saveBtn.addEventListener("click", saveValues);
     // 담당자 지정·검증완료가 바뀌면 선택한 서식의 편집 가능 여부를 다시 정한다.
     document.addEventListener('result-review:change', function (event) {
       if (event.detail && event.detail.item === activeItem()) {
@@ -867,6 +883,7 @@
         updateReview();
       }
     });
+
     window.addEventListener('beforeunload', function (event) {
       if (!hasUnsavedChanges()) return;
       event.preventDefault();

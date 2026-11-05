@@ -5,6 +5,7 @@ import com.agilesoda.module.apply.mapper.CrossRuleMapper;
 import com.agilesoda.module.apply.vo.OcrVerifyCellVO;
 import com.agilesoda.module.ocr.mapper.OcrReviewMapper;
 import com.agilesoda.module.ocr.vo.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +13,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Supplier;
 
@@ -40,6 +49,12 @@ public class OcrReviewService {
     /** 담당자를 지정할 수 있는 직위 코드(OCUOC_USERI_M.HRA_PSTN_CD, 팀장). 환경 변수 AIOCR_REVIEW_ASSIGNER_POSITION_CODES */
     @Value("${aiocr.review.assigner-position-codes:P02}")
     private List<String> assignerPositionCodes = List.of("P02");
+
+    /* 임시저장 및 검증확정 기능 통합 */
+    @Value("${aiocr.file.result:}")
+    private String resultBaseDir;
+    private static final ObjectMapper JSON = new ObjectMapper();
+    private static final DateTimeFormatter SAVED_AT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /** 로그인 사용자와 담당자 지정 권한. 로그인 정보가 없으면 null */
     public OcrReviewerVO reviewer(SsoLoginUserVO loginUser) {
@@ -191,15 +206,97 @@ public class OcrReviewService {
         List<OcrAgentData.Form> forms = ocrReqService.resultForms(wkId, key.getTransId());
         List<OcrAgentData.ItemValue> fields = fieldValues(request);
         List<OcrAgentData.ItemValue> cells = cellValues(request);
-        log.debug("[검토] 검증완료 요청 wkId={} transId={} docId={} by={} fieldCount={} cellCount={} forms={}",
-                wkId, key.getTransId(), key.getDocId(), reviewer.getUserId(), fields.size(), cells.size(), forms.size());
-        OcrReviewStateVO state = agent(() -> toState(agentData.verify(key.getTransId(), key.getDocId(),
-                new OcrAgentData.VerifyRequest(actor(reviewer), wkId, fields, cells, forms))));
-        log.info("[검토] 검증완료 확정 wkId={} transId={} docId={} by={} forms={} verifyStatus={}", wkId, key.getTransId(), key.getDocId(),
-                reviewer.getUserId(), forms.size(), state.getVrfyStatCd());
+        log.debug("[검토] 검증완료 요청 wkId={} transId={} docId={} by={} fieldCount={} cellCount={} forms={}", wkId, key.getTransId(), key.getDocId(), reviewer.getUserId(), fields.size(), cells.size(), forms.size());
+
+        OcrReviewStateVO state = agent(() -> toState(agentData.verify(key.getTransId(), key.getDocId(), new OcrAgentData.VerifyRequest(actor(reviewer), wkId, fields, cells, forms))));
+        log.info("[검토] 검증완료 확정 wkId={} transId={} docId={} by={} forms={} verifyStatus={}", wkId, key.getTransId(), key.getDocId(), reviewer.getUserId(), forms.size(), state.getVrfyStatCd());
+
         // Agent 가 검증완료를 확정한 뒤에만 보낸다. 거절·실패는 위에서 예외로 끝난다.
         ocrReqService.sendVerifyResultToTerminal(wkId, lefrmId, key.getTransId(), key.getDocId(), reviewer.getUserId(), request);
+
+        // 검증완료 JSON 생성(DB 조회 기반). 생성 로직은 여기 한 곳에만 둔다.
+        this.writeVerifyJson(wkId, lefrmId, key.getTransId(), key.getDocId(), reviewer.getUserId(), request);
         return state;
+    }
+
+    /** 서식별 검증완료 JSON. DB 조회 결과로 만든다. */
+    private void writeVerifyJson(String wkId, long lefrmId, String transId, String docId, String userId,
+                                 OcrVerifyRequestVO request) {
+        if (resultBaseDir == null || resultBaseDir.isBlank()) {
+            log.warn("[검토] 서식별 JSON 저장 건너뜀, aiocr.file.result 미설정 transId={} docId={}", transId, docId);
+            return;
+        }
+        if (transId == null || docId == null || !transId.matches("[A-Za-z0-9_-]{1,100}") || !docId.matches("[A-Za-z0-9_-]{1,100}")) {
+            log.warn("[검토] 서식별 JSON 저장 건너뜀, 식별자 형식 오류 transId={} docId={}", transId, docId);
+            return;
+        }
+        Path base = Paths.get(resultBaseDir).toAbsolutePath().normalize();
+        Path folder = base.resolve(transId).normalize();
+        Path file = folder.resolve(transId + "_" + docId + ".json"); // 파일명 생성 규칙 확인 필요
+        if (!folder.startsWith(base)) {
+            log.warn("[검토] 서식별 JSON 저장 건너뜀, 결과 폴더 밖 경로 transId={}", transId);
+            return;
+        }
+        try {
+            // 1) DB 조회 (검증완료가 커밋된 뒤라 최신 확인값이 조회된다)
+            Map<String, Object> header = reviewMapper.selectVerifyJsonHeader(wkId, lefrmId, transId, docId);
+            List<Map<String, Object>> items = reviewMapper.selectVerifyJsonItems(transId, docId);
+
+            // 2) 조회 결과 → JSON 구조
+            Map<String, Object> json = new LinkedHashMap<>();
+            if (header != null) json.putAll(header);
+            json.put("verifiedBy", userId);
+            json.put("savedAt"   , LocalDateTime.now().format(SAVED_AT));
+            json.put("items"     , items != null ? items : List.of());
+
+            // 3) 파일 쓰기
+            Files.createDirectories(folder);
+            Path temp = folder.resolve(transId + "_" + docId + ".json.tmp");
+            Files.writeString(temp, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(json), StandardCharsets.UTF_8);
+            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+            log.info("[검토] 서식별 JSON 저장 완료 file={} itemCount={}", file, items != null ? items.size() : 0);
+        } catch (Exception e) {
+            // 검증완료는 이미 확정됐으므로 조회·저장 실패는 WARN만 남긴다.
+            log.warn("[검토] 서식별 JSON 저장 실패(검증완료는 유지) file={}", file, e);
+        }
+    }
+
+    /** 서식별 검증완료 JSON. 임시 파일에 먼저 쓰고 교체해서, 쓰다가 실패해도 기존 파일이 깨지지 않게 한다. */
+    private void writeVerifyJsonBackup(String wkId, long lefrmId, String transId, String docId, String userId,
+                                 OcrVerifyRequestVO request) {
+        if (resultBaseDir == null || resultBaseDir.isBlank()) {
+            log.warn("[검토] 서식별 JSON 저장 건너뜀, aiocr.file.result 미설정 transId={} docId={}", transId, docId);
+            return;
+        }
+        if (transId == null || docId == null || !transId.matches("[A-Za-z0-9_-]{1,100}") || !docId.matches("[A-Za-z0-9_-]{1,100}")) {
+            log.warn("[검토] 서식별 JSON 저장 건너뜀, 식별자 형식 오류 transId={} docId={}", transId, docId);
+            return;
+        }
+        Path base = Paths.get(resultBaseDir).toAbsolutePath().normalize();
+        Path folder = base.resolve(transId).normalize();
+        Path file = folder.resolve(transId + "_" + docId + ".json"); // 파일명 생성 규직 확인 필요
+        if (!folder.startsWith(base)) {
+            log.warn("[검토] 서식별 JSON 저장 건너뜀, 결과 폴더 밖 경로 transId={}", transId);
+            return;
+        }
+        Map<String, Object> json = new LinkedHashMap<>();
+        json.put("wkId", wkId);
+        json.put("lefrmId", lefrmId);
+        json.put("transId", transId);
+        json.put("docId", docId);
+        json.put("verifiedBy", userId);
+        json.put("savedAt", LocalDateTime.now().format(SAVED_AT));
+        json.put("fields", request != null && request.getFields() != null ? request.getFields() : List.of());
+        json.put("tables", request != null && request.getTables() != null ? request.getTables() : List.of());
+        try {
+            Files.createDirectories(folder);
+            Path temp = folder.resolve(transId + "_" + docId + ".json.tmp");
+            Files.writeString(temp, JSON.writerWithDefaultPrettyPrinter().writeValueAsString(json), StandardCharsets.UTF_8);
+            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+            log.info("[검토] 서식별 JSON 저장 완료 file={}", file);
+        } catch (IOException e) {
+            log.warn("[검토] 서식별 JSON 저장 실패(검증완료는 유지) file={}", file, e);
+        }
     }
 
     /** 문서 역할 지정(담당자만, 판단은 Agent). 역할을 비우면 지정을 지워 자동 구분으로 돌아간다. */
@@ -223,9 +320,10 @@ public class OcrReviewService {
     public OcrReviewStateVO cancelVerify(String wkId, long lefrmId, String transId, String docId, OcrReviewerVO reviewer) {
         requireReviewer(reviewer);
         OcrResultLefrmVO key = resolveDocument(wkId, lefrmId, transId, docId);
-        OcrReviewStateVO state = agent(() -> toState(agentData.cancelVerify(key.getTransId(), key.getDocId(),
-                new OcrAgentData.CancelVerifyRequest(actor(reviewer)))));
+        OcrReviewStateVO state = agent(() -> toState(agentData.cancelVerify(key.getTransId(), key.getDocId(), new OcrAgentData.CancelVerifyRequest(actor(reviewer)))));
+
         log.info("[검토] 검증완료 취소 wkId={} transId={} docId={} by={} verifyStatus={}", wkId, key.getTransId(), key.getDocId(), reviewer.getUserId(), state.getVrfyStatCd());
+
         return state;
     }
 

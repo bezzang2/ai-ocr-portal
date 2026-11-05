@@ -39,9 +39,9 @@
     function newCheck(type) {
       var a = ctx.forms()[0], b = ctx.forms()[1] || a, left = a ? a.formId : null, right = b ? b.formId : null;
       return {
-        type: type, leftForm: left, leftKey: firstKey(left), rightForm: right, rightKey: firstKey(right),
+        type: type, rightKind: 'item', leftForm: left, leftKey: firstKey(left), rightForm: right, rightKey: firstKey(right),
         op: type === 'list' ? 'IN_LIST' : type === 'dateCompare' || type === 'baseDate' ? 'GE' : type === 'presence' ? 'NOT_EMPTY' : 'EQ', fixed: '', months: 3, min: 1, max: 1,
-        // 집계 비교의 조건은 왼쪽(집계 대상) 서류에 걸린다. 다른 유형은 오른쪽(대조할) 서류에 걸린다.
+        // 집계 비교의 조건은 왼쪽(집계 대상) 서류에 걸린다. 다른 유형은 오른쪽(비교 대상) 서류에 걸린다.
         offset: 0, dateUnit: 'months', leftSort: null, rightSort: null, sliceOn: false, sliceStart: 7, sliceLength: 1, patternMode: 'regex', pattern: '', valueList: '',
         fn: 'SUM', aggregateAs: 'NUMBER', scope: 'DOCUMENT', targetKind: 'number', targetValue: 100, rightFn: 'SUM',
         calc: [newStep(right)], round: 'NONE', tolerance: 0, tolerancePct: 0, extras: [], leftExtras: [], pairs: [], leftPick: null, rightPick: null, leftRole: null, rightRole: null,
@@ -59,8 +59,8 @@
     var CHECK_TYPE_FIELDS = {
       compare: FAMILY_SIDE_FIELDS,
       list: FAMILY_SIDE_FIELDS,
-      number: FAMILY_SIDE_FIELDS.filter(function (key) { return key !== 'pairs'; }).concat(['calc', 'round', 'tolerance', 'tolerancePct']),
-      dateCompare: FAMILY_SIDE_FIELDS.filter(function (key) { return key !== 'pairs'; }),
+      number: FAMILY_SIDE_FIELDS.filter(function (key) { return key !== 'pairs'; }).concat(['rightKind', 'fixed', 'calc', 'round', 'tolerance', 'tolerancePct']),
+      dateCompare: FAMILY_SIDE_FIELDS.filter(function (key) { return key !== 'pairs'; }).concat(['rightKind', 'fixed']),
       fixed: ITEM_SIDE_FIELDS.concat(['fixed']),
       date: ITEM_SIDE_FIELDS.concat(['months', 'dateUnit']),
       count: ['min', 'max'],
@@ -202,6 +202,11 @@
         c.match = raw.match || 'ANY';
         c.normalize = raw.normalize || [];
         c.op = raw.op;
+        // 숫자 항목을 계산 없이 저장한 옛 정의도 빈 계산 목록으로 복원한다.
+        if (raw.uiType === 'number') {
+          c.calc = []; c.round = raw.right.round || 'NONE';
+          c.tolerance = raw.tolerance || 0; c.tolerancePct = raw.tolerancePct || 0;
+        }
         if (raw.uiType === 'presence') { readLeft(c, raw.left); checks.push(c); return; }
         if (raw.uiType === 'baseDate') { readLeft(c, raw.left); offsetOf(c, raw.right.offset); checks.push(c); return; }
         if (raw.uiType === 'pattern') {
@@ -259,6 +264,10 @@
           if (right.kind === 'union') {
             c.extras = right.items.slice(1).map(function (x) { return { form: formOf(x.source), key: x.keys[0] }; });
             right = right.items[0];
+          }
+          // 직접 입력한 숫자·날짜는 서류 별칭이 없다. 계산식을 벗긴 최종 피연산자로 구분한다.
+          if ((raw.uiType === 'number' && right.kind === 'number') || (raw.uiType === 'dateCompare' && right.kind === 'text')) {
+            c.rightKind = 'fixed'; c.fixed = right.value; checks.push(c); return;
           }
           c.rightSort = sortOf(right);
           c.rightPick = pickOf(right.source);
@@ -344,7 +353,7 @@
       var checks = [];
       list.forEach(function (c) {
         var id = c.id = 'c' + (++number);
-        var usesCount = c.useDocCount && RIGHT_ITEM_TYPES.indexOf(c.type) >= 0 && !negativeOp(c);
+        var usesCount = c.useDocCount && RIGHT_ITEM_TYPES.indexOf(c.type) >= 0 && !((c.type === 'number' || c.type === 'dateCompare') && c.rightKind === 'fixed') && !negativeOp(c);
         var common = { uiType: c.type, match: c.match, rightDocCount: usesCount ? { min: c.docMin, max: c.docMax } : null, normalize: c.normalize };
         if (c.type === 'count') {
           checks.push(Object.assign({}, common, { id: id, left: { kind: 'docCount', source: source(c.leftForm) }, op: 'BETWEEN', low: { kind: 'number', value: c.min }, high: { kind: 'number', value: c.max }, compareAs: 'NUMBER', match: 'ANY' }));
@@ -372,8 +381,10 @@
         } else if (c.type === 'fixed') {
           checks.push(Object.assign({}, common, { id: id, left: item(c.leftForm, c.leftKey, null, c.leftPick, c.leftRole), op: c.op, right: { kind: 'text', value: c.fixed }, compareAs: 'TEXT' }));
         } else {
-          var right = item(c.rightForm, pairKeys(c, 'right'), whereOf(c), c.rightPick, c.rightRole, c.rightSort);
-          if (c.extras.length) right = { kind: 'union', items: [right].concat(c.extras.map(function (x) { return item(x.form, x.key); })) };
+          // 직접값 비교에는 숨겨진 오른쪽 서류 설정과 별칭을 저장하지 않는다.
+          var literalFixed = (c.type === 'number' || c.type === 'dateCompare') && c.rightKind === 'fixed';
+          var right = literalFixed ? { kind: c.type === 'number' ? 'number' : 'text', value: c.type === 'number' ? Number(c.fixed) : c.fixed } : item(c.rightForm, pairKeys(c, 'right'), whereOf(c), c.rightPick, c.rightRole, c.rightSort);
+          if (!literalFixed && c.extras.length) right = { kind: 'union', items: [right].concat(c.extras.map(function (x) { return item(x.form, x.key); })) };
           if (c.type === 'number') {
             c.calc.forEach(function (step) {
               right = { kind: 'calc', op: step.op, left: right, right: step.kind === 'item' ? item(step.form, step.key) : { kind: 'number', value: step.value } };
@@ -413,10 +424,14 @@
       return { schemaVersion: 1, sources: sources, cases: cases, otherwise: otherwise };
     }
 
-    /* 마지막 글자의 받침으로 조사를 고른다. 한글이 아니면 숫자·영문도 함께 읽히도록 두 형태를 적는다 */
+    /* 마지막 글자의 받침으로 조사를 고른다. 숫자는 읽는 소리로 고르고, 영문 등은 두 형태를 함께 적는다 */
     function josa(word, withFinal, withoutFinal) {
       /* 조사는 따옴표 앞 글자의 받침으로 고른다: "한빛"과 */
-      var bare = String(word).replace(/"+$/, '');
+      // 끝의 괄호 설명은 조사와 무관하다: 주주명 (상위 1건)과 → '주주명' 기준
+      var bare = String(word).replace(/"+$/, '').replace(/\s*\([^()]*\)$/, '');
+      var last = bare.charAt(bare.length - 1);
+      // 숫자는 읽는 소리의 받침으로 고른다. 0영 1일 3삼 6육 7칠 8팔은 받침이 있다.
+      if (/[0-9]/.test(last)) return word + ('013678'.indexOf(last) >= 0 ? withFinal : withoutFinal);
       var code = bare.charCodeAt(bare.length - 1) - 0xAC00;
       if (code < 0 || code > 11171) return word + withFinal + '(' + withoutFinal + ')';
       return word + (code % 28 ? withFinal : withoutFinal);
@@ -443,7 +458,7 @@
     }
     function sentence(c) {
       var text = baseSentence(c);
-      return c.useDocCount && RIGHT_ITEM_TYPES.indexOf(c.type) >= 0 && !negativeOp(c) ? text + ' (' + c.docMin + '~' + c.docMax + '건의 서류에서 찾아야 함)' : text;
+      return c.useDocCount && RIGHT_ITEM_TYPES.indexOf(c.type) >= 0 && !((c.type === 'number' || c.type === 'dateCompare') && c.rightKind === 'fixed') && !negativeOp(c) ? text + ' (' + c.docMin + '~' + c.docMax + '건의 서류에서 찾아야 함)' : text;
     }
     function sortText(sort) {
       if (!sort) return '';
@@ -457,8 +472,9 @@
       return key + ' ' + value + '인';
     }
     function offsetText(c) {
-      if (!c.offset) return '기준일';
-      return '기준일 ' + Math.abs(c.offset) + labelOf(DATE_UNITS, c.dateUnit) + (c.offset < 0 ? ' 전' : ' 후');
+      // 기준일은 판독 건의 접수일(스캔일)이다. 화면 이름과 같게 '접수일'로 읽는다.
+      if (!c.offset) return '접수일';
+      return '접수일 ' + Math.abs(c.offset) + labelOf(DATE_UNITS, c.dateUnit) + (c.offset < 0 ? ' 전' : ' 후');
     }
     function aggregateText(c) {
       var cond = c.condition ? ' 중 ' + conditionText(c) + ' 값의 ' : '의 ';
@@ -468,8 +484,24 @@
         : c.targetKind === 'baseDate' ? offsetText(c) : String(c.targetValue);
       return josa(left, '이', '가') + ' ' + (c.op === 'EQ' ? josa(target, '과', '와') + ' 같다.' : target + ' 기준으로 ' + labelOf(OPS.aggregate, c.op) + '.');
     }
+    /**
+     * 더한 항목을 쉼표로 잇는다. '+'는 계산처럼 읽히므로 쓰지 않는다.
+     * 앞 항목과 같은 서식이면 서식 이름을 다시 적지 않는다.
+     * 예(가짜 값): 가족관계증명서의 본인_성명, 배우자_성명, 가족사항.성명
+     * @param {Array<{form:number,key:string}>} extras 더한 항목 목록
+     * @param {number} firstForm 첫 항목의 서식 ID
+     * @returns {string} 앞에 붙일 문구. 더한 항목이 없으면 빈 문자열
+     */
+    function extrasText(extras, firstForm) {
+      var prev = firstForm;
+      return extras.map(function (x) {
+        var text = ', ' + (String(x.form) === String(prev) ? '' : formName(x.form) + '의 ') + x.key;
+        prev = x.form;
+        return text;
+      }).join('');
+    }
     function baseSentence(c) {
-      var left = pickText(c.leftPick, c.leftForm) + roleText(c.leftRole) + '의 ' + (pairKeys(c, 'left').join('·') || '(항목)') + sortText(c.leftSort) + c.leftExtras.map(function (x) { return ' + ' + formName(x.form) + '의 ' + x.key; }).join('');
+      var left = pickText(c.leftPick, c.leftForm) + roleText(c.leftRole) + '의 ' + (pairKeys(c, 'left').join('·') || '(항목)') + sortText(c.leftSort) + extrasText(c.leftExtras, c.leftForm);
       if (c.type === 'count') return formName(c.leftForm) + ' 제출 건수가 ' + c.min + '건 이상 ' + c.max + '건 이하이다.';
       if (c.type === 'date') return josa(left, '이', '가') + ' 접수일 기준 ' + c.months + labelOf(DATE_UNITS, c.dateUnit) + ' 이내이다.';
       if (c.type === 'presence') return left + ' ' + labelOf(OPS.presence, c.op) + '.';
@@ -480,13 +512,14 @@
         return c.patternMode === 'regex' ? josa(part, '이', '가') + ' 형식 ' + (c.pattern || '(정규식)') + '에 맞다.' : josa(part, '이', '가') + ' ' + (c.valueList || '(값 목록)') + ' 중 하나이다.';
       }
       var opLabel = (OPS[c.type].filter(function (o) { return o[0] === c.op; })[0] || ['', ''])[1];
+      // 과거 목록 규칙은 저장 코드를 바꾸지 않고 일반 항목 비교와 같은 말로 읽는다.
+      if (c.type === 'list') opLabel = c.op === 'IN_LIST' ? '같다' : c.op === 'NOT_IN_LIST' ? '다르다' : labelOf(OPS.compare, c.op);
       if (c.type === 'fixed') return josa(left, '이', '가') + ' ' + josa('"' + c.fixed + '"', '과', '와') + ' ' + opLabel + '.';
       var cond = c.condition ? ' 중 ' + conditionText(c) + ' 값의 ' : '의 ';
-      var right = pickText(c.rightPick, c.rightForm) + roleText(c.rightRole) + cond + (pairKeys(c, 'right').join('·') || '(항목)') + sortText(c.rightSort) + c.extras.map(function (x) { return ' + ' + formName(x.form) + '의 ' + x.key; }).join('');
-      if (c.type === 'dateCompare') return josa(left, '이', '가') + ' ' + right + ' 기준으로 ' + opLabel + '.';
-      if (c.type === 'list') return josa(left, '이', '가') + ' ' + right + ' 목록에 ' + opLabel + '.';
+      var right = pickText(c.rightPick, c.rightForm) + roleText(c.rightRole) + cond + (pairKeys(c, 'right').join('·') || '(항목)') + sortText(c.rightSort) + extrasText(c.extras, c.rightForm);
+      if (c.type === 'dateCompare') return josa(left, '이', '가') + ' ' + (c.rightKind === 'fixed' ? c.fixed : right) + ' 기준으로 ' + opLabel + '.';
       if (c.type === 'number') {
-        var target = calcText(right, c);
+        var target = calcText(c.rightKind === 'fixed' ? String(c.fixed) : right, c);
         return josa(left, '이', '가') + ' ' + (c.op === 'EQ' ? josa(target, '과', '와') + ' 같다.' : target + ' 기준으로 ' + opLabel + '.');
       }
       return josa(left, '이', '가') + ' ' + (c.op === 'CONTAINS' ? josa(right, '을', '를') + ' 포함한다.' : josa(right, '과', '와') + ' ' + opLabel + '.');
