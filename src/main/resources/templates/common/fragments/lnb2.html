@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<!-- Thymeleaf 선언 / headerFragment 임을 선언-->
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      th:fragment="LnbFragment">
+<!-- GNB include 조각. breadcrumb는 화면마다 달라지므로 JSP 변환 시 파라미터로 치환.
+     get_design_context(232:784) 실측 반영 — 마지막 breadcrumb 항목만 진한 색(현재 화면),
+     구분자는 텍스트(›) 대신 실제 아이콘(images/icons/gnb/ic-16-breadcrumb-arrow.svg).
+     알림 아이콘의 .gnb__notif-badge는 "읽지 않은 알림 있음" 상태 — 알림이 없는 화면은
+     .gnb__notif에 is-read 클래스를 추가해 뱃지를 숨긴다. -->
+<!-- include: common/lnb.html (실제 운영 시 JSP include로 대체, 내용은 common/lnb.html과 동일) -->
+<head>
+    <link rel="stylesheet" th:href="@{/css/main.css}">
+    <script defer th:src="@{/js/lnb-shell.js}"></script>
+    <!-- inline JS 영역-->
+    <script th:inline="javascript" type="text/javascript">
+        //var item = [[${menuList}]];
+        //console.log(item);
+
+        const contextPath = /*[[@{/}]]*/ '/';
+
+        /**********************************************************************
+         *  부모 메뉴 펼치기/닫기 함수 (1depth 행 전체가 클릭 영역)
+         ***********************************************************************/
+        function toggleTree(el){
+            //console.log(" 메뉴 클릭 할때 요기들어오나>>>>>>>>>>>>");
+            const navGroup = el.closest('.nav-group');
+            const submenu = navGroup.querySelector('.nav-submenu');
+            // 현제 메뉴가 열려있는지 확인
+            const isOpen = submenu.style.display === 'block';
+            // 1. 모든 서브메뉴 닫기
+            document.querySelectorAll('.nav-submenu').forEach(menu => {menu.style.display = 'none';});
+            //2. 모든 부모 선택 표시 제거
+            document.querySelectorAll('.nav-item').forEach(item =>{item.classList.remove('is_active')});
+            //3. 클릭한 것만 열기
+            if(!isOpen){
+                submenu.style.display = 'block';
+                el.classList.add('is_active');
+            }
+        }
+
+        /**********************************************************************
+         *  하위 메뉴 클릭 이벤트
+         ***********************************************************************/
+        function loadContent(el){
+            let url = el.dataset.url;
+            const menuId = el.dataset.menuId;
+            const menuNm = el.dataset.menuNm;
+            const parentMenuNm = el.dataset.parentMenuNm;
+
+            sessionStorage.setItem("gnbParentMenuNm",parentMenuNm);
+            sessionStorage.setItem("gnbMenuNm",menuNm);
+
+            //console.log(" contextPath >>>>>>>>>>>>",contextPath);
+            //console.log(" 메뉴 클릭한 URL>>>>>>>>>>>>"+url);
+            location.href = contextPath+url.replace(/^\/+/, '')+"?menuId="+encodeURIComponent(menuId);
+        }
+
+        /**********************************************************************
+         *  메뉴id에 해당하는 메뉴 펼치기
+         ***********************************************************************/
+        function openLnb(menuId){
+            console.log("openLnb 호출 : "+menuId);
+            // 1. 모든 LNB 자식 메뉴 선택 해제
+            document.querySelectorAll('.nav-subitem').forEach(function (item){item.classList.remove('is-active')});
+            // 2. 모든 서브메뉴 닫기
+            document.querySelectorAll('.nav-submenu').forEach(function (el){
+                el.style.display = 'none';
+            });
+
+            // 3. 현재 메뉴 찾기
+            const target = document.querySelector(`.nav-subitem[data-menu-id="${menuId}"]`);
+            if(!target) {
+                console.log("lnb 메뉴 없음 : "+menuId);
+                return;
+            }
+
+            // 4. 현재 메뉴가 속한 부모 메뉴만 펼치기
+            const submenu = target.closest('.nav-submenu');
+            if(submenu){
+                // 현재 부모 메뉴 열기
+                submenu.style.display = 'block';
+            }
+            // 5. 클릭한 메뉴만 선택
+            target.classList.add('is-active');
+        }
+
+        /**********************************************************************
+         *  해당 하위메뉴 선택 표시
+         ***********************************************************************/
+        function selectMenu(menuId){
+            // 1. 기존 선택 모드 해제
+            document.querySelectorAll('.nav-subitem').forEach(function (el){
+                el.classList.remove('is-selected');
+            });
+            // 2. 현제 메뉴 찾기
+            const target = document.querySelector(`.nav-subitem[data-menu-id="${menuId}"]`);
+            if(target) {
+                target.classList.add('is-selected');
+            }
+
+        }
+
+        /**********************************************************************
+         *  URL의 메뉴id 받아서 실행
+         ***********************************************************************/
+        document.addEventListener("DOMContentLoaded",function (){
+            // 메뉴 권한이 없어 ID가 비어도 서버 화면을 첫 메뉴로 잘못 선택하지 않는다.
+            const navigation = document.querySelector('[data-navigation-context], [data-navigation-current]');
+            if (navigation) {
+                const current = navigation.dataset.navigationCurrent;
+                if (current) {
+                    openLnb(current);
+                    selectMenu(current);
+                }
+                return;
+            }
+            const params = new URLSearchParams(window.location.search);
+            const menuId = params.get("menuId");
+            if(menuId){
+                openLnb(menuId);
+                selectMenu(menuId);
+            }else{
+                const firstMenu = document.querySelector('.nav-subitem');
+                if(firstMenu){
+                    const firstMenuId = firstMenu.dataset.menuId;
+                    const menuNm = firstMenu.dataset.menuNm;
+                    const parentMenuNm = firstMenu.dataset.parentMenuNm;
+                    openLnb(firstMenuId);
+                    selectMenu(firstMenuId);
+                    // gnb에 사용할 메뉴명 저장
+                    sessionStorage.setItem("gnbParentMenuNm",parentMenuNm);
+                    sessionStorage.setItem("gnbMenuNm",menuNm);
+                }
+            }
+        });
+    </script>
+</head>
+<aside class="lnb">
+    <div class="lnb__logo">
+        <div class="lnb__workspace-brand" hidden><span>AI-OCR</span><strong>서류판독시스템</strong></div>
+        <img class="lnb__logo-img" th:src="@{/images/icons/logo-aiocr.svg}" alt="AI OCR 서류판독시스템">
+        <button type="button" class="lnb__toggle" data-navigation-toggle
+                aria-controls="portal-navigation-menu" aria-expanded="true"
+                aria-label="업무 메뉴 접기" title="업무 메뉴 접기">
+            <span data-navigation-toggle-icon aria-hidden="true">‹</span>
+            <span class="lnb__toggle-label" data-navigation-toggle-label>업무 메뉴 접기</span>
+        </button>
+    </div>
+    <nav class="lnb__menu" id="portal-navigation-menu" aria-label="업무 메뉴">
+        <!-- 부모 메뉴만 반복 -->
+        <div class="nav-group" th:each="item:${session.menuList}" th:if="${item.menuLevel == 1}">
+            <!-- 부모 -->
+            <div class="nav-item" th:data-menu-id="${item.menuId}" th:data-menu-label="${item.menuNm}" onclick="toggleTree(this)">
+                <!--                <svg class="nav-item__icon" viewBox="0 0 16 16" fill="none"><g transform="translate(2,2)"><path d="M11.3333 5.33333H7.33333C6.96667 5.33333 6.66667 5.63333 6.66667 6V11.3333C6.66667 11.7 6.96667 12 7.33333 12H11.3333C11.7 12 12 11.7 12 11.3333V6C12 5.63333 11.7 5.33333 11.3333 5.33333ZM10.6667 10.6667H8V6.66667H10.6667V10.6667ZM4.66667 8H0.666667C0.3 8 0 8.3 0 8.66667V11.3333C0 11.7 0.3 12 0.666667 12H4.66667C5.03333 12 5.33333 11.7 5.33333 11.3333V8.66667C5.33333 8.3 5.03333 8 4.66667 8ZM4 10.6667H1.33333V9.33333H4V10.6667ZM11.3333 0H7.33333C6.96667 0 6.66667 0.3 6.66667 0.666667V3.33333C6.66667 3.7 6.96667 4 7.33333 4H11.3333C11.7 4 12 3.7 12 3.33333V0.666667C12 0.3 11.7 0 11.3333 0ZM10.6667 2.66667H8V1.33333H10.6667V2.66667ZM4.66667 0H0.666667C0.3 0 0 0.3 0 0.666667V6C0 6.36667 0.3 6.66667 0.666667 6.66667H4.66667C5.03333 6.66667 5.33333 6.36667 5.33333 6V0.666667C5.33333 0.3 5.03333 0 4.66667 0ZM4 5.33333H1.33333V1.33333H4V5.33333Z" fill="currentColor"/></g></svg>-->
+                <span class="nav-item__label" th:text="${item.menuNm}"></span>
+                <svg class="nav-item__chevron" viewBox="0 0 16 16" fill="none"><g transform="translate(4,5.6667)"><path d="M0.666667 0.666667L4 4L7.33333 0.666667" stroke="currentColor" stroke-width="1.33333" stroke-linecap="round" stroke-linejoin="round"/></g></svg>
+            </div>
+            <!-- 자식 -->
+            <div class="nav-submenu" th:id="'menu_'+${item.menuId}" style="display:none;">
+                <a class="nav-subitem" th:each="child:${session.menuList}"
+                   th:if="${child.menuLevel == 2 and item.menuId.equals(child.uprnMenuId)}"
+                   th:href="@{${#strings.startsWith(child.menuUrl, '/') ? child.menuUrl : '/' + child.menuUrl}(menuId=${child.menuId})}"
+                   th:data-url="${child.menuUrl}"
+                   th:data-menu-id="${child.menuId}"
+                   th:data-menu-nm="${child.menuNm}"
+                   th:data-parent-menu-nm="${child.uprnMenuNm}"
+                   th:attr="aria-current=${child.menuId == menuId ? 'page' : null}"
+                   onclick="if (!event.ctrlKey &amp;&amp; !event.metaKey &amp;&amp; !event.shiftKey &amp;&amp; !event.altKey) { loadContent(this); return false; }"> <!--화면 URL변경필요 -->
+                    <span class="nav-subitem__dot"></span>
+                    <span class="nav-subitem__label" th:text="${child.menuNm}"></span>
+                </a>
+                <a class="nav-subitem" data-review-menu-fallback
+                   th:if="${@reviewMenuNavigation.showFallback(session.menuList, item.menuId)}"
+                   th:href="@{/module/ocr/result(menuId='MENU0301')}"
+                   data-url="module/ocr/result" data-menu-id="MENU0301" data-menu-nm="판독결과 검토"
+                   th:data-parent-menu-nm="${item.menuNm}"
+                   th:attr="aria-current=${menuId == 'MENU0301' ? 'page' : null}"
+                   onclick="if (!event.ctrlKey &amp;&amp; !event.metaKey &amp;&amp; !event.shiftKey &amp;&amp; !event.altKey) { loadContent(this); return false; }">
+                    <span class="nav-subitem__dot"></span>
+                    <span class="nav-subitem__label">판독결과 검토</span>
+                </a>
+            </div>
+            <!--<div class="nav-submenu">
+                <a class="nav-subitem" href="dashboard.html">
+                    <span class="nav-subitem__dot"></span>
+                    <span class="nav-subitem__label">모니터링</span>
+                </a>
+            </div>-->
+        </div>
+    </nav>
+</aside>
+</html>
