@@ -8,7 +8,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.agilesoda.common.ComCodeManager;
+import com.agilesoda.common.ComMenu;
 import com.agilesoda.common.GroupCode;
+import com.agilesoda.common.menu.MenuManager;
 import com.agilesoda.module.admin.vo.SsoLoginUserVO;
 import com.agilesoda.module.common.entity.CommonExcelEntity;
 import com.agilesoda.module.common.entity.CommonMenuEntity;
@@ -28,6 +30,7 @@ public class CommonService {
     @PostConstruct
     public void init() {
     	initialComCode();
+    	initialMenu();
     }
     
     public void initialComCode() {
@@ -37,6 +40,16 @@ public class CommonService {
     	}
     	catch(Exception e) {
     		log.warn("[공통코드] 조회중 오류발생 => {}", e.getMessage());
+    	}
+    }
+    
+    public void initialMenu() {
+    	try {
+    		List<ComMenu> list = commonMapper.selectAllMenu();
+    		MenuManager.getInstance().add(list);
+    	}
+    	catch(Exception e) {
+    		log.warn("[전체메] 조회중 오류발생 => {}", e.getMessage());
     	}
     }
     

@@ -120,7 +120,7 @@
 		          FROM OCUOC_OCRDF_L F
 		          LEFT JOIN OCUOC_OCRCV_L C
 		            ON C.ITEM_TYP_CD = 'F' AND C.ITEM_ID = F.FILD_ID
-		        UNION ALL
+		         UNION ALL
 		        SELECT T.DOC_ID, 'C', T.TBL_KEY, R.ROW_SEQ, TC.COL_NM,
 		               R.FILD_KEY, R.FILD_VAL, C.CNFM_VAL,
 		               CASE WHEN C.ITEM_ID IS NULL THEN R.FILD_VAL ELSE C.CNFM_VAL END,

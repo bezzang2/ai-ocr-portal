@@ -57,6 +57,7 @@ public class CommonController {
         //  SSO 로그인 페이지에서 redirect로 진입 시 세션에 정보가 없기 때문에
         //  SSO의 정보를 가져와서 세팅한다.
         if(ssoLoginUser == null && devUserEnabled){
+        	/*
             log.debug("[메인] SSO 없는 환경, 개발용 사용자로 진입");
             ssoLoginUser = new SsoLoginUserVO();
             ssoLoginUser.setUserId("TEST");
@@ -64,6 +65,8 @@ public class CommonController {
             ssoLoginUser.setDeptCode("D001");
             ssoLoginUser.setDeptName("개발팀");
             session.setAttribute("ssoLoginUser", ssoLoginUser);
+            */
+        	return "test/login";
         }
 
         if(ssoLoginUser == null ){

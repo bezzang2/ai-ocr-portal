@@ -26,6 +26,7 @@
         
         <typeAlias alias="groupCode" type="com.agilesoda.common.GroupCode" />
         <typeAlias alias="comCode" type="com.agilesoda.common.ComCode" />
+        <typeAlias alias="comMenu" type="com.agilesoda.common.ComMenu" />
         
         <!-- request entity -->
         <typeAlias alias="userInqDto" type="com.agilesoda.sample.dto.UserInqDto" />

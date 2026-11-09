@@ -27,6 +27,10 @@ public class ComCodeManager {
 		this.groups.addAll(groups);
 	}
 	
+	public List<GroupCode> getGroups(){
+		return this.groups;
+	}
+	
 	public List<ComCode> getCodes(String groupCd){
 		List<ComCode> codes = new ArrayList<>();
 		

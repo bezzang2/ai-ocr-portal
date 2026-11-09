@@ -230,7 +230,6 @@ $(function(){
 	}
 	
 	$(".nav-subitem").each((index, item) => {
-		console.log(item.getAttribute("href") + " : " + uri);
 		if(item.getAttribute("href").includes(uri)){
 			if(!$(item).hasClass("is-selected")){
 				$(item).addClass("is-selected");

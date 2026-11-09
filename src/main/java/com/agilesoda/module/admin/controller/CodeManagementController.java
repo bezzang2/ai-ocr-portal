@@ -1,23 +1,31 @@
 package com.agilesoda.module.admin.controller;
 
 
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.agilesoda.common.ComCodeManager;
+import com.agilesoda.module.admin.service.CodeManagementService;
+import com.agilesoda.module.admin.vo.CodeManagementDetailResVO;
+import com.agilesoda.module.admin.vo.CodeManagementInqVO;
+import com.agilesoda.module.admin.vo.CodeManagementResVO;
+import com.agilesoda.module.admin.vo.CodeManagementSaveVO;
+import com.agilesoda.module.admin.vo.SsoLoginUserVO;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import com.agilesoda.module.admin.service.CodeManagementService;
-import com.agilesoda.module.admin.service.MenuManagementService;
-import com.agilesoda.module.admin.vo.*;
-import com.agilesoda.module.admin.vo.CommonMenuListVO;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-
-
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /****************************************************
  *   코드관리 화면 호출 서비스를 관리하는 Controller
@@ -38,6 +46,8 @@ public class CodeManagementController {
     public String codeManagement(@RequestParam(value = "menuId", defaultValue = "") String menuId,
                                  Model model) throws Exception {
         log.debug("[codeManagement] 시작");
+        
+       model.addAttribute("groups", ComCodeManager.getInstance().getGroups());
 
         return "module/admin/codeManagement";
 

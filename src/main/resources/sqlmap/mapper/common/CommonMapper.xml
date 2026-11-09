@@ -85,6 +85,17 @@
 			, SYSDATE
 		)
 	</insert>
+	
+	<select id="selectAllMenu" resultType="comMenu">
+		SELECT MENU_ID 		AS menuId
+			, MENU_NM		AS menuNm
+			, UPRN_MENU_ID	AS uprnMenuId
+			, MENU_URL		AS menuUrl
+		FROM OCUOC_MENUN_M
+		WHERE 1=1
+			AND USE_YN = 'Y'
+			AND MENU_LEVEL = 2
+	</select>
 
 	<select id="commonMenuList" parameterType="string" resultType="com.agilesoda.module.common.entity.CommonMenuEntity">
 		/* 최초 메뉴 조회 commonMenuList */

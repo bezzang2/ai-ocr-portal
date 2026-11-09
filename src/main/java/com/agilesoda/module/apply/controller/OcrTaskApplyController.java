@@ -49,7 +49,7 @@ public class OcrTaskApplyController {
 
         model.addAttribute("bzwkCds", bzwkCdCodes);
         model.addAttribute("prgsStCds", prgsStCdCodes);
-
+        
         log.info("######################## ocrTaskSearch END ####################");
         return "module/apply/ocr-task-search";
     }

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- OCR업무사용신청 -->
+<mapper namespace="com.agilesoda.module.apply.mapper.OcrTaskUsageApplyMapper">
+
+    <!-- 업무(OCRWF_M) → 서식(OCRWL_L, LEFRM_M) → 추출항목(판독결과 F/C + 이미 저장한 매핑) -->
+    <sql id="usageRows">
+        WITH FORM AS (
+            SELECT WF.WK_ID, WF.WK_NM, L.LEFRM_ID, L.LEFRM_NM, L.DOC_ID
+              FROM OCUOC_OCRWF_M WF
+              JOIN OCUOC_OCRWL_L WL ON WL.WK_ID   = WF.WK_ID
+              JOIN OCUOC_LEFRM_M L  ON L.LEFRM_ID = WL.LEFRM_ID
+            <where>
+                <choose>
+                    <!-- 팝업에서 업무를 고른 경우 : 그 업무만 -->
+                    <when test="wk_id != null and wk_id != ''">
+                        AND WF.WK_ID = #{wk_id}
+                    </when>
+                    <!-- 업무명 직접 입력 : 포함 검색 -->
+                                        <when test="ocr_work_nm != null and ocr_work_nm != ''">
+                        AND WF.WK_NM LIKE '%' || #{ocr_work_nm} || '%'
+                    </when>
+                    <!-- 업무명이 없으면 조회하지 않음 (화면에서 막아도 서버에서 한 번 더) -->
+                    <otherwise>
+                        AND 1 = 0
+                    </otherwise>
+                </choose>
+            </where>
+        ), DOCS AS (
+            SELECT DISTINCT FM.LEFRM_ID, O.DOC_ID
+              FROM (SELECT DISTINCT LEFRM_ID, DOC_ID FROM FORM) FM
+              JOIN OCUOC_OCRDO_L O
+                ON (O.DOC_TYP_CD = FM.DOC_ID OR O.DOC_TYP_CD = 'KJB_' || FM.DOC_ID)
+             WHERE NVL(LOWER(O.DOC_STAT_CD), ' ') NOT IN ('failed', 'canceled')
+        ), ITEM AS (
+            SELECT D.LEFRM_ID, 'F' AS ITEM_TYPE, F.FILD_KEY
+              FROM DOCS D
+              JOIN OCUOC_OCRDF_L F ON F.DOC_ID = D.DOC_ID
+            UNION
+            SELECT D.LEFRM_ID, 'C', R.FILD_KEY
+              FROM DOCS D
+              JOIN OCUOC_OCRDT_L T ON T.DOC_ID = D.DOC_ID
+              JOIN OCUOC_OCRTR_L R ON R.TBL_ID = T.TBL_ID
+        ), RW AS (
+            SELECT FM.WK_ID, FM.WK_NM, FM.LEFRM_ID, FM.LEFRM_NM, FM.DOC_ID, I.ITEM_TYPE, I.FILD_KEY
+              FROM FORM FM
+              JOIN ITEM I ON I.LEFRM_ID = FM.LEFRM_ID
+            UNION
+            SELECT FM.WK_ID, FM.WK_NM, FM.LEFRM_ID, FM.LEFRM_NM, FM.DOC_ID, NULL, P.FILD_KEY
+              FROM FORM FM
+              JOIN OCUOC_LFMAP_L P ON P.WK_ID = FM.WK_ID AND P.LEFRM_ID = FM.LEFRM_ID
+             WHERE NOT EXISTS (SELECT 1 FROM ITEM I
+                                WHERE I.LEFRM_ID = P.LEFRM_ID AND I.FILD_KEY = P.FILD_KEY)
+        )
+    </sql>
+
+    <!-- 매핑값 붙이기 : 없으면 빈 칸 -->
+    <sql id="usageJoin">
+          FROM RW
+          LEFT JOIN OCUOC_LFMAP_L P
+                 ON P.WK_ID    = RW.WK_ID
+                AND P.LEFRM_ID = RW.LEFRM_ID
+                AND P.FILD_KEY = RW.FILD_KEY
+         WHERE NVL(P.USE_YN, 'Y') = 'Y'
+    </sql>
+
+    <select id="selectUsageCnt" parameterType="map" resultType="int">
+        /* [OCR업무사용신청] 목록 건수 - selectUsageCnt */
+        <include refid="usageRows" />
+        SELECT COUNT(*)
+        <include refid="usageJoin" />
+    </select>
+
+    <!-- 별칭을 "" 로 감싸야 Map 키가 camelCase 로 그대로 나감 -->
+    <select id="selectUsageList" parameterType="map" resultType="map">
+        /* [OCR업무사용신청] 목록 - selectUsageList */
+        <include refid="usageRows" />
+        SELECT RW.WK_ID                    AS "wkId"
+             , RW.WK_NM                    AS "wkNm"
+             , RW.LEFRM_ID                 AS "lefrmId"
+             , RW.LEFRM_NM                 AS "ocrDoc"
+             , RW.DOC_ID                   AS "ocrCode"
+             , RW.ITEM_TYPE                AS "itemType"
+             , RW.FILD_KEY                 AS "readItem"
+             , NVL(P.FILD_NM, RW.FILD_KEY) AS "readItemNm"
+             , P.SCN_NO                    AS "dispNumber"
+             , P.MAPP_INFO                 AS "mappingInfo"
+             , P.DISP_ORD                  AS "dispOrd"
+             , CASE WHEN P.FILD_KEY IS NULL THEN 'N' ELSE 'Y' END AS "savedYn"
+        <include refid="usageJoin" />
+         ORDER BY RW.WK_NM, RW.LEFRM_NM, NVL(P.DISP_ORD, 99999), RW.ITEM_TYPE, RW.FILD_KEY
+        OFFSET #{offset} ROWS FETCH NEXT #{limit} ROWS ONLY
+    </select>
+
+    <!-- 저장 : 매핑 행이 없으면 INSERT, 있으면 UPDATE -->
+    <update id="updateUsage" parameterType="map">
+        /* [OCR업무사용신청] 매핑 저장 - updateUsage */
+        MERGE INTO OCUOC_LFMAP_L T
+        USING (SELECT #{wkId}     AS WK_ID
+                    , #{lefrmId}  AS LEFRM_ID
+                    , #{readItem} AS FILD_KEY
+                 FROM DUAL) S
+           ON (T.WK_ID = S.WK_ID AND T.LEFRM_ID = S.LEFRM_ID AND T.FILD_KEY = S.FILD_KEY)
+         WHEN MATCHED THEN UPDATE SET
+                T.SCN_NO    = #{dispNumber}
+              , T.MAPP_INFO = #{mappingInfo}
+              , T.DISP_ORD  = #{dispOrd}
+              , T.EDTR_ID   = #{userId}
+              , T.CHNG_DT   = SYSTIMESTAMP
+         WHEN NOT MATCHED THEN INSERT
+                (WK_ID, LEFRM_ID, FILD_KEY, FILD_NM, SCN_NO, MAPP_INFO, DISP_ORD, USE_YN, RGSR_ID, REG_DT)
+              VALUES
+                (S.WK_ID, S.LEFRM_ID, S.FILD_KEY, S.FILD_KEY,
+                 #{dispNumber}, #{mappingInfo}, #{dispOrd}, 'Y', #{userId}, SYSTIMESTAMP)
+    </update>
+
+    <!-- 사용신청 : 테이블 미정이라 그대로 (TEST_OCR_APPLY) -->
+    <insert id="insertApply" parameterType="map">
+        <selectKey keyProperty="applyId" resultType="long" order="BEFORE">
+            SELECT TEST_OCR_APPLY_SEQ.NEXTVAL FROM DUAL
+        </selectKey>
+        INSERT INTO TEST_OCR_APPLY
+               (APPLY_ID, OCR_DOC, OCR_CODE, APPLY_REASON, APPLY_USER_ID, APPLY_USER_NM, STATUS, CREATE_DATE)
+        VALUES (#{applyId}, #{ocrDoc}, #{ocrCode}, #{applyReason}, #{applyUserId}, #{applyUserNm}, 'REQ', SYSDATE)
+    </insert>
+
+    <insert id="insertApplyLine" parameterType="map">
+        INSERT INTO TEST_OCR_APPLY_LINE
+               (APPLY_ID, SEQ, APPR_USER_ID, APPR_USER_NM, APPR_STATUS)
+        VALUES (#{applyId}, #{seq}, #{apprUserId}, #{apprUserNm}, 'WAIT')
+    </insert>
+
+        <!-- 업무 검색 팝업 : 업무(OCRWF_M) + 연결된 서식 수 -->
+    <select id="selectTaskList" parameterType="map" resultType="map">
+        /* [OCR업무사용신청] 업무 검색 팝업 - selectTaskList */
+        SELECT WF.WK_ID       AS "wkId"
+             , WF.WK_NM       AS "wkNm"
+             , WF.WK_STAT_CD  AS "wkStatCd"
+             , (SELECT COUNT(*) FROM OCUOC_OCRWL_L WL WHERE WL.WK_ID = WF.WK_ID) AS "formCnt"
+          FROM OCUOC_OCRWF_M WF
+        <where>
+            <if test="keyword != null and keyword != ''">
+                AND WF.WK_NM LIKE '%' || #{keyword} || '%'
+            </if>
+        </where>
+         ORDER BY WF.WK_NM
+         FETCH FIRST 200 ROWS ONLY
+    </select>
+
+</mapper>

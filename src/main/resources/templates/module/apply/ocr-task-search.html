@@ -51,8 +51,8 @@
                                 <select id="prgs_st_cd" name="prgs_st_cd" class="input input--w120">
                                     <option value="">전체</option>
                                     <option th:each="prgsStCd : ${prgsStCds}"
-                                                    th:value="${prgsStCd.CD_VAL}"
-                                                    th:text="${prgsStCd.CD_NM}"/>
+                                                    th:value="${prgsStCd.value}"
+                                                    th:text="${prgsStCd.name}"/>
                                 </select>
                             </div>
                             <div class="search-area__item">
@@ -60,8 +60,8 @@
                                 <select id="bzwk_cd" name="bzwk_cd" class="input input--w120">
                                     <option value="">전체</option>
                                     <option th:each="bzwkCd : ${bzwkCds}" 
-                                                    th:value="${bzwkCd.CD_VAL}"
-                                                    th:text="${bzwkCd.CD_NM}"/>
+                                                    th:value="${bzwkCd.value}"
+                                                    th:text="${bzwkCd.name}"/>
                                 </select>
                             </div>
                             <div class="search-area__item">

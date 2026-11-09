@@ -1,22 +1,34 @@
 package com.agilesoda.module.admin.controller;
 
 
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import com.agilesoda.module.admin.service.MenuManagementService;
-import com.agilesoda.module.admin.service.PermissionManagementService;
-import com.agilesoda.module.admin.vo.*;
-import com.agilesoda.module.admin.vo.CommonMenuListVO;
-import jakarta.servlet.http.HttpSession;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.agilesoda.module.admin.service.PermissionManagementService;
+import com.agilesoda.module.admin.vo.CommonUserListVO;
+import com.agilesoda.module.admin.vo.PermissionManagementInqVO;
+import com.agilesoda.module.admin.vo.PermissionManagementResVO;
+import com.agilesoda.module.admin.vo.PermissionManagementUserResVO;
+import com.agilesoda.module.admin.vo.PermissionUserBtnResVO;
+import com.agilesoda.module.admin.vo.PermissionUserMenuListVO;
+import com.agilesoda.module.admin.vo.PermissionUserMenuVO;
+import com.agilesoda.module.admin.vo.SsoLoginUserVO;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpSession;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 /****************************************************
  *   권한관리 화면 호출 서비스를 관리하는 Controller

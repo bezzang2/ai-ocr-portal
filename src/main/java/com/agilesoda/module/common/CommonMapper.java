@@ -6,6 +6,7 @@ import java.util.Map;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import com.agilesoda.common.ComMenu;
 import com.agilesoda.common.GroupCode;
 import com.agilesoda.module.admin.vo.SsoLoginUserVO;
 import com.agilesoda.module.common.entity.CommonExcelEntity;
@@ -21,6 +22,8 @@ public interface CommonMapper {
     List<Map<String, Object>> selectListEmpInfo(Map<String, Object> param) throws Exception;
 
     int registApproval(OcuocAprvlEntity entity) throws Exception;
+    
+    List<ComMenu> selectAllMenu() throws Exception;
 
     List<CommonMenuEntity> commonMenuList(@Param("menuId") String menuId , @Param("userId") String userId);
 
