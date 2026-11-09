@@ -9,5 +9,7 @@ public class GroupCode {
 	private String groupCd;
 	private String groupNm;
 	
+	private String userId;
+	
 	List<ComCode> codes;
 }

@@ -1,8 +1,7 @@
 package com.agilesoda.module.admin.mapper;
 
-import com.agilesoda.module.admin.vo.CodeManagementDetailResVO;
-import com.agilesoda.module.admin.vo.CodeManagementInqVO;
-import com.agilesoda.module.admin.vo.CodeManagementResVO;
+import com.agilesoda.module.admin.entity.ComCodeEntity;
+import com.agilesoda.module.admin.entity.GroupCodeEntity;
 
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -13,26 +12,20 @@ import java.util.Map;
 @Mapper
 public interface CodeManagementMapper {
 
-    // 그룹코드 조회ㅑ
-    List<CodeManagementResVO> searchGropCode(CodeManagementInqVO vo);
-
-    // 상세코드 조회
-    List<CodeManagementDetailResVO> selectCodeDetail(@Param("cdGroup") String cdGroup);
-
     // 그룹코드 등록
-    int insertGroupCode(CodeManagementResVO vo);
+    int insertGroupCode(GroupCodeEntity entity) throws Exception;
 
-    int insertGroupDetail(CodeManagementDetailResVO vo);
+    int insertComCode(ComCodeEntity entity) throws Exception;
 
     // 그룹에속한 상세코드 삭제
-    int deleteCodeDetailByGroup(@Param("cdGroup") String cdGroup);
+    int deleteCodeDetailByGroup(String cdGroup) throws Exception;
 
     // 그룹코드 삭제
-    int deleteGroupCode(@Param("cdGroup") String cdGroup);
+    int deleteGroupCode(String cdGroup) throws Exception;
 
     // 코드상세 삭제
-    int deleteCodeDetail(Map<String, Object> param);
+    int deleteCodeDetail(ComCodeEntity entity) throws Exception;
 
-    int groupCnt(CodeManagementResVO vo);
+    int groupCnt(String groupCd) throws Exception;
 
 }

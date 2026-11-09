@@ -29,6 +29,9 @@
         <typeAlias alias="comMenu" type="com.agilesoda.common.ComMenu" />
         
         <!-- request entity -->
+        <typeAlias alias="groupCodeEntity" type="com.agilesoda.module.admin.entity.GroupCodeEntity" />
+        <typeAlias alias="comCodeEntity" type="com.agilesoda.module.admin.entity.ComCodeEntity" />
+
         <typeAlias alias="userInqDto" type="com.agilesoda.sample.dto.UserInqDto" />
         <typeAlias alias="boardInqDto" type="com.agilesoda.sample.dto.BoardInqDto" />
         <typeAlias alias="taskInfoReqEntity" type="com.agilesoda.module.apply.entity.TaskInfoReqEntity" />

@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<!-- Default Layout Import-->
+<<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- 결재선 지정 모달 — get_design_context(517:15533) 실측("신청관리-OCR서식신청-직원선택 팝업" 프레임,
+ 실제 표시 타이틀은 "결재선 지정"). 신청관리>OCR서식신청 추출화면(ocr-form-apply-extract.html)의
+ 담당자 지정 "직원선택" 버튼에서 여는 팝업 — 실제 화면 연결은 개발자가 진행.
+ 2026-08-20 재실측: 폭이 1200px(.modal--lg) → 1000px로 변경돼 .modal--w1000으로 교체. -->
+<div th:fragment="group-code-popup">
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none;">
+	<symbol id="svg_close" viewBox="0 0 7.725 7.725">
+		<path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round"/>
+	</symbol>
+	<symbol id="svg_cancel" viewBox="0 0 7.725 7.725">
+		<path d="M7.2375 0.4875L0.4875 7.2375M0.4875 0.4875L7.2375 7.2375" stroke="currentColor" stroke-width="0.975" stroke-linecap="round" stroke-linejoin="round" />
+	</symbol>
+	<symbol id="svg_save" viewBox="0 0 9.2 6.7">
+		<path d="M8.6 0.6L3.1 6.1L0.6 3.6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+	</symbol>
+</svg>
+    <div id="group-code-popup" class="modal-overlay" hidden>
+           <div class="modal">
+			<div class="modal__header">
+				<span class="modal__title">그룹 코드 등록</span>
+				<button type="button" class="modal__close" aria-label="닫기" data-modal-close>
+					<svg  width="7.725" height="7.725" fill="none" aria-hidden="true" >
+						<use href="#svg_close" />
+					</svg>
+				</button>
+			</div>
+			<div class="modal__body">
+				<div class="modal__row">
+					<span class="modal__row-label">그룹코드</span>
+					<input class="input" type="text" id="modal_group_cd" name="modal_group_cd" value="" style="flex: 1" />
+				</div>
+				<div class="modal__row">
+					<span class="modal__row-label">그룹명</span>
+					<input class="input" type="text" id="modal_group_nm" name="modal_group_nm" value="" style="flex: 1" />
+				</div>
+        	</div>
+			<div class="modal__footer">
+				<div class="modal__footer-actions">
+					<button type="button" class="btn-outline-primary" data-modal-close>
+						<span class="btn-icon-slot">
+							<svg width="7.725" height="7.725" fill="none" aria-hidden="true" >
+								<use href="#svg_cancel" />
+                 			</svg>
+                 		</span>
+             			취소
+           			</button>
+           			<button type="button" class="btn btn-primary" id="btn_modal_save" data-modal-close>
+             			<span class="btn-icon-slot">
+              				<svg width="9.2" height="6.7" fill="none" aria-hidden="true" >
+              					<use href="#svg_save" />
+                  			</svg>
+                  		</span>
+             			저장
+					</button>
+         		</div>
+       		</div>
+      	</div>
+    </div>
+    <script th:inline="javascript" type="text/javascript">
+$(function(){
+	$("#btn_modal_save").on("click", function(){
+		if($("#modal_group_cd").val() == ""){
+			alert("그룹 코드를 입력하셔야 합니다.");
+			$("#modal_group_cd").focus();
+			return;
+		}
+		
+		if($("#modal_group_nm").val() == ""){
+			alert("그룹명을 입력하셔야 합니다.");
+			$("#modal_group_nm").focus();
+			return;
+		}
+		
+		let param = {
+			groupCd: $("#modal_group_cd").val(),
+			groupNm: $("#modal_group_nm").val()
+		}
+		
+		fetch(contextPath+"module/admin/save-group-code", {
+	        method: "POST",
+	        headers: {
+	          "Content-Type": "application/json"
+	        },
+	        body: JSON.stringify(param)
+		})
+        .then(response => {
+            if (!response.ok) {
+                openErrorModal("조회 오류");
+                return;
+            }
+            return response.json();
+        })
+        .then(data => {
+        	console.log(data);
+        	callback(data.data);
+        })
+        .catch(error => {
+            console.error(error);
+            return;
+        })
+		
+	});
+});
+</script>
+</div>
+</body>
+</html>

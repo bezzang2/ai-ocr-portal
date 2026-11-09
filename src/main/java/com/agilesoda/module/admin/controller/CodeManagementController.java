@@ -4,21 +4,18 @@ package com.agilesoda.module.admin.controller;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.agilesoda.common.response.BaseResponse;
+import com.agilesoda.common.util.StringUtil;
+import com.agilesoda.module.admin.entity.ComCodeEntity;
+import com.agilesoda.module.admin.entity.GroupCodeEntity;
+import com.agilesoda.module.common.CommonService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import com.agilesoda.common.ComCodeManager;
 import com.agilesoda.module.admin.service.CodeManagementService;
-import com.agilesoda.module.admin.vo.CodeManagementDetailResVO;
-import com.agilesoda.module.admin.vo.CodeManagementInqVO;
-import com.agilesoda.module.admin.vo.CodeManagementResVO;
-import com.agilesoda.module.admin.vo.CodeManagementSaveVO;
 import com.agilesoda.module.admin.vo.SsoLoginUserVO;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,6 +36,8 @@ public class CodeManagementController {
 
     private final CodeManagementService codeManagementService;
 
+    private final CommonService commonService;
+
     /****************************************************
      *   codeManagement 공통코드 화면 연결
      *****************************************************/
@@ -54,111 +53,80 @@ public class CodeManagementController {
     }
 
     /****************************************************
-     *   그룹코드 리스트  조회
-     *****************************************************/
-    @Operation(summary = "그룹코드 목록 조회")
-    @PostMapping("/searchGropCode")
-    @ResponseBody
-    public Map<String, Object> searchGropCode(@RequestBody CodeManagementInqVO vo) {
-        log.debug("[그룹코드 조회] 시작");
-
-        return codeManagementService.searchGropCode(vo);
-    }
-
-    /****************************************************
-     *  그룹코드로 코드상세 리스트 조회
-     *****************************************************/
-    @Operation(summary = "상세코드 조회")
-    @PostMapping("/selectCodeDetail")
-    @ResponseBody
-    public Map<String, Object> selectCodeDetail(@RequestBody Map<String, Object> param) {
-        log.debug("[코드상세 조회] 시작");
-
-        String cdGroup = String.valueOf(param.get("cdGroup"));
-
-        return codeManagementService.selectCodeDetail(cdGroup);
-    }
-
-    /****************************************************
      *  그룹코드 등록
      *****************************************************/
     @Operation(summary = "그룹코드와 상세코드 저장")
-    @PostMapping("/saveGroupCode")
+    @PostMapping("/save-group-code")
     @ResponseBody
-    public Map<String, Object> saveGroupCode(@RequestBody CodeManagementSaveVO saveVO,
-                                               HttpSession session) {
+    public ResponseEntity<?> saveGroupCode(@RequestBody Map<String, Object> params,
+                                        HttpSession session) throws Exception{
         log.info("[관리자] 코드그룹 등록 시작 userId={}", SsoLoginUserVO.userIdOf(session));
 
-        Map<String, Object> result = new HashMap<>();
-        try {
-            SsoLoginUserVO ssoLoginUserVO = (SsoLoginUserVO) session.getAttribute("ssoLoginUser");
-            if(ssoLoginUserVO == null){
-                throw new IllegalStateException("로그인 정보가 없습니다.");
-            }
-            String userId = ssoLoginUserVO.getUserId();
-            //그룹 등록자 세팅
-            saveVO.getGroup().setLastChngEmpno(userId);
-            // 상세 등록자 세팅
-            for(CodeManagementDetailResVO detail : saveVO.getDetailList()){
-                detail.setCdGroup(saveVO.getGroup().getCdGroup());
-                detail.setLastChngEmpno(userId);
-            }
+        String groupCd = StringUtil.nvl(params.get("groupCd"));
+        String groupNm = StringUtil.nvl(params.get("groupNm"));
 
-            codeManagementService.saveGroupCode(saveVO);
-            result.put("result","SUCCESS");
-        }catch (Exception e){
-            log.error("[관리자] saveGroupCode 실패 userId={}", SsoLoginUserVO.userIdOf(session), e);
-            result.put("result","FAIL");
-            result.put("message","처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        if("".equals(groupCd) || "".equals(groupNm)){
+            return BaseResponse.error("그룹코드 또는 그룹명이 입력되지 않았습니다.");
         }
-        return result;
+
+        SsoLoginUserVO ssoLoginUserVO = (SsoLoginUserVO) session.getAttribute("ssoLoginUser");
+        if(ssoLoginUserVO == null){
+            throw new IllegalStateException("로그인 정보가 없습니다.");
+        }
+
+        String userId = ssoLoginUserVO.getUserId();
+
+        int cnt = codeManagementService.saveGroupCode(GroupCodeEntity.builder()
+                .groupCd(groupCd)
+                .groupNm(groupNm)
+                .userId(userId)
+                .build());
+
+        if(cnt > 0 ){
+            commonService.initialComCode();
+        }
+
+        return BaseResponse.ok("성공", ComCodeManager.getInstance().getGroups());
     }
 
     /****************************************************
      *  그룹코드 삭제
      *****************************************************/
     @Operation(summary = "그룹코드 삭제")
-    @PostMapping("/deleteGroupCode")
+    @GetMapping("/deleteGroupCode/{groupCd}")
     @ResponseBody
-    public Map<String, Object> deleteGroupCode(@RequestBody CodeManagementResVO vo) {
+    public ResponseEntity<?> deleteGroupCode(@PathVariable("groupCd") String groupCd) throws Exception {
         log.debug("[코드그룹 삭제] 시작");
 
-        Map<String, Object> result = new HashMap<>();
-        try {
-            codeManagementService.deleteGroupCode(vo.getCdGroup());
-            result.put("result","SUCCESS");
-        }catch (Exception e){
-            log.error("[관리자] deleteGroupCode 실패", e);
-            result.put("result","FAIL");
-            result.put("message","처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
-        }
-        return result;
+        codeManagementService.deleteGroupCode(groupCd);
+
+        commonService.initialComCode();
+
+        return BaseResponse.ok("성공", ComCodeManager.getInstance().getGroups());
     }
 
     /****************************************************
      *  코드상세 삭제
      *****************************************************/
     @Operation(summary = "상세코드 삭제")
-    @PostMapping("/deleteCodeDetail")
+    @PostMapping("/deleteComCode")
     @ResponseBody
-    public Map<String, Object> deleteCodeDetail(@RequestBody Map<String, Object> param) {
+    public ResponseEntity<?> deleteCodeDetail(@RequestBody Map<String, Object> param) throws Exception {
         log.debug("[코드상세 삭제] 시작");
 
-        Map<String, Object> result = new HashMap<>();
-        try {
-            int cnt = codeManagementService.deleteCodeDetail(param);
-            if(cnt > 0){
-                result.put("result","SUCCESS");
-            }else{
-                result.put("result","FAIL");
-                result.put("message","삭제할 데이터가 없습니다.");
-            }
-        }catch (Exception e){
-            log.error("[관리자] deleteCodeDetail 실패", e);
-            result.put("result","FAIL");
-            result.put("message","처리 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+        String groupCd = StringUtil.nvl(param.get("groupCd"));
+        String cdVal = StringUtil.nvl(param.get("cdVal"));
+
+        int cnt = codeManagementService.deleteComCode(ComCodeEntity.builder()
+                .groupCd(groupCd)
+                .cdVal(cdVal)
+                .build());
+
+        if(cnt == 0){
+            return BaseResponse.ok("성공", "삭제할 데이터가 없습니다.[" + groupCd + "." + cdVal + "]");
         }
-        return result;
+
+        return BaseResponse.ok("성공", "삭제되었습니다[" + groupCd + "." + cdVal + "]");
     }
 }
 

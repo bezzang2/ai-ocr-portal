@@ -8,4 +8,5 @@ public class ComCode {
 	private String name;
 	private String description;
 	private int seq;
+	private String useYn;
 }
